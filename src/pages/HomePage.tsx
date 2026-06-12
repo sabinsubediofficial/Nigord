@@ -628,7 +628,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const isVoiceCallActive = !!activeVoiceChannel
-    const pollInterval = (isTabActive || isVoiceCallActive) ? 1500 : 12000
+    const pollInterval = (isTabActive || isVoiceCallActive) ? 1500 : 4000
 
     const interval = setInterval(() => {
       // 1. Fetch global notifications (badges + sound)
