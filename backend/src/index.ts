@@ -127,13 +127,13 @@ const sendVerificationEmail = async (email: string, username: string, code: stri
   try {
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
         client_id: GMAIL_CLIENT_ID,
         client_secret: GMAIL_CLIENT_SECRET,
         refresh_token: GMAIL_REFRESH_TOKEN,
         grant_type: 'refresh_token'
-      })
+      }).toString()
     })
 
     if (!tokenRes.ok) {
@@ -170,7 +170,7 @@ const sendVerificationEmail = async (email: string, username: string, code: stri
 
     const raw = base64UrlSafe(message)
 
-    const sendRes = await fetch('https://gmail.googleapis.com/v1/users/me/messages/send', {
+    const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${access_token}`,
