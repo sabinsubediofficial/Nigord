@@ -1,0 +1,9 @@
+# Proxy API requests to the Cloudflare Worker backend
+# Replace "nigord-backend.YOUR_SUBDOMAIN.workers.dev" with your actual deployed Worker URL!
+
+/auth/* https://nigord-backend.YOUR_SUBDOMAIN.workers.dev/auth/:splat 200
+/users/* https://nigord-backend.YOUR_SUBDOMAIN.workers.dev/users/:splat 200
+/channels/* https://nigord-backend.YOUR_SUBDOMAIN.workers.dev/channels/:splat 200
+/signaling/* https://nigord-backend.YOUR_SUBDOMAIN.workers.dev/signaling/:splat 200
+/files/* https://nigord-backend.YOUR_SUBDOMAIN.workers.dev/files/:splat 200
+/dms/* https://nigord-backend.YOUR_SUBDOMAIN.workers.dev/dms/:splat 200
