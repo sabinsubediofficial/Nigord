@@ -579,6 +579,7 @@ export default function HomePage() {
     e.preventDefault()
     if (!messageContent.trim() && pendingAttachments.length === 0) return
     
+    sendTypingStatus(false)
     const attachmentsToSend = [...pendingAttachments]
     setPendingAttachments([]) 
     const contentToSend = messageContent
@@ -597,6 +598,7 @@ export default function HomePage() {
     e.preventDefault()
     if (!dmMessageContent.trim() && pendingAttachments.length === 0) return
     
+    sendTypingStatus(false)
     const attachmentsToSend = [...pendingAttachments]
     setPendingAttachments([])
     const contentToSend = dmMessageContent
@@ -920,6 +922,7 @@ export default function HomePage() {
   }, [searchQuery, friendsFilter])
 
   const goHome = () => {
+    sendTypingStatus(false)
     setCurrentServer(null)
     setCurrentChannel(null)
     setActiveTab('home')
@@ -927,6 +930,7 @@ export default function HomePage() {
   }
 
   const openDm = (dmId: string) => {
+    sendTypingStatus(false)
     setCurrentServer(null)
     setCurrentChannel(null)
     setActiveTab('home')
@@ -999,7 +1003,7 @@ export default function HomePage() {
           return (
           <div 
             key={server.id} 
-            onClick={() => { setCurrentServer(server); setActiveTab('server'); }} 
+            onClick={() => { sendTypingStatus(false); setCurrentServer(server); setActiveTab('server'); }} 
             className={`w-12 h-12 rounded-[24px] hover:rounded-[16px] transition-all flex items-center justify-center text-white cursor-pointer group relative mb-2 ${activeTab === 'server' && currentServer?.id === server.id ? 'rounded-[16px] bg-[#bc9f84] text-[#141517]' : 'bg-[#2d2f31] hover:bg-[#bc9f84] hover:text-[#141517]'}`}
           >
             <div className={`absolute left-0 bg-[#e3e1db] rounded-r-full transition-all origin-left ${activeTab === 'server' && currentServer?.id === server.id ? 'h-10 scale-y-100' : (unreadCount > 0 ? 'h-2 scale-y-100' : 'h-5 scale-y-0 group-hover:scale-y-50')}`} style={{ width: '4px' }} />
@@ -1130,7 +1134,7 @@ export default function HomePage() {
                       return (
                         <div 
                           key={channel.id} 
-                          onClick={() => setCurrentChannel(channel)} 
+                          onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); }} 
                           className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
                             isActive 
                               ? 'bg-[#2d2f31] text-[#e3e1db]' 
@@ -1229,7 +1233,7 @@ export default function HomePage() {
                       return (
                         <div key={channel.id} className="flex flex-col">
                           <div 
-                            onClick={() => { setCurrentChannel(channel); handleJoinVoice(channel); }} 
+                            onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); }} 
                             className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
                               isActive 
                                 ? 'bg-[#2d2f31] text-[#e3e1db]' 
