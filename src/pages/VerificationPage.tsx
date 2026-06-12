@@ -1,0 +1,148 @@
+import { useState, useEffect } from "react"
+import { useNavigate, useLocation } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useAuthStore } from "@/store/useAuthStore"
+import { ShieldAlert, Check, RefreshCw } from "lucide-react"
+
+export default function VerificationPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  
+  // Get userId from router state
+  const state = location.state as { userId?: string } | null
+  const userId = state?.userId || new URLSearchParams(location.search).get("userId")
+
+  const [code, setCode] = useState("")
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [loading, setLoading] = useState("")
+  const [resendTimer, setResendTimer] = useState(0)
+
+  const setUser = useAuthStore((state) => state.setUser)
+
+  useEffect(() => {
+    if (!userId) {
+      navigate("/login")
+    }
+  }, [userId, navigate])
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1)
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [resendTimer])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+    setLoading("verify")
+
+    try {
+      const res = await fetch("/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, code }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setUser(data.user)
+        navigate("/")
+      } else {
+        setError(data.error || "Verification failed")
+      }
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+    } finally {
+      setLoading("")
+    }
+  }
+
+  const handleResend = async () => {
+    setError("")
+    setSuccess("")
+    setLoading("resend")
+    try {
+      const res = await fetch("/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      })
+
+      if (res.ok) {
+        setSuccess("A new verification code has been sent to your inbox.")
+        setResendTimer(60) // 60 seconds cooldown
+      } else {
+        const data = await res.json()
+        setError(data.error || "Failed to resend code")
+      }
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+    } finally {
+      setLoading("")
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#141517] p-4 font-sans selection:bg-[#bc9f84]/30">
+      <div className="w-full max-w-[420px] rounded-xl bg-[#1e2022] p-8 shadow-2xl border border-[#2d2f31]/60">
+        <h2 className="text-center text-2xl font-bold text-[#e3e1db]">Verify Email</h2>
+        <p className="mb-6 text-center text-[#a3a29e] text-sm">
+          Please enter the 6-digit verification code sent to your email address.
+        </p>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs flex items-center gap-2">
+            <ShieldAlert size={14} /> {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs flex items-center gap-2">
+            <Check size={14} /> {success}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider">Verification Code</label>
+            <Input
+              type="text"
+              placeholder="123456"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-12 text-center text-2xl tracking-[0.5em] font-bold"
+              required
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading === "verify" || code.length !== 6}
+            className="w-full bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold h-10 transition-all shadow-md mt-2"
+          >
+            {loading === "verify" ? "Verifying..." : "Verify"}
+          </Button>
+
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              disabled={loading === "resend" || resendTimer > 0}
+              onClick={handleResend}
+              className="text-xs text-[#bc9f84] hover:underline cursor-pointer disabled:text-[#767572] disabled:no-underline transition-colors flex items-center gap-1.5 justify-center w-full"
+            >
+              <RefreshCw size={12} className={loading === "resend" ? "animate-spin" : ""} />
+              {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : "Resend Verification Code"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}

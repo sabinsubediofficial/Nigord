@@ -9,6 +9,9 @@ type Bindings = {
   DB: D1Database
   FILES: R2Bucket
   JWT_SECRET: string
+  GMAIL_CLIENT_ID?: string
+  GMAIL_CLIENT_SECRET?: string
+  GMAIL_REFRESH_TOKEN?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -103,6 +106,73 @@ app.get('/files/get/:key', async (c) => {
   return c.body(file.body, 200, Object.fromEntries(headers))
 })
 
+// Gmail Verification Mailer Helper
+const sendVerificationEmail = async (email: string, username: string, code: string, env: any) => {
+  const { GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN } = env
+  
+  if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET || !GMAIL_REFRESH_TOKEN) {
+    console.log(`[DEVELOPMENT VERIFICATION] Email verification code for ${username} (${email}): ${code}`)
+    return
+  }
+
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: GMAIL_CLIENT_ID,
+        client_secret: GMAIL_CLIENT_SECRET,
+        refresh_token: GMAIL_REFRESH_TOKEN,
+        grant_type: 'refresh_token'
+      })
+    })
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text()
+      console.error('Failed to get Gmail access token:', errText)
+      return
+    }
+
+    const tokenData = await tokenRes.json() as any
+    const access_token = tokenData.access_token
+
+    const subject = `Nigord - Verify your email`
+    const body = `Hello ${username},\n\nYour 6-digit email verification code is: ${code}\n\nPlease enter this code to verify your email.\n\nThanks,\nThe Nigord Team`
+    
+    const message = [
+      `To: ${email}`,
+      `Subject: ${subject}`,
+      `Content-Type: text/plain; charset=utf-8`,
+      `MIME-Version: 1.0`,
+      ``,
+      body
+    ].join('\r\n')
+
+    const base64UrlSafe = (str: string) => {
+      const b64 = btoa(unescape(encodeURIComponent(str)))
+      return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    }
+
+    const raw = base64UrlSafe(message)
+
+    const sendRes = await fetch('https://gmail.googleapis.com/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${access_token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ raw })
+    })
+
+    if (!sendRes.ok) {
+      const errText = await sendRes.text()
+      console.error('Gmail send API failed:', errText)
+    }
+  } catch (err) {
+    console.error('Error sending verification email:', err)
+  }
+}
+
 // Authentication Routes
 app.post('/auth/register', async (c) => {
   const { username, email, password } = await c.req.json()
@@ -110,22 +180,16 @@ app.post('/auth/register', async (c) => {
 
   const id = crypto.randomUUID()
   const passwordHash = await bcrypt.hash(password, 10)
+  const code = Math.floor(100000 + Math.random() * 900000).toString()
 
   try {
     await c.env.DB.prepare(
-      'INSERT INTO users (id, username, email, password_hash) VALUES (?, ?, ?, ?)'
-    ).bind(id, username, email, passwordHash).run()
+      'INSERT INTO users (id, username, email, password_hash, is_verified, verification_code) VALUES (?, ?, ?, ?, 0, ?)'
+    ).bind(id, username, email, passwordHash, code).run()
 
-    const token = await sign({ id, username }, c.env.JWT_SECRET)
-    setCookie(c, 'token', token, {
-      httpOnly: true,
-      secure: false, // Set to true in production
-      sameSite: 'Lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7,
-    })
+    await sendVerificationEmail(email, username, code, c.env)
 
-    return c.json({ user: { id, username, email } })
+    return c.json({ user: { id, username, email, is_verified: 0 } })
   } catch (e: any) {
     if (e.message.includes('UNIQUE constraint failed')) return c.json({ error: 'Username or email already exists' }, 400)
     return c.json({ error: 'Database error' }, 500)
@@ -138,6 +202,10 @@ app.post('/auth/login', async (c) => {
 
   if (!user || !(await bcrypt.compare(password, user.password_hash))) return c.json({ error: 'Invalid credentials' }, 401)
 
+  if (!user.is_verified) {
+    return c.json({ error: 'Email not verified', unverified: true, userId: user.id }, 403)
+  }
+
   const token = await sign({ id: user.id, username: user.username }, c.env.JWT_SECRET)
   setCookie(c, 'token', token, {
     httpOnly: true,
@@ -148,6 +216,61 @@ app.post('/auth/login', async (c) => {
   })
 
   return c.json({ user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, display_name: user.display_name, bio: user.bio, status_message: user.status_message, status: user.status } })
+})
+
+app.post('/auth/verify-email', async (c) => {
+  const { userId, code } = await c.req.json()
+  if (!userId || !code) return c.json({ error: 'Missing code or user ID' }, 400)
+  
+  try {
+    const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first()
+    if (!user) return c.json({ error: 'User not found' }, 404)
+    
+    if (user.is_verified) {
+      return c.json({ error: 'Email is already verified' }, 400)
+    }
+    
+    if (user.verification_code !== code.trim()) {
+      return c.json({ error: 'Invalid verification code' }, 400)
+    }
+    
+    await c.env.DB.prepare('UPDATE users SET is_verified = 1, verification_code = NULL WHERE id = ?').bind(userId).run()
+    
+    const token = await sign({ id: user.id, username: user.username }, c.env.JWT_SECRET)
+    setCookie(c, 'token', token, {
+      httpOnly: true,
+      secure: false, // Set to true in production
+      sameSite: 'Lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    })
+    
+    return c.json({ user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, display_name: user.display_name, bio: user.bio, status_message: user.status_message, status: user.status } })
+  } catch (e) {
+    return c.json({ error: 'Verification failed' }, 500)
+  }
+})
+
+app.post('/auth/resend-verification', async (c) => {
+  const { userId } = await c.req.json()
+  if (!userId) return c.json({ error: 'User ID is required' }, 400)
+  
+  try {
+    const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first()
+    if (!user) return c.json({ error: 'User not found' }, 404)
+    
+    if (user.is_verified) {
+      return c.json({ error: 'Email is already verified' }, 400)
+    }
+    
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    await c.env.DB.prepare('UPDATE users SET verification_code = ? WHERE id = ?').bind(code, userId).run()
+    await sendVerificationEmail(user.email, user.username, code, c.env)
+    
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Failed to resend code' }, 500)
+  }
 })
 
 app.get('/auth/me', async (c) => {

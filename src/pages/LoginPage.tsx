@@ -43,6 +43,10 @@ export default function LoginPage() {
         setUser(data.user)
         navigate("/")
       } else {
+        if (data.unverified) {
+          navigate("/verify", { state: { userId: data.userId } })
+          return
+        }
         setError(data.error || "Invalid credentials")
       }
     } catch (err) {

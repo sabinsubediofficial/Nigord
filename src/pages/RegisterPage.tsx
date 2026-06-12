@@ -32,8 +32,7 @@ export default function RegisterPage() {
       const data = await res.json()
 
       if (res.ok) {
-        setUser(data.user)
-        navigate("/")
+        navigate("/verify", { state: { userId: data.user.id } })
       } else {
         setError(data.error || "Failed to register")
       }
