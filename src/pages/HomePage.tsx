@@ -122,6 +122,15 @@ export default function HomePage() {
   const [channelToEdit, setChannelToEdit] = useState<any | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
   const [hoveredChannelId, setHoveredChannelId] = useState<string | null>(null)
+  const [isTabActive, setIsTabActive] = useState(true)
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      setIsTabActive(!document.hidden)
+    }
+    document.addEventListener("visibilitychange", handleVisibility)
+    return () => document.removeEventListener("visibilitychange", handleVisibility)
+  }, [])
 
   const [messageContent, setMessageContent] = useState("")
   const [dmMessageContent, setDmMessageContent] = useState("")
@@ -618,10 +627,18 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    const isVoiceCallActive = !!activeVoiceChannel
+    const pollInterval = (isTabActive || isVoiceCallActive) ? 1500 : 12000
+
     const interval = setInterval(() => {
       // 1. Fetch global notifications (badges + sound)
       // Pass the IDs of what we are currently LOOKING AT to suppress notifications for them
       fetchNotifications(currentChannel?.id, activeDmId || undefined)
+
+      // If tab is backgrounded and user is not in a voice call, skip intensive queries
+      if (!isTabActive && !isVoiceCallActive) {
+        return
+      }
 
       // 2. Fetch messages for the ACTIVE conversation
       if (activeTab === 'server' && currentChannel) {
@@ -642,10 +659,10 @@ export default function HomePage() {
       if (currentChannel || activeDmId) {
         fetchTypingUsers()
       }
-    }, 1500) // Consolidated 1.5s poll
+    }, pollInterval)
 
     return () => clearInterval(interval)
-  }, [user, currentChannel, activeDmId, activeTab, activeHomeView, currentServer, activeVoiceChannel])
+  }, [user, currentChannel, activeDmId, activeTab, activeHomeView, currentServer, activeVoiceChannel, isTabActive])
 
   const fetchMembers = async (serverId: string) => {
     try {
