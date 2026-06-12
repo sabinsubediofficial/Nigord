@@ -5,12 +5,10 @@ compatibility_date = "2024-03-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "nigord-db"
-database_id = "your-database-id-here" # Placeholder for local dev it uses local file
+database_id = "cf4d7bee-6d00-492b-9a6e-cd2dcab0e01b"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding = "FILES"
 bucket_name = "nigord-files"
 
-[vars]
-JWT_SECRET = "development-secret-do-not-use-in-production"
