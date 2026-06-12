@@ -8,6 +8,8 @@ export interface DMChannel {
   name: string
   avatar?: string
   active_call?: number
+  display_name?: string
+  status?: string
 }
 
 export const useDMs = (activeDmId?: string) => {
@@ -51,6 +53,15 @@ export const useDMs = (activeDmId?: string) => {
             const updatedCurrent = prev.map(m => {
               const fetched = fetchedMsgs.find(f => f.id === m.id)
               if (fetched) {
+                const localEditTime = m.edited_at ? new Date(m.edited_at).getTime() : 0
+                const fetchedEditTime = fetched.edited_at ? new Date(fetched.edited_at).getTime() : 0
+                if (localEditTime > fetchedEditTime) {
+                  return {
+                    ...fetched,
+                    content: m.content,
+                    edited_at: m.edited_at
+                  }
+                }
                 return { ...m, ...fetched }
               }
               return m

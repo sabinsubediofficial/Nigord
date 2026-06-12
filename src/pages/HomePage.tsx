@@ -684,17 +684,93 @@ export default function HomePage() {
     }
   }, [currentChannel])
 
+  const findLocalUserInfo = (userId: string) => {
+    if (userId === user?.id) {
+      return {
+        id: user.id,
+        username: user.username,
+        display_name: user.display_name,
+        avatar: user.avatar,
+        bio: user.bio,
+        status_message: user.status_message,
+        status: user.status,
+      }
+    }
+    
+    const member = members.find(m => m.id === userId)
+    if (member) {
+      return {
+        id: member.id,
+        username: member.username,
+        display_name: member.display_name,
+        avatar: member.avatar,
+        status_message: member.status_message,
+        status: member.status,
+      }
+    }
+
+    const friend = friends.find(f => f.id === userId)
+    if (friend) {
+      return {
+        id: friend.id,
+        username: friend.username,
+        display_name: friend.display_name || friend.username,
+        avatar: friend.avatar,
+        status_message: friend.status_message,
+        status: friend.presence_status,
+      }
+    }
+
+    const dm = dms.find(d => d.target_id === userId)
+    if (dm) {
+      return {
+        id: dm.target_id,
+        username: dm.name,
+        display_name: dm.display_name || dm.name,
+        avatar: dm.avatar,
+        status: dm.status,
+      }
+    }
+
+    const msg = [...channelMessages, ...dmMessages].find(m => m.author_id === userId)
+    if (msg) {
+      return {
+        id: msg.author_id,
+        username: msg.username,
+        display_name: msg.username,
+        status: 'online',
+      }
+    }
+
+    return null
+  }
+
   useEffect(() => {
     if (!selectedUserProfileId) {
       setUserProfileData(null)
       return
     }
+
+    const localUser = findLocalUserInfo(selectedUserProfileId)
+    if (localUser) {
+      setUserProfileData({
+        ...localUser,
+        bio: (localUser as any).bio || '',
+        isLoading: true
+      })
+    } else {
+      setUserProfileData({ isLoading: true })
+    }
+
     const fetchProfile = async () => {
       try {
         const res = await apiFetch(`/users/${selectedUserProfileId}/profile`, { credentials: 'include' })
         if (res.ok) {
           const data = await res.json()
-          setUserProfileData(data.user)
+          setUserProfileData({
+            ...data.user,
+            isLoading: false
+          })
         }
       } catch (e) {
         console.error(e)
@@ -2211,48 +2287,53 @@ export default function HomePage() {
       {selectedUserProfileId && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedUserProfileId(null)}>
           <div className="bg-[#1e2022] w-full max-w-[340px] rounded-xl overflow-hidden shadow-2xl border border-[#2d2f31] relative text-left" onClick={e => e.stopPropagation()}>
-            {/* Header block (non-scrollable) to prevent avatar clipping */}
-            <div className="relative shrink-0">
-              <div className="h-16 bg-[#bc9f84]" />
-              <div className="px-4 -mt-8 mb-2">
-                <div className="w-16 h-16 rounded-full bg-[#1e2022] p-1 relative z-10">
-                  <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-2xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-md">
-                    {userProfileData?.username?.[0] || '?' }
-                  </div>
-                  {userProfileData?.status && (
-                    <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#1e2022] ${getStatusColor(userProfileData.status)}`} />
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            <div className="px-4 pb-4 flex flex-col relative">
-              
-              {userProfileData ? (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-[#e3e1db] leading-tight">{userProfileData.display_name || userProfileData.username}</h3>
-                    <p className="text-xs text-[#a3a29e]">@{userProfileData.username}</p>
-                  </div>
-                  
-                  {userProfileData.status_message && (
-                    <div className="bg-[#141517] p-2 rounded border border-[#2d2f31] text-xs text-white">
-                      <p className="text-[#a3a29e] text-[10px] font-bold uppercase mb-0.5">Custom Status</p>
-                      <p className="italic text-[#e3e1db]">"{userProfileData.status_message}"</p>
+            {userProfileData && !(!userProfileData.username && userProfileData.isLoading) ? (
+              <>
+                {/* Header block (non-scrollable) to prevent avatar clipping */}
+                <div className="relative shrink-0">
+                  <div className="h-16 bg-[#bc9f84]" />
+                  <div className="px-4 -mt-8 mb-2">
+                    <div className="w-16 h-16 rounded-full bg-[#1e2022] p-1 relative z-10">
+                      <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-2xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-md">
+                        {userProfileData.username[0]}
+                      </div>
+                      {userProfileData.status && (
+                        <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#1e2022] ${getStatusColor(userProfileData.status)}`} />
+                      )}
                     </div>
-                  )}
-
-                  <div className="bg-[#141517] p-3 rounded border border-[#2d2f31] space-y-2.5">
+                  </div>
+                </div>
+                
+                <div className="px-4 pb-4 flex flex-col relative">
+                  <div className="space-y-4">
                     <div>
-                      <p className="text-[#a3a29e] text-[10px] font-bold uppercase">About Me</p>
-                      <p className="text-xs text-[#a3a29e] whitespace-pre-wrap">{userProfileData.bio || "No bio yet."}</p>
+                      <h3 className="text-lg font-bold text-[#e3e1db] leading-tight">{userProfileData.display_name || userProfileData.username}</h3>
+                      <p className="text-xs text-[#a3a29e]">@{userProfileData.username}</p>
+                    </div>
+                    
+                    {userProfileData.status_message && (
+                      <div className="bg-[#141517] p-2 rounded border border-[#2d2f31] text-xs text-white">
+                        <p className="text-[#a3a29e] text-[10px] font-bold uppercase mb-0.5">Custom Status</p>
+                        <p className="italic text-[#e3e1db]">"{userProfileData.status_message}"</p>
+                      </div>
+                    )}
+
+                    <div className="bg-[#141517] p-3 rounded border border-[#2d2f31] space-y-2.5">
+                      <div>
+                        <p className="text-[#a3a29e] text-[10px] font-bold uppercase">About Me</p>
+                        <p className="text-xs text-[#a3a29e] whitespace-pre-wrap">
+                          {userProfileData.isLoading && !userProfileData.bio 
+                            ? "Loading bio..." 
+                            : (userProfileData.bio || "No bio yet.")}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="py-8 text-center text-sm text-[#a3a29e]">Loading profile...</div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="py-12 text-center text-sm text-[#a3a29e]">Loading profile...</div>
+            )}
             <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-white/75 hover:text-white rounded-full bg-black/20 hover:bg-black/40 h-7 w-7" onClick={() => setSelectedUserProfileId(null)}>
               <XIcon size={14} />
             </Button>

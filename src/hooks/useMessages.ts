@@ -30,6 +30,15 @@ export const useMessages = (channelId?: string) => {
           const updatedCurrent = current.map(m => {
             const fetched = fetchedMsgs.find(f => f.id === m.id)
             if (fetched) {
+              const localEditTime = m.edited_at ? new Date(m.edited_at).getTime() : 0
+              const fetchedEditTime = fetched.edited_at ? new Date(fetched.edited_at).getTime() : 0
+              if (localEditTime > fetchedEditTime) {
+                return {
+                  ...fetched,
+                  content: m.content,
+                  edited_at: m.edited_at
+                }
+              }
               return { ...m, ...fetched }
             }
             return m
