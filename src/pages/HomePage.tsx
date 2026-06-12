@@ -1052,6 +1052,35 @@ export default function HomePage() {
                   <Settings size={15} />
                 </div>
               )}
+              {currentServer?.owner_id !== user?.id && (
+                <div 
+                  className="flex items-center justify-between p-2 rounded-md text-red-400 hover:bg-red-500/20 cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!currentServer) return;
+                    setShowServerMenu(false);
+                    if (window.confirm("Are you sure you want to leave this server?")) {
+                      try {
+                        const res = await apiFetch(`/servers/${currentServer.id}/leave`, {
+                          method: 'POST',
+                          credentials: 'include'
+                        });
+                        if (res.ok) {
+                          window.location.reload();
+                        } else {
+                          const data = await res.json();
+                          alert(data.error || "Failed to leave server");
+                        }
+                      } catch (err) {
+                        alert("Failed to leave server due to network error.");
+                      }
+                    }
+                  }}
+                >
+                  <span className="text-xs font-semibold">Leave Server</span>
+                  <LogOut size={15} />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2390,7 +2419,7 @@ export default function HomePage() {
       )}
 
       {showServerSettingsModal && currentServer && (
-        <ServerSettingsModal serverId={currentServer.id} serverName={currentServer.name} onClose={() => setShowServerSettingsModal(false)} />
+        <ServerSettingsModal serverId={currentServer.id} serverName={currentServer.name} ownerId={currentServer.owner_id} onClose={() => setShowServerSettingsModal(false)} />
       )}
 
       {showChannelSettingsModal && channelToEdit && (

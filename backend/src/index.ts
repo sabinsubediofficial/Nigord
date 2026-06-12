@@ -570,6 +570,114 @@ app.get('/servers/:id', authMiddleware, async (c) => {
   }
 })
 
+app.patch('/servers/:id', authMiddleware, async (c) => {
+  const serverId = c.req.param('id')
+  const user = c.get('user')
+  const { name, icon } = await c.req.json()
+  if (!name && icon === undefined) return c.json({ error: 'Nothing to update' }, 400)
+
+  try {
+    const server: any = await c.env.DB.prepare('SELECT * FROM servers WHERE id = ?').bind(serverId).first()
+    if (!server) return c.json({ error: 'Server not found' }, 404)
+    if (server.owner_id !== user.id) return c.json({ error: 'Only the server owner can update settings' }, 403)
+
+    const updates: string[] = []
+    const params: any[] = []
+
+    if (name) {
+      updates.push('name = ?')
+      params.push(name)
+    }
+    if (icon !== undefined) {
+      updates.push('icon = ?')
+      params.push(icon)
+    }
+
+    params.push(serverId)
+
+    await c.env.DB.prepare(`
+      UPDATE servers 
+      SET ${updates.join(', ')} 
+      WHERE id = ?
+    `).bind(...params).run()
+
+    const updatedServer = await c.env.DB.prepare('SELECT * FROM servers WHERE id = ?').bind(serverId).first()
+    return c.json({ server: updatedServer })
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: 'Failed to update server' }, 500)
+  }
+})
+
+app.delete('/servers/:id', authMiddleware, async (c) => {
+  const serverId = c.req.param('id')
+  const user = c.get('user')
+  try {
+    const server: any = await c.env.DB.prepare('SELECT * FROM servers WHERE id = ?').bind(serverId).first()
+    if (!server) return c.json({ error: 'Server not found' }, 404)
+    if (server.owner_id !== user.id) return c.json({ error: 'Only the server owner can delete this server' }, 403)
+
+    await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM messages WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?)').bind(serverId),
+      c.env.DB.prepare('DELETE FROM channels WHERE server_id = ?').bind(serverId),
+      c.env.DB.prepare('DELETE FROM members WHERE server_id = ?').bind(serverId),
+      c.env.DB.prepare('DELETE FROM invites WHERE server_id = ?').bind(serverId),
+      c.env.DB.prepare('DELETE FROM roles WHERE server_id = ?').bind(serverId),
+      c.env.DB.prepare('DELETE FROM servers WHERE id = ?').bind(serverId)
+    ])
+
+    return c.json({ success: true })
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: 'Failed to delete server' }, 500)
+  }
+})
+
+app.post('/servers/:id/leave', authMiddleware, async (c) => {
+  const serverId = c.req.param('id')
+  const user = c.get('user')
+  try {
+    const server: any = await c.env.DB.prepare('SELECT * FROM servers WHERE id = ?').bind(serverId).first()
+    if (!server) return c.json({ error: 'Server not found' }, 404)
+    if (server.owner_id === user.id) {
+      return c.json({ error: 'As the owner, you cannot leave the server. Delete it or transfer ownership first.' }, 400)
+    }
+
+    const res = await c.env.DB.prepare('DELETE FROM members WHERE server_id = ? AND user_id = ?').bind(serverId, user.id).run()
+    if (res.meta.changes === 0) {
+      return c.json({ error: 'You are not a member of this server' }, 400)
+    }
+
+    return c.json({ success: true })
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: 'Failed to leave server' }, 500)
+  }
+})
+
+app.post('/servers/:id/transfer-ownership', authMiddleware, async (c) => {
+  const serverId = c.req.param('id')
+  const user = c.get('user')
+  const { target_user_id } = await c.req.json()
+  if (!target_user_id) return c.json({ error: 'Target user ID is required' }, 400)
+
+  try {
+    const server: any = await c.env.DB.prepare('SELECT * FROM servers WHERE id = ?').bind(serverId).first()
+    if (!server) return c.json({ error: 'Server not found' }, 404)
+    if (server.owner_id !== user.id) return c.json({ error: 'Only the server owner can transfer ownership' }, 403)
+
+    const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(serverId, target_user_id).first()
+    if (!isMember) return c.json({ error: 'Target user is not a member of this server' }, 400)
+
+    await c.env.DB.prepare('UPDATE servers SET owner_id = ? WHERE id = ?').bind(target_user_id, serverId).run()
+    return c.json({ success: true })
+  } catch (e) {
+    console.error(e)
+    return c.json({ error: 'Failed to transfer ownership' }, 500)
+  }
+})
+
+
 app.get('/servers/:id/search', authMiddleware, async (c) => {
   const serverId = c.req.param('id')
   const q = c.req.query('q')

@@ -109,5 +109,78 @@ export const useServerSettings = (serverId?: string) => {
     fetchMembers()
   }, [serverId])
 
-  return { roles, fetchRoles, createRole, createInvite, joinServer, members, fetchMembers, updateMemberRole }
+  const updateServer = async (payload: { name?: string, icon?: string }) => {
+    if (!serverId) return false
+    try {
+      const res = await apiFetch(`/servers/${serverId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      })
+      return res.ok
+    } catch (e) {
+      console.error(e)
+      return false
+    }
+  }
+
+  const deleteServer = async () => {
+    if (!serverId) return false
+    try {
+      const res = await apiFetch(`/servers/${serverId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      return res.ok
+    } catch (e) {
+      console.error(e)
+      return false
+    }
+  }
+
+  const leaveServer = async () => {
+    if (!serverId) return false
+    try {
+      const res = await apiFetch(`/servers/${serverId}/leave`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+      return res.ok
+    } catch (e) {
+      console.error(e)
+      return false
+    }
+  }
+
+  const transferOwnership = async (targetUserId: string) => {
+    if (!serverId) return false
+    try {
+      const res = await apiFetch(`/servers/${serverId}/transfer-ownership`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_user_id: targetUserId }),
+        credentials: 'include'
+      })
+      return res.ok
+    } catch (e) {
+      console.error(e)
+      return false
+    }
+  }
+
+  return { 
+    roles, 
+    fetchRoles, 
+    createRole, 
+    createInvite, 
+    joinServer, 
+    members, 
+    fetchMembers, 
+    updateMemberRole,
+    updateServer,
+    deleteServer,
+    leaveServer,
+    transferOwnership
+  }
 }
