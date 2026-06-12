@@ -513,7 +513,7 @@ app.post('/auth/logout', (c) => {
 // Server Routes
 app.post('/servers', authMiddleware, async (c) => {
   const user = c.get('user')
-  const { name } = await c.req.json()
+  const { name, icon, banner } = await c.req.json()
   if (!name) return c.json({ error: 'Server name is required' }, 400)
 
   const serverId = crypto.randomUUID()
@@ -522,12 +522,12 @@ app.post('/servers', authMiddleware, async (c) => {
 
   try {
     await c.env.DB.batch([
-      c.env.DB.prepare('INSERT INTO servers (id, name, owner_id) VALUES (?, ?, ?)').bind(serverId, name, user.id),
+      c.env.DB.prepare('INSERT INTO servers (id, name, owner_id, icon, banner) VALUES (?, ?, ?, ?, ?)').bind(serverId, name, user.id, icon || null, banner || null),
       c.env.DB.prepare('INSERT INTO members (id, user_id, server_id) VALUES (?, ?, ?)').bind(memberId, user.id, serverId),
       c.env.DB.prepare('INSERT INTO channels (id, server_id, name, type) VALUES (?, ?, ?, ?)').bind(channelId, serverId, 'general', 'text')
     ])
 
-    return c.json({ server: { id: serverId, name, owner_id: user.id } })
+    return c.json({ server: { id: serverId, name, owner_id: user.id, icon: icon || null, banner: banner || null } })
   } catch (e) {
     console.error(e)
     return c.json({ error: 'Failed to create server' }, 500)
@@ -573,8 +573,8 @@ app.get('/servers/:id', authMiddleware, async (c) => {
 app.patch('/servers/:id', authMiddleware, async (c) => {
   const serverId = c.req.param('id')
   const user = c.get('user')
-  const { name, icon } = await c.req.json()
-  if (!name && icon === undefined) return c.json({ error: 'Nothing to update' }, 400)
+  const { name, icon, banner } = await c.req.json()
+  if (!name && icon === undefined && banner === undefined) return c.json({ error: 'Nothing to update' }, 400)
 
   try {
     const server: any = await c.env.DB.prepare('SELECT * FROM servers WHERE id = ?').bind(serverId).first()
@@ -591,6 +591,10 @@ app.patch('/servers/:id', authMiddleware, async (c) => {
     if (icon !== undefined) {
       updates.push('icon = ?')
       params.push(icon)
+    }
+    if (banner !== undefined) {
+      updates.push('banner = ?')
+      params.push(banner)
     }
 
     params.push(serverId)

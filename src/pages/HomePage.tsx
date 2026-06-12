@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, getFileUrl } from "@/lib/api"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useMessageStore } from "@/store/useMessageStore"
 import { useServers } from "@/hooks/useServers"
@@ -1024,7 +1024,15 @@ export default function HomePage() {
             className={`w-12 h-12 rounded-[24px] hover:rounded-[16px] transition-all flex items-center justify-center text-white cursor-pointer group relative mb-2 ${activeTab === 'server' && currentServer?.id === server.id ? 'rounded-[16px] bg-[#bc9f84] text-[#141517]' : 'bg-[#2d2f31] hover:bg-[#bc9f84] hover:text-[#141517]'}`}
           >
             <div className={`absolute left-0 bg-[#e3e1db] rounded-r-full transition-all origin-left ${activeTab === 'server' && currentServer?.id === server.id ? 'h-10 scale-y-100' : (unreadCount > 0 ? 'h-2 scale-y-100' : 'h-5 scale-y-0 group-hover:scale-y-50')}`} style={{ width: '4px' }} />
-            <span className="text-sm font-medium">{server.name.substring(0, 2).toUpperCase()}</span>
+            {server.icon ? (
+              <img 
+                src={getFileUrl(server.icon)} 
+                alt={server.name} 
+                className="w-full h-full object-cover rounded-[inherit] transition-all"
+              />
+            ) : (
+              <span className="text-sm font-medium">{server.name.substring(0, 2).toUpperCase()}</span>
+            )}
             {unreadCount > 0 && (
               <div className="absolute -bottom-1 -right-1 bg-[#bc9f84] text-[#141517] text-[10px] font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border-4 border-[#1e2022] ring-0">
                 {unreadCount}
@@ -1040,16 +1048,35 @@ export default function HomePage() {
       {/* Secondary Sidebar */}
       <div className="w-60 obsidian-card flex flex-col overflow-hidden shrink-0 border-none">
         <div 
-          className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0 relative cursor-pointer hover:bg-[#2d2f31]/30 transition-all duration-200" 
+          className="relative flex flex-col justify-end overflow-hidden group cursor-pointer hover:bg-[#2d2f31]/30 transition-all duration-200 border-b border-[#2d2f31] shrink-0 select-none" 
+          style={{ height: activeTab === 'server' && currentServer?.banner ? '120px' : '48px' }}
           onClick={() => activeTab === 'server' && setShowServerMenu(!showServerMenu)}
         >
-          <h2 className="font-bold truncate flex-1 text-[#e3e1db] transition-colors group-hover:text-white">{activeTab === 'server' ? currentServer?.name : "Find or start a conversation"}</h2>
-          {activeTab === 'server' && (
-            <ChevronDown 
-              size={18} 
-              className={`text-[#a3a29e] shrink-0 transition-transform duration-200 ${showServerMenu ? 'rotate-180 text-white' : ''}`} 
+          {activeTab === 'server' && currentServer?.banner && (
+            <img 
+              src={getFileUrl(currentServer.banner)} 
+              className="absolute inset-0 w-full h-full object-cover brightness-[0.5] group-hover:brightness-[0.6] transition-all duration-200" 
+              alt="" 
             />
           )}
+          <div className="flex items-center px-4 h-12 w-full relative z-10">
+            {activeTab === 'server' && currentServer?.icon && (
+              <img 
+                src={getFileUrl(currentServer.icon)} 
+                className="w-5 h-5 rounded-full object-cover mr-2 border border-[#2d2f31]" 
+                alt="" 
+              />
+            )}
+            <h2 className="font-bold truncate flex-1 text-[#e3e1db] transition-colors group-hover:text-white drop-shadow-md">
+              {activeTab === 'server' ? currentServer?.name : "Find or start a conversation"}
+            </h2>
+            {activeTab === 'server' && (
+              <ChevronDown 
+                size={18} 
+                className={`text-[#a3a29e] shrink-0 transition-transform duration-200 drop-shadow-md ${showServerMenu ? 'rotate-180 text-white' : ''}`} 
+              />
+            )}
+          </div>
           
           {showServerMenu && activeTab === 'server' && (
             <div className="absolute top-[52px] left-2 right-2 bg-[#1e2022]/95 backdrop-blur-md rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.6)] border border-[#2d2f31]/80 p-1.5 z-50 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-150 ease-out">

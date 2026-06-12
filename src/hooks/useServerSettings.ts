@@ -109,7 +109,7 @@ export const useServerSettings = (serverId?: string) => {
     fetchMembers()
   }, [serverId])
 
-  const updateServer = async (payload: { name?: string, icon?: string }) => {
+  const updateServer = async (payload: { name?: string, icon?: string | null, banner?: string | null }) => {
     if (!serverId) return false
     try {
       const res = await apiFetch(`/servers/${serverId}`, {

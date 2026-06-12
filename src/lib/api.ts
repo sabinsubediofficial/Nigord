@@ -18,3 +18,14 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     credentials: 'include',
   })
 }
+
+/**
+ * Resolves local file paths to full URLs if needed (especially for production deployment).
+ */
+export function getFileUrl(url?: string): string {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url
+  }
+  return `${API_BASE}${url}`
+}

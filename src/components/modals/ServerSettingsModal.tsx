@@ -1,9 +1,11 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useServerSettings } from "@/hooks/useServerSettings"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useServerStore } from "@/store/useServerStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X } from "lucide-react"
+import { apiFetch, getFileUrl } from "@/lib/api"
 
 export default function ServerSettingsModal({ 
   serverId, 
@@ -17,7 +19,10 @@ export default function ServerSettingsModal({
   onClose: () => void 
 }) {
   const { user } = useAuthStore()
+  const { servers, setServers, setCurrentServer } = useServerStore()
   const isOwner = user?.id === ownerId
+
+  const server = servers.find(s => s.id === serverId)
 
   const { 
     roles, 
@@ -35,6 +40,14 @@ export default function ServerSettingsModal({
 
   // Overview States
   const [name, setName] = useState(serverName)
+  const [iconUrl, setIconUrl] = useState(server?.icon || "")
+  const [bannerUrl, setBannerUrl] = useState(server?.banner || "")
+  const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
+
+  const iconInputRef = useRef<HTMLInputElement>(null)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [transferTargetUserId, setTransferTargetUserId] = useState("")
   const [showTransferConfirm, setShowTransferConfirm] = useState(false)
@@ -48,16 +61,92 @@ export default function ServerSettingsModal({
     setNewRoleName("")
   }
 
-  const handleRenameServer = async (e: React.FormEvent) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    setUploadingIcon(true)
+    setErrorMsg("")
+    setSuccessMsg("")
+    try {
+      const res = await apiFetch('/files/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setIconUrl(data.url)
+        setSuccessMsg("Icon uploaded! Click Save Changes to apply.")
+      } else {
+        const data = await res.json()
+        setErrorMsg(data.error || "Upload failed")
+      }
+    } catch (err) {
+      setErrorMsg("Upload failed")
+    } finally {
+      setUploadingIcon(false)
+    }
+  }
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    setUploadingBanner(true)
+    setErrorMsg("")
+    setSuccessMsg("")
+    try {
+      const res = await apiFetch('/files/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setBannerUrl(data.url)
+        setSuccessMsg("Banner uploaded! Click Save Changes to apply.")
+      } else {
+        const data = await res.json()
+        setErrorMsg(data.error || "Upload failed")
+      }
+    } catch (err) {
+      setErrorMsg("Upload failed")
+    } finally {
+      setUploadingBanner(false)
+    }
+  }
+
+  const handleUpdateServerSettings = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
     setErrorMsg("")
     setSuccessMsg("")
-    const ok = await updateServer({ name: name.trim() })
+    const ok = await updateServer({ 
+      name: name.trim(), 
+      icon: iconUrl || null, 
+      banner: bannerUrl || null 
+    })
     if (ok) {
-      setSuccessMsg("Server renamed successfully! Please refresh or switch servers to see the change.")
+      const updatedServers = servers.map(s => 
+        s.id === serverId 
+          ? { ...s, name: name.trim(), icon: iconUrl || null, banner: bannerUrl || null } 
+          : s
+      )
+      setServers(updatedServers)
+      const updatedCurrent = updatedServers.find(s => s.id === serverId)
+      if (updatedCurrent) {
+        setCurrentServer(updatedCurrent)
+      }
+      setSuccessMsg("Server settings updated successfully!")
     } else {
-      setErrorMsg("Failed to rename server.")
+      setErrorMsg("Failed to update server settings.")
     }
   }
 
@@ -135,8 +224,88 @@ export default function ServerSettingsModal({
 
               {isOwner ? (
                 <div className="bg-[#1e2022] rounded-xl p-6 border border-[#2d2f31] space-y-6">
-                  {/* Rename Server */}
-                  <form onSubmit={handleRenameServer} className="space-y-4">
+                  {/* Server Settings Form */}
+                  <form onSubmit={handleUpdateServerSettings} className="space-y-6">
+                    {/* Upload Settings (Icon and Banner) */}
+                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                      {/* Server Icon */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider block">Server Icon</label>
+                        <div 
+                          onClick={() => iconInputRef.current?.click()}
+                          className="relative group w-24 h-24 rounded-full overflow-hidden bg-[#141517] border-2 border-[#2d2f31] flex items-center justify-center cursor-pointer hover:border-[#bc9f84] transition-all"
+                        >
+                          {iconUrl ? (
+                            <img src={getFileUrl(iconUrl)} className="w-full h-full object-cover" alt="Server Icon" />
+                          ) : (
+                            <span className="text-xl font-bold text-[#a3a29e] uppercase">{name.substring(0, 2)}</span>
+                          )}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-white font-bold transition-opacity">
+                            <span>{uploadingIcon ? "UPLOADING..." : "CHANGE"}</span>
+                          </div>
+                        </div>
+                        <input 
+                          type="file" 
+                          ref={iconInputRef} 
+                          onChange={handleIconUpload} 
+                          accept="image/*" 
+                          className="hidden" 
+                        />
+                        {iconUrl && (
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs text-red-400 hover:text-red-300 hover:bg-transparent p-0"
+                            onClick={(e) => { e.stopPropagation(); setIconUrl(""); }}
+                          >
+                            Remove Icon
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Server Banner */}
+                      <div className="flex-1 space-y-2 w-full">
+                        <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider block">Server Banner</label>
+                        <div 
+                          onClick={() => bannerInputRef.current?.click()} 
+                          className="relative group h-24 w-full rounded-lg bg-[#141517] border-2 border-[#2d2f31] border-dashed flex items-center justify-center cursor-pointer hover:border-[#bc9f84] overflow-hidden transition-all"
+                        >
+                          {bannerUrl ? (
+                            <img src={getFileUrl(bannerUrl)} className="w-full h-full object-cover" alt="Server Banner" />
+                          ) : (
+                            <div className="text-center text-xs text-[#a3a29e] p-4">
+                              <p className="font-semibold">{uploadingBanner ? "Uploading..." : "Click to upload banner"}</p>
+                              <p className="text-[10px] opacity-70 mt-1">Recommended size: 960x540</p>
+                            </div>
+                          )}
+                          {bannerUrl && (
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs text-white font-bold transition-opacity">
+                              CHANGE BANNER
+                            </div>
+                          )}
+                        </div>
+                        <input 
+                          type="file" 
+                          ref={bannerInputRef} 
+                          onChange={handleBannerUpload} 
+                          accept="image/*" 
+                          className="hidden" 
+                        />
+                        {bannerUrl && (
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs text-red-400 hover:text-red-300 hover:bg-transparent p-0"
+                            onClick={(e) => { e.stopPropagation(); setBannerUrl(""); }}
+                          >
+                            Remove Banner
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider">Server Name</label>
                       <Input 
