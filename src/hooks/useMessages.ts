@@ -19,13 +19,31 @@ export const useMessages = (channelId?: string) => {
           setMessages(channelId, fetchedMsgs)
           setHasMore(data.messages.length === 50)
         } else {
-          // Merge newly polled messages with existing ones (both newest first)
           const current = messages[channelId] || []
-          const currentIds = new Set(current.map(m => m.id))
-          const uniqueNew = fetchedMsgs.filter(m => !currentIds.has(m.id))
-          if (uniqueNew.length > 0) {
-            setMessages(channelId, [...uniqueNew, ...current])
+          const fetchedIds = new Set(fetchedMsgs.map(m => m.id))
+          
+          let oldestFetchedTime = 0
+          if (fetchedMsgs.length > 0) {
+            oldestFetchedTime = new Date(fetchedMsgs[fetchedMsgs.length - 1].created_at).getTime()
           }
+          
+          const updatedCurrent = current.map(m => {
+            const fetched = fetchedMsgs.find(f => f.id === m.id)
+            if (fetched) {
+              return { ...m, ...fetched }
+            }
+            return m
+          }).filter(m => {
+            const mTime = new Date(m.created_at).getTime()
+            if (fetchedIds.has(m.id)) return true
+            if (mTime < oldestFetchedTime) return true
+            return false
+          })
+          
+          const currentIds = new Set(updatedCurrent.map(m => m.id))
+          const uniqueNew = fetchedMsgs.filter(m => !currentIds.has(m.id))
+          
+          setMessages(channelId, [...uniqueNew, ...updatedCurrent])
         }
         
         apiFetch(`/channels/${channelId}/read`, { method: 'POST', credentials: 'include' }).catch(console.error)
@@ -57,13 +75,13 @@ export const useMessages = (channelId?: string) => {
     }
   }
 
-  const sendMessage = async (content: string, attachments: any[] = []) => {
+  const sendMessage = async (content: string, attachments: any[] = [], replyToId?: string) => {
     if (!channelId) return
     try {
       const res = await apiFetch(`/channels/${channelId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, attachments }),
+        body: JSON.stringify({ content, attachments, reply_to_id: replyToId }),
         credentials: 'include'
       })
       if (res.ok) {

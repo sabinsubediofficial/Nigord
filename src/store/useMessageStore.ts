@@ -9,6 +9,12 @@ export interface Message {
   avatar?: string
   created_at: string
   edited_at?: string
+  is_pinned?: number
+  reply_to_id?: string
+  reply_username?: string
+  reply_content?: string
+  attachments?: any[]
+  reactions?: any[]
 }
 
 interface MessageState {
@@ -16,6 +22,8 @@ interface MessageState {
   setMessages: (channelId: string, messages: Message[]) => void
   addMessage: (channelId: string, message: Message) => void
   prependMessages: (channelId: string, oldMessages: Message[]) => void
+  updateMessage: (channelId: string, messageId: string, updates: Partial<Message>) => void
+  deleteMessage: (channelId: string, messageId: string) => void
 }
 
 export const useMessageStore = create<MessageState>((set) => ({
@@ -38,6 +46,28 @@ export const useMessageStore = create<MessageState>((set) => ({
         messages: {
           ...state.messages,
           [channelId]: [...existing, ...uniqueOld]
+        }
+      }
+    }),
+  updateMessage: (channelId, messageId, updates) =>
+    set((state) => {
+      const current = state.messages[channelId] || []
+      const updated = current.map(m => m.id === messageId ? { ...m, ...updates } : m)
+      return {
+        messages: {
+          ...state.messages,
+          [channelId]: updated
+        }
+      }
+    }),
+  deleteMessage: (channelId, messageId) =>
+    set((state) => {
+      const current = state.messages[channelId] || []
+      const filtered = current.filter(m => m.id !== messageId)
+      return {
+        messages: {
+          ...state.messages,
+          [channelId]: filtered
         }
       }
     }),

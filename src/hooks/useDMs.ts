@@ -41,9 +41,30 @@ export const useDMs = (activeDmId?: string) => {
           setHasMore(data.messages.length === 50)
         } else {
           setMessages(prev => {
-            const currentIds = new Set(prev.map(m => m.id))
+            const fetchedIds = new Set(fetchedMsgs.map(m => m.id))
+            
+            let oldestFetchedTime = 0
+            if (fetchedMsgs.length > 0) {
+              oldestFetchedTime = new Date(fetchedMsgs[fetchedMsgs.length - 1].created_at).getTime()
+            }
+            
+            const updatedCurrent = prev.map(m => {
+              const fetched = fetchedMsgs.find(f => f.id === m.id)
+              if (fetched) {
+                return { ...m, ...fetched }
+              }
+              return m
+            }).filter(m => {
+              const mTime = new Date(m.created_at).getTime()
+              if (fetchedIds.has(m.id)) return true
+              if (mTime < oldestFetchedTime) return true
+              return false
+            })
+            
+            const currentIds = new Set(updatedCurrent.map(m => m.id))
             const uniqueNew = fetchedMsgs.filter(m => !currentIds.has(m.id))
-            return uniqueNew.length > 0 ? [...uniqueNew, ...prev] : prev
+            
+            return [...uniqueNew, ...updatedCurrent]
           })
         }
         apiFetch(`/dms/${activeDmId}/read`, { method: 'POST', credentials: 'include' }).catch(console.error)
@@ -78,22 +99,24 @@ export const useDMs = (activeDmId?: string) => {
     }
   }
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, attachments: any[] = [], replyToId?: string) => {
     if (!activeDmId) return
     try {
       const res = await apiFetch(`/dms/${activeDmId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, attachments, reply_to_id: replyToId }),
         credentials: 'include'
       })
       if (res.ok) {
         const data = await res.json()
         setMessages(prev => [data.message, ...prev])
+        return data.message
       }
     } catch (e) {
       console.error(e)
     }
+    return null
   }
 
   useEffect(() => {
@@ -108,5 +131,5 @@ export const useDMs = (activeDmId?: string) => {
     fetchDMs()
   }, [activeDmId])
 
-  return { dms, messages, fetchDMs, fetchMessages, fetchMoreMessages, hasMore, isLoadingMore, sendMessage }
+  return { dms, messages, setMessages, fetchDMs, fetchMessages, fetchMoreMessages, hasMore, isLoadingMore, sendMessage }
 }

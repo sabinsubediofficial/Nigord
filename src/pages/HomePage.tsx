@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react"
 import { apiFetch } from "@/lib/api"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useMessageStore } from "@/store/useMessageStore"
 import { useServers } from "@/hooks/useServers"
 import { useServerStore } from "@/store/useServerStore"
 import { useChannels } from "@/hooks/useChannels"
@@ -136,7 +137,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   const { friends, searchResults, searchUsers, sendRequest, acceptRequest, removeFriend, blockUser } = useFriends()
-  const { dms, messages: dmMessages, sendMessage: sendDmMessage, fetchMessages: fetchDmMessages, fetchMoreMessages: fetchMoreDmMessages, hasMore: dmHasMore, isLoadingMore: dmLoadingMore } = useDMs(activeDmId || undefined)
+  const { dms, messages: dmMessages, setMessages: setDmMessages, sendMessage: sendDmMessage, fetchMessages: fetchDmMessages, fetchMoreMessages: fetchMoreDmMessages, hasMore: dmHasMore, isLoadingMore: dmLoadingMore } = useDMs(activeDmId || undefined)
   const { unreads } = useNotifications(currentServer?.id)
   const { searchResults: msgSearchResults, searchMessages, isSearching, setSearchResults: setMsgSearchResults } = useSearch(currentServer?.id)
   const { notifications, fetchNotifications } = useGlobalNotifications()
@@ -151,6 +152,150 @@ export default function HomePage() {
   const [showDmProfile, setShowDmProfile] = useState(true)
   const [dmUserProfile, setDmUserProfile] = useState<any | null>(null)
   
+
+  const allParticipants = [
+    {
+      id: 'local',
+      username: user?.username || 'You',
+      isLocal: true,
+      isVideoEnabled,
+      isAudioEnabled,
+      isDeafened,
+      stream: localStream
+    },
+    ...(isScreenSharing && localScreenStream ? [{
+      id: 'local-screen',
+      username: `${user?.username || 'You'} (Screen)`,
+      isLocal: true,
+      isVideoEnabled: true,
+      isAudioEnabled: false,
+      isDeafened: false,
+      stream: localScreenStream,
+      isScreenShare: true
+    }] : []),
+    ...Object.entries(remoteStreams).map(([peerId, stream]) => {
+      const actualUserId = peerId.replace('-screen', '');
+      const isScreenShare = peerId.endsWith('-screen');
+      const peer = voiceParticipants.find(p => p.user_id === actualUserId) 
+        || members.find(m => m.id === actualUserId) 
+        || dms.find(d => d.target_id === actualUserId)
+        || { username: 'Unknown' };
+      const hasVideo = stream.getVideoTracks().length > 0;
+      const isMuted = voiceParticipants.find(p => p.user_id === actualUserId)?.is_muted === 1;
+      const isDeaf = voiceParticipants.find(p => p.user_id === actualUserId)?.is_deafened === 1;
+      return {
+        id: peerId,
+        username: ((peer as any).username || (peer as any).name || 'Unknown') + (isScreenShare ? " (Screen)" : ""),
+        isLocal: false,
+        isVideoEnabled: hasVideo,
+        isAudioEnabled: !isMuted,
+        isDeafened: isDeaf,
+        stream,
+        isScreenShare
+      }
+    })
+  ];
+
+  const getCardBg = (name: string) => {
+    const bgColors = [
+      'from-[#2a2622] to-[#141517]',
+      'from-[#202522] to-[#141517]',
+      'from-[#1c2229] to-[#141517]',
+      'from-[#271f29] to-[#141517]',
+      'from-[#291f24] to-[#141517]',
+    ]
+    let hash = 0
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    }
+    const idx = Math.abs(hash) % bgColors.length
+    return bgColors[idx]
+  }
+
+  const renderParticipantCard = (p: any, size: 'large' | 'small' | 'normal') => {
+    const isLocal = p.isLocal;
+    const hasVideo = p.isVideoEnabled;
+    const isAudioEnabled = p.isAudioEnabled;
+    const isDeafened = p.isDeafened;
+    const stream = p.stream;
+    const isScreenShare = p.isScreenShare;
+    const isFocused = focusedParticipantId === p.id;
+    const isSpeaking = p.isLocal 
+      ? (speakingUsers[user?.id || 'local'] || speakingUsers['local'])
+      : speakingUsers[p.id.replace('-screen', '')] === true;
+
+    const cardClasses = `bg-[#1e2022] rounded-xl flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all cursor-pointer group shadow-lg ${
+      isSpeaking ? 'ring-2 ring-[#bc9f84]' : ''
+    } ${
+      isFocused && size !== 'small' ? 'border-[#bc9f84]' : 'border-[#2d2f31] hover:border-[#bc9f84]'
+    } ${
+      size === 'small' ? 'w-48 aspect-video shrink-0 text-[10px]' : 'w-full h-full aspect-video'
+    }`;
+
+    return (
+      <div 
+        key={p.id} 
+        onClick={() => {
+          if (size === 'small') {
+            setFocusedParticipantId(p.id);
+          } else {
+            setFocusedParticipantId(isFocused ? null : p.id);
+          }
+        }} 
+        className={cardClasses}
+      >
+        {hasVideo && stream ? (
+          <video 
+            ref={el => { if (el && el.srcObject !== stream) el.srcObject = stream }} 
+            autoPlay 
+            muted={isLocal} 
+            playsInline 
+            className="w-full h-full object-cover" 
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#2d2f31]">
+            <div className={`absolute inset-0 bg-gradient-to-tr ${getCardBg(p.username)} opacity-60`} />
+            <div className={`relative z-10 rounded-full border-4 border-[#1e2022] shadow-2xl flex items-center justify-center font-bold uppercase ${
+              size === 'small' ? 'w-10 h-10 text-sm border-2' : 'w-24 h-24 text-3xl border-[6px]'
+            } ${isLocal ? 'bg-[#bc9f84] text-[#141517]' : 'bg-[#2d2f31] text-[#e3e1db] border border-[#bc9f84]'}`}>
+              {p.username[0]}
+            </div>
+          </div>
+        )}
+        <div className={`absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-white flex items-center gap-1 z-10 ${
+          size === 'small' ? 'text-[10px] px-1.5 py-0.5 bottom-1.5 left-1.5 gap-0.5' : ''
+        }`}>
+          {isLocal ? (
+            <>
+              {isAudioEnabled ? <Mic size={size === 'small' ? 10 : 14} className="text-[#bc9f84]" /> : <MicOff size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />}
+              {isDeafened && (
+                <div className="relative flex items-center justify-center">
+                  <Headphones size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[1.5px] h-[14px] bg-[#ed4245] rotate-45" />
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {!isScreenShare && (!isAudioEnabled ? <MicOff size={size === 'small' ? 10 : 14} className="text-[#ed4245]" /> : <Mic size={size === 'small' ? 10 : 14} className="text-[#bc9f84]" />)}
+              {!isScreenShare && isDeafened && (
+                <div className="relative flex items-center justify-center">
+                  <Headphones size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[1.5px] h-[14px] bg-[#ed4245] rotate-45" />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          <span className="truncate max-w-[100px]">{p.username} {isLocal ? '(You)' : ''}</span>
+        </div>
+      </div>
+    );
+  }
+
   // Advanced Messaging States
   const [replyToMsg, setReplyToMsg] = useState<any | null>(null)
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null)
@@ -159,11 +304,22 @@ export default function HomePage() {
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([])
   const [typingUsers, setTypingUsers] = useState<any[]>([])
   const lastTypingSentRef = useRef<number>(0)
+  
+  const [toast, setToast] = useState<string | null>(null)
+  const showToast = (msg: string) => {
+    setToast(msg)
+  }
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [toast])
 
   const fetchPins = async () => {
-    const channelId = currentChannel?.id || activeDmId
+    const isDm = activeTab === 'home'
+    const channelId = isDm ? activeDmId : currentChannel?.id
     if (!channelId) return
-    const isDm = !currentChannel?.id
     try {
       const res = await apiFetch(isDm ? `/dms/${channelId}/pins` : `/channels/${channelId}/pins`, { credentials: 'include' })
       if (res.ok) {
@@ -176,6 +332,17 @@ export default function HomePage() {
   }
 
   const togglePin = async (msgId: string, isPinnedNow: boolean) => {
+    const isDm = activeTab === 'home'
+    const channelId = isDm ? activeDmId : currentChannel?.id
+    if (!channelId) return
+
+    const nextPinVal = !isPinnedNow ? 1 : 0
+    if (isDm) {
+      setDmMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_pinned: nextPinVal } : m))
+    } else {
+      useMessageStore.getState().updateMessage(channelId, msgId, { is_pinned: nextPinVal })
+    }
+
     try {
       const res = await apiFetch(`/messages/${msgId}/pin`, {
         method: 'PUT',
@@ -184,37 +351,78 @@ export default function HomePage() {
         credentials: 'include'
       })
       if (res.ok) {
-        if (currentChannel) fetchMessages()
-        if (activeDmId) fetchDmMessages()
+        showToast(!isPinnedNow ? "Message pinned!" : "Message unpinned!")
         fetchPins()
+      } else {
+        // Rollback
+        if (isDm) {
+          setDmMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_pinned: isPinnedNow ? 1 : 0 } : m))
+        } else {
+          useMessageStore.getState().updateMessage(channelId, msgId, { is_pinned: isPinnedNow ? 1 : 0 })
+        }
       }
     } catch (e) {
       console.error(e)
+      // Rollback
+      if (isDm) {
+        setDmMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_pinned: isPinnedNow ? 1 : 0 } : m))
+      } else {
+        useMessageStore.getState().updateMessage(channelId, msgId, { is_pinned: isPinnedNow ? 1 : 0 })
+      }
     }
   }
 
   const handleDeleteMsg = async (msgId: string) => {
-    const channelId = currentChannel?.id || activeDmId
+    const isDm = activeTab === 'home'
+    const channelId = isDm ? activeDmId : currentChannel?.id
     if (!channelId) return
-    const isDm = !currentChannel?.id
+
+    let previousMsgs: any[] = []
+    if (isDm) {
+      setDmMessages(prev => {
+        previousMsgs = prev
+        return prev.filter(m => m.id !== msgId)
+      })
+    } else {
+      previousMsgs = useMessageStore.getState().messages[channelId] || []
+      useMessageStore.getState().deleteMessage(channelId, msgId)
+    }
+
     try {
       const res = await apiFetch(isDm ? `/dms/${channelId}/messages/${msgId}` : `/channels/${channelId}/messages/${msgId}`, {
         method: 'DELETE',
         credentials: 'include'
       })
-      if (res.ok) {
-        if (currentChannel) fetchMessages()
-        if (activeDmId) fetchDmMessages()
+      if (!res.ok) {
+        if (isDm) setDmMessages(previousMsgs)
+        else useMessageStore.getState().setMessages(channelId, previousMsgs)
       }
     } catch (e) {
       console.error(e)
+      if (isDm) setDmMessages(previousMsgs)
+      else useMessageStore.getState().setMessages(channelId, previousMsgs)
     }
   }
 
   const handleEditMsg = async (msgId: string, newContent: string) => {
-    const channelId = currentChannel?.id || activeDmId
+    const isDm = activeTab === 'home'
+    const channelId = isDm ? activeDmId : currentChannel?.id
     if (!channelId) return
-    const isDm = !currentChannel?.id
+
+    setEditingMsgId(null)
+
+    let oldMsg: any = null
+    if (isDm) {
+      setDmMessages(prev => {
+        oldMsg = prev.find(m => m.id === msgId)
+        return prev.map(m => m.id === msgId ? { ...m, content: newContent, edited_at: new Date().toISOString() } : m)
+      })
+    } else {
+      const current = useMessageStore.getState().messages[channelId] || []
+      oldMsg = current.find(m => m.id === msgId)
+      useMessageStore.getState().updateMessage(channelId, msgId, { content: newContent, edited_at: new Date().toISOString() })
+    }
+
     try {
       const res = await apiFetch(isDm ? `/dms/${channelId}/messages/${msgId}` : `/channels/${channelId}/messages/${msgId}`, {
         method: 'PATCH',
@@ -222,17 +430,60 @@ export default function HomePage() {
         body: JSON.stringify({ content: newContent }),
         credentials: 'include'
       })
-      if (res.ok) {
-        setEditingMsgId(null)
-        if (currentChannel) fetchMessages()
-        if (activeDmId) fetchDmMessages()
+      if (!res.ok) {
+        if (isDm) {
+          setDmMessages(prev => prev.map(m => m.id === msgId ? oldMsg : m))
+        } else {
+          useMessageStore.getState().updateMessage(channelId, msgId, oldMsg)
+        }
       }
     } catch (e) {
       console.error(e)
+      if (isDm) {
+        setDmMessages(prev => prev.map(m => m.id === msgId ? oldMsg : m))
+      } else {
+        useMessageStore.getState().updateMessage(channelId, msgId, oldMsg)
+      }
     }
   }
 
   const toggleReaction = async (msgId: string, emoji: string, hasReacted: boolean) => {
+    const isDm = activeTab === 'home'
+    const channelId = isDm ? activeDmId : currentChannel?.id
+    if (!channelId) return
+
+    const updateLocalReactions = (prev: any[]) => {
+      return prev.map(m => {
+        if (m.id === msgId) {
+          const reactions = m.reactions || []
+          if (hasReacted) {
+            return {
+              ...m,
+              reactions: reactions.filter((r: any) => !(r.emoji === emoji && r.user_id === user?.id))
+            }
+          } else {
+            return {
+              ...m,
+              reactions: [...reactions, { message_id: msgId, emoji, user_id: user?.id, username: user?.username }]
+            }
+          }
+        }
+        return m
+      })
+    }
+
+    let previousMsgs: any[] = []
+    if (isDm) {
+      setDmMessages(prev => {
+        previousMsgs = prev
+        return updateLocalReactions(prev)
+      })
+    } else {
+      previousMsgs = useMessageStore.getState().messages[channelId] || []
+      const updated = updateLocalReactions(previousMsgs)
+      useMessageStore.getState().setMessages(channelId, updated)
+    }
+
     try {
       const res = await apiFetch(`/messages/${msgId}/react`, {
         method: 'POST',
@@ -240,12 +491,14 @@ export default function HomePage() {
         body: JSON.stringify({ emoji, action: hasReacted ? 'remove' : 'add' }),
         credentials: 'include'
       })
-      if (res.ok) {
-        if (currentChannel) fetchMessages()
-        if (activeDmId) fetchDmMessages()
+      if (!res.ok) {
+        if (isDm) setDmMessages(previousMsgs)
+        else useMessageStore.getState().setMessages(channelId, previousMsgs)
       }
     } catch (e) {
       console.error(e)
+      if (isDm) setDmMessages(previousMsgs)
+      else useMessageStore.getState().setMessages(channelId, previousMsgs)
     }
   }
 
@@ -332,13 +585,7 @@ export default function HomePage() {
     setMessageContent("")
 
     try {
-      await apiFetch(`/channels/${currentChannel?.id}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: contentToSend, attachments: attachmentsToSend, reply_to_id: replyId }),
-        credentials: 'include'
-      })
-      fetchMessages()
+      await sendMessage(contentToSend, attachmentsToSend, replyId)
     } catch (e) {
       console.error(e)
     }
@@ -356,13 +603,7 @@ export default function HomePage() {
     setDmMessageContent("")
 
     try {
-      await apiFetch(`/dms/${activeDmId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: contentToSend, attachments: attachmentsToSend, reply_to_id: replyId }),
-        credentials: 'include'
-      })
-      fetchDmMessages()
+      await sendDmMessage(contentToSend, attachmentsToSend, replyId)
     } catch (e) {
       console.error(e)
     }
@@ -602,12 +843,14 @@ export default function HomePage() {
 
   const goHome = () => {
     setCurrentServer(null)
+    setCurrentChannel(null)
     setActiveTab('home')
     setActiveHomeView('friends')
   }
 
   const openDm = (dmId: string) => {
     setCurrentServer(null)
+    setCurrentChannel(null)
     setActiveTab('home')
     setActiveHomeView('dm')
     setActiveDmId(dmId)
@@ -948,7 +1191,14 @@ export default function HomePage() {
           </div>
           <div className="flex items-center">
             <Button variant="ghost" size="icon" onClick={toggleAudio} className={`h-8 w-8 ${!isAudioEnabled ? 'text-[#bc9f84]' : 'text-[#a3a29e] hover:bg-[#2d2f31]/60'}`}>{isAudioEnabled ? <Mic size={18} /> : <MicOff size={18} />}</Button>
-            <Button variant="ghost" size="icon" onClick={toggleDeafen} className={`h-8 w-8 ${isDeafened ? 'text-[#bc9f84]' : 'text-[#a3a29e] hover:bg-[#2d2f31]/60'}`}><Headphones size={18} /></Button>
+            <Button variant="ghost" size="icon" onClick={toggleDeafen} className={`h-8 w-8 relative ${isDeafened ? 'text-[#ed4245] hover:bg-[#ed4245]/10' : 'text-[#a3a29e] hover:bg-[#2d2f31]/60'}`}>
+              <Headphones size={18} />
+              {isDeafened && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-[2px] h-[18px] bg-[#ed4245] rotate-45" />
+                </div>
+              )}
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-[#a3a29e] hover:bg-[#2d2f31]/60" onClick={() => setShowUserSettingsModal(true)}>
               <Settings size={18} />
             </Button>
@@ -993,7 +1243,7 @@ export default function HomePage() {
                             <div className="w-10 h-10 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638]">{u.username?.[0] || '?'}</div>
                             <span className="font-bold text-[#e3e1db]">{u.username}</span>
                           </div>
-                          <Button size="sm" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]" onClick={() => sendRequest(u.id)}>Send Request</Button>
+                          <Button size="sm" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]" onClick={async () => { const ok = await sendRequest(u.id); if (ok) showToast("Friend request sent!"); }}>Send Request</Button>
                         </div>
                       ))}
                     </div>
@@ -1121,78 +1371,13 @@ export default function HomePage() {
                 {isJoined && activeVoiceChannel?.id === activeDmId && (
                   <div className="bg-[#141517] p-4 flex flex-col items-center justify-center border-b border-[#2d2f31] select-none shrink-0 relative transition-all duration-300 w-full">
                     {/* Participant Grid */}
-                    <div className="w-full max-w-4xl grid grid-cols-2 gap-4 mb-4">
-                      {/* Left: Peer Participant Card */}
-                      {(() => {
-                        const peerName = dms.find(d => d.id === activeDmId)?.name || 'User';
-                        const peerId = dms.find(d => d.id === activeDmId)?.target_id || '';
-                        const hasRemoteVideo = remoteStreams[peerId] && remoteStreams[peerId].getVideoTracks().length > 0;
-                        const isSpeaking = speakingUsers[peerId] === true;
-                        
-                        return (
-                          <div className={`aspect-video bg-[#1e2022] rounded-xl flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all shadow-lg ${
-                            isSpeaking ? 'border-[#bc9f84]' : 'border-[#2d2f31]'
-                          }`}>
-                            {hasRemoteVideo && remoteStreams[peerId] ? (
-                              <video 
-                                ref={el => { if (el && el.srcObject !== remoteStreams[peerId]) el.srcObject = remoteStreams[peerId] }} 
-                                autoPlay 
-                                playsInline 
-                                className="w-full h-full object-cover" 
-                              />
-                            ) : (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#2d2f31]">
-                                <div className={`w-20 h-20 rounded-full bg-[#1e2022] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-lg transition-all ${
-                                  isSpeaking ? 'ring-4 ring-[#bc9f84] ring-offset-2 ring-offset-[#2d2f31] scale-105' : ''
-                                }`}>
-                                  {peerName[0]}
-                                </div>
-                              </div>
-                            )}
-                            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-semibold text-white">
-                              {peerName}
-                            </div>
-                          </div>
-                        );
-                      })()}
-
-                      {/* Right: Local Participant Card */}
-                      {(() => {
-                        const localName = user?.username || 'You';
-                        const isSpeaking = speakingUsers[user?.id || 'local'] || speakingUsers['local'];
-                        
-                        return (
-                          <div className={`aspect-video bg-[#1e2022] rounded-xl flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all shadow-lg ${
-                            isSpeaking ? 'border-[#bc9f84]' : 'border-[#2d2f31]'
-                          }`}>
-                            {isVideoEnabled && localStream ? (
-                              <video 
-                                ref={el => { if (el && el.srcObject !== localStream) el.srcObject = localStream }} 
-                                autoPlay 
-                                muted 
-                                playsInline 
-                                className="w-full h-full object-cover" 
-                              />
-                            ) : (
-                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#2b2d31]">
-                                <div className={`w-20 h-20 rounded-full bg-[#1e2022] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-lg transition-all ${
-                                  isSpeaking ? 'ring-4 ring-[#bc9f84] ring-offset-2 ring-offset-[#2b2d31] scale-105' : ''
-                                }`}>
-                                  {localName[0]}
-                                </div>
-                              </div>
-                            )}
-                            <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-semibold text-white">
-                              {localName} (You)
-                            </div>
-                          </div>
-                        );
-                      })()}
+                    <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      {allParticipants.map(p => renderParticipantCard(p, 'normal'))}
                     </div>
 
                     {/* Controls Row */}
                     <div className="flex items-center gap-4">
-                      {/* Audio & Video Controls Container */}
+                      {/* Audio, Video, Deafen Controls Container */}
                       <div className="bg-[#1e2022] border border-[#2d2f31] p-1 rounded-xl flex items-center gap-1 shadow-md">
                         {/* Mic */}
                         <div className="flex items-center">
@@ -1231,6 +1416,29 @@ export default function HomePage() {
                           </button>
                           <button className="p-1 text-[#a3a29e] hover:text-white transition-colors" aria-label="Camera settings">
                             <ChevronDown size={12} />
+                          </button>
+                        </div>
+
+                        <div className="w-[1px] h-5 bg-[#2d2f31] mx-1" />
+
+                        {/* Deafen */}
+                        <div className="flex items-center">
+                          <button 
+                            onClick={toggleDeafen}
+                            className={`p-2 rounded-lg transition-all flex items-center justify-center relative ${
+                              isDeafened 
+                                ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white' 
+                                : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'
+                            }`}
+                            title={isDeafened ? "Undeafen" : "Deafen"}
+                            aria-label={isDeafened ? "Undeafen" : "Deafen"}
+                          >
+                            <Headphones size={16} />
+                            {isDeafened && (
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-[1.5px] h-[14px] bg-current rotate-45" />
+                              </div>
+                            )}
                           </button>
                         </div>
                       </div>
@@ -1292,6 +1500,7 @@ export default function HomePage() {
                       onDelete={handleDeleteMsg}
                       onTogglePin={togglePin}
                       onReact={toggleReaction}
+                      onProfileClick={setSelectedUserProfileId}
                     />
                   ))}
                 </div>
@@ -1450,6 +1659,7 @@ export default function HomePage() {
                         onDelete={handleDeleteMsg}
                         onTogglePin={togglePin}
                         onReact={toggleReaction}
+                        onProfileClick={setSelectedUserProfileId}
                       />
                     )
                   ))}
@@ -1588,126 +1798,8 @@ export default function HomePage() {
           <>
             {isJoined ? (
               (() => {
-            const allParticipants = [
-              {
-                id: 'local',
-                username: user?.username || 'You',
-                isLocal: true,
-                isVideoEnabled,
-                isAudioEnabled,
-                isDeafened,
-                stream: localStream
-              },
-              ...(isScreenSharing && localScreenStream ? [{
-                id: 'local-screen',
-                username: `${user?.username || 'You'} (Screen)`,
-                isLocal: true,
-                isVideoEnabled: true,
-                isAudioEnabled: false,
-                isDeafened: false,
-                stream: localScreenStream,
-                isScreenShare: true
-              }] : []),
-              ...Object.entries(remoteStreams).map(([peerId, stream]) => {
-                const actualUserId = peerId.replace('-screen', '');
-                const isScreenShare = peerId.endsWith('-screen');
-                const peer = voiceParticipants.find(p => p.user_id === actualUserId) || members.find(m => m.id === actualUserId) || { username: 'Unknown' };
-                const hasVideo = stream.getVideoTracks().length > 0;
-                const isMuted = voiceParticipants.find(p => p.user_id === actualUserId)?.is_muted === 1;
-                const isDeaf = voiceParticipants.find(p => p.user_id === actualUserId)?.is_deafened === 1;
-                return {
-                  id: peerId,
-                  username: peer.username + (isScreenShare ? " (Screen)" : ""),
-                  isLocal: false,
-                  isVideoEnabled: hasVideo,
-                  isAudioEnabled: !isMuted,
-                  isDeafened: isDeaf,
-                  stream,
-                  isScreenShare
-                }
-              })
-            ];
-
-            const getCardBg = (name: string) => {
-              const bgColors = [
-                'from-[#2a2622] to-[#141517]',
-                'from-[#202522] to-[#141517]',
-                'from-[#1c2229] to-[#141517]',
-                'from-[#271f29] to-[#141517]',
-                'from-[#291f24] to-[#141517]',
-              ]
-              let hash = 0
-              for (let i = 0; i < name.length; i++) {
-                hash = name.charCodeAt(i) + ((hash << 5) - hash)
-              }
-              const idx = Math.abs(hash) % bgColors.length
-              return bgColors[idx]
-            }
-
-            const renderParticipantCard = (p: any, size: 'large' | 'small' | 'normal') => {
-              const isLocal = p.isLocal;
-              const hasVideo = p.isVideoEnabled;
-              const isAudioEnabled = p.isAudioEnabled;
-              const isDeafened = p.isDeafened;
-              const stream = p.stream;
-              const isScreenShare = p.isScreenShare;
-              const isFocused = focusedParticipantId === p.id;
-
-              const cardClasses = `bg-[#1e2022] rounded-xl flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all cursor-pointer group shadow-lg ${
-                isFocused && size !== 'small' ? 'border-[#bc9f84]' : 'border-[#2d2f31] hover:border-[#bc9f84]'
-              } ${
-                size === 'small' ? 'w-48 aspect-video shrink-0 text-[10px]' : 'w-full h-full aspect-video'
-              }`;
-
-              return (
-                <div 
-                  key={p.id} 
-                  onClick={() => {
-                    if (size === 'small') {
-                      setFocusedParticipantId(p.id);
-                    } else {
-                      setFocusedParticipantId(isFocused ? null : p.id);
-                    }
-                  }} 
-                  className={cardClasses}
-                >
-                  {hasVideo && stream ? (
-                    <video 
-                      ref={el => { if (el && el.srcObject !== stream) el.srcObject = stream }} 
-                      autoPlay 
-                      muted={isLocal} 
-                      playsInline 
-                      className="w-full h-full object-cover" 
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#2d2f31]">
-                      <div className={`absolute inset-0 bg-gradient-to-tr ${getCardBg(p.username)} opacity-60`} />
-                      <div className={`relative z-10 rounded-full border-4 border-[#1e2022] shadow-2xl flex items-center justify-center font-bold uppercase ${
-                        size === 'small' ? 'w-10 h-10 text-sm border-2' : 'w-24 h-24 text-3xl border-[6px]'
-                      } ${isLocal ? 'bg-[#bc9f84] text-[#141517]' : 'bg-[#2d2f31] text-[#e3e1db] border border-[#bc9f84]'}`}>
-                        {p.username[0]}
-                      </div>
-                    </div>
-                  )}
-                  <div className={`absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-white flex items-center gap-1 z-10 ${
-                    size === 'small' ? 'text-[10px] px-1.5 py-0.5 bottom-1.5 left-1.5 gap-0.5' : ''
-                  }`}>
-                    {isLocal ? (
-                      <>
-                        {isAudioEnabled ? <Mic size={size === 'small' ? 10 : 14} className="text-[#bc9f84]" /> : <MicOff size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />}
-                        {isDeafened && <Headphones size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />}
-                      </>
-                    ) : (
-                      <>
-                        {!isScreenShare && (!isAudioEnabled ? <MicOff size={size === 'small' ? 10 : 14} className="text-[#ed4245]" /> : <Mic size={size === 'small' ? 10 : 14} className="text-[#bc9f84]" />)}
-                        {!isScreenShare && isDeafened && <Headphones size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />}
-                      </>
-                    )}
-                    <span className="truncate max-w-[100px]">{p.username} {isLocal ? '(You)' : ''}</span>
-                  </div>
-                </div>
-              );
-            }
+            const focusedParticipant = allParticipants.find(p => p.id === focusedParticipantId);
+            const otherParticipants = allParticipants.filter(p => p.id !== focusedParticipantId);
 
             const renderInviteCard = () => {
               return (
@@ -1738,8 +1830,7 @@ export default function HomePage() {
               );
             }
 
-            const focusedParticipant = allParticipants.find(p => p.id === focusedParticipantId);
-            const otherParticipants = allParticipants.filter(p => p.id !== focusedParticipantId);
+            
 
             return (
               <div 
@@ -1971,20 +2062,22 @@ export default function HomePage() {
       {/* DM User Profile Sidebar */}
       {activeTab === 'home' && activeHomeView === 'dm' && activeDmId && showDmProfile && dmUserProfile && (
         <div className="w-72 obsidian-card flex flex-col overflow-hidden shrink-0 border-none select-none text-left">
-          {/* Top Banner (color matching server avatar or matching discord) */}
-          <div className="h-16 bg-[#bc9f84] relative shrink-0" />
-          
-          <div className="flex-1 overflow-y-auto p-4 relative flex flex-col custom-sidebar-scrollbar min-h-0">
-            {/* Avatar block with status dot */}
-            <div className="w-20 h-20 rounded-full bg-[#1e2022] p-1.5 -mt-12 relative shrink-0 mb-3 z-10">
-              <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] shadow-lg border border-[#343638]">
-                {dmUserProfile.username[0]}
+          {/* Header block (non-scrollable) to prevent avatar clipping */}
+          <div className="relative shrink-0">
+            <div className="h-16 bg-[#bc9f84]" />
+            <div className="px-4 -mt-10 mb-2">
+              <div className="w-20 h-20 rounded-full bg-[#1e2022] p-1.5 relative z-10">
+                <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] shadow-lg border border-[#343638]">
+                  {dmUserProfile.username[0]}
+                </div>
+                {dmUserProfile.status && (
+                  <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 border-[#1e2022] ${getStatusColor(dmUserProfile.status)}`} />
+                )}
               </div>
-              {dmUserProfile.status && (
-                <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 border-[#1e2022] ${getStatusColor(dmUserProfile.status)}`} />
-              )}
             </div>
-
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 pt-1 relative flex flex-col custom-sidebar-scrollbar min-h-0">
             {/* Profile Info block */}
             <div className="bg-[#141517] p-4 rounded-xl space-y-4 shadow-inner border border-[#2d2f31]">
               <div>
@@ -2118,16 +2211,22 @@ export default function HomePage() {
       {selectedUserProfileId && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedUserProfileId(null)}>
           <div className="bg-[#1e2022] w-full max-w-[340px] rounded-xl overflow-hidden shadow-2xl border border-[#2d2f31] relative text-left" onClick={e => e.stopPropagation()}>
-            <div className="h-16 bg-[#bc9f84] relative" />
-            <div className="px-4 pb-4 -mt-8 flex flex-col relative">
-              <div className="w-16 h-16 rounded-full bg-[#1e2022] p-1 mb-2 relative shrink-0 z-10">
-                <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-2xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-md">
-                  {userProfileData?.username?.[0] || '?' }
+            {/* Header block (non-scrollable) to prevent avatar clipping */}
+            <div className="relative shrink-0">
+              <div className="h-16 bg-[#bc9f84]" />
+              <div className="px-4 -mt-8 mb-2">
+                <div className="w-16 h-16 rounded-full bg-[#1e2022] p-1 relative z-10">
+                  <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-2xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-md">
+                    {userProfileData?.username?.[0] || '?' }
+                  </div>
+                  {userProfileData?.status && (
+                    <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#1e2022] ${getStatusColor(userProfileData.status)}`} />
+                  )}
                 </div>
-                {userProfileData?.status && (
-                  <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#1e2022] ${getStatusColor(userProfileData.status)}`} />
-                )}
               </div>
+            </div>
+            
+            <div className="px-4 pb-4 flex flex-col relative">
               
               {userProfileData ? (
                 <div className="space-y-4">
@@ -2182,6 +2281,7 @@ export default function HomePage() {
                 onClick={() => {
                   const dmName = dms.find(d => d.id === incomingCall.channelId)?.name || incomingCall.callerName
                   setActiveVoiceChannel({ id: incomingCall.channelId, name: `@${dmName}`, type: 'voice' })
+                  openDm(incomingCall.channelId)
                   acceptCall()
                 }}
                 className="flex-1 py-3 bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg animate-pulse"
@@ -2212,6 +2312,12 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-[#bc9f84] text-[#141517] px-4 py-2.5 rounded-lg shadow-2xl font-semibold border border-[#a88d71] z-[110] animate-in slide-in-from-bottom duration-200">
+          {toast}
+        </div>
+      )}
     </div>
   )
 }
@@ -2237,6 +2343,7 @@ interface MessageItemProps {
   onDelete: (msgId: string) => void;
   onTogglePin: (msgId: string, isPinned: boolean) => void;
   onReact: (msgId: string, emoji: string, hasReacted: boolean) => void;
+  onProfileClick?: (userId: string) => void;
 }
 
 function MessageItem({
@@ -2251,7 +2358,8 @@ function MessageItem({
   onEditCancel,
   onDelete,
   onTogglePin,
-  onReact
+  onReact,
+  onProfileClick
 }: MessageItemProps) {
   const isAuthor = msg.author_id === currentUser?.id;
   const isEditing = editingMsgId === msg.id;
@@ -2287,13 +2395,13 @@ function MessageItem({
 
       <div className="flex gap-4">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-[#5865f2] flex items-center justify-center shrink-0 mt-0.5 uppercase font-bold text-white shadow-sm cursor-pointer hover:opacity-85">
+        <div className="w-10 h-10 rounded-full bg-[#5865f2] flex items-center justify-center shrink-0 mt-0.5 uppercase font-bold text-white shadow-sm cursor-pointer hover:opacity-85" onClick={() => onProfileClick?.(msg.author_id)}>
           {msg.username?.[0] || 'U'}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
-            <span className="font-bold hover:underline cursor-pointer text-white">{msg.username}</span>
+            <span className="font-bold hover:underline cursor-pointer text-white" onClick={() => onProfileClick?.(msg.author_id)}>{msg.username}</span>
             <span className="text-[10px] font-medium text-[#949ba4] uppercase">
               {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
@@ -2373,7 +2481,7 @@ function MessageItem({
             </button>
             {showEmojiPicker && (
               <div className="absolute bottom-8 right-0 bg-[#1e1f22] border border-[#2b2d31] rounded shadow-2xl p-2 z-50 flex gap-2 w-48 flex-wrap justify-center">
-                {['👍', '❤️', '😂', '😂', '😢', '🙏', '🔥', '🎉'].map(emoji => (
+                {['👍', '❤️', '🔥', '🎉', '😂', '😢', '😮', '🙏'].map(emoji => (
                   <button 
                     key={emoji}
                     onClick={() => {
