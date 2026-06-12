@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
-
-const API_URL = ''
+import { apiFetch, API_BASE } from "@/lib/api"
 
 const playSound = (src: string) => {
   new Audio(src).play().catch(() => {})
@@ -57,7 +56,7 @@ export const useWebRTC = (channelId?: string) => {
 
   const sendSystemMessage = async (channelId: string, content: string) => {
     try {
-      await fetch(`/dms/${channelId}/messages`, {
+      await apiFetch(`/dms/${channelId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -128,7 +127,7 @@ export const useWebRTC = (channelId?: string) => {
     const targetChannelId = activeChannelIdRef.current || channelId
     if (!targetChannelId || !isJoined) return
     try {
-      await fetch(`/channels/${targetChannelId}/voice/status`, {
+      await apiFetch(`/channels/${targetChannelId}/voice/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -207,7 +206,7 @@ export const useWebRTC = (channelId?: string) => {
   }
 
   const sendSignal = async (to_id: string, type: string, data: any) => {
-    await fetch(`${API_URL}/signaling/send`, {
+    await apiFetch('/signaling/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to_id, type, data }),
@@ -294,7 +293,7 @@ export const useWebRTC = (channelId?: string) => {
         callConnectTime.current = Date.now()
       }
 
-      const res = await fetch(`${API_URL}/channels/${targetChannelId}/voice/join`, {
+      const res = await apiFetch(`/channels/${targetChannelId}/voice/join`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -342,7 +341,7 @@ export const useWebRTC = (channelId?: string) => {
     analysers.current = {}
     setSpeakingUsers({})
 
-    await fetch(`${API_URL}/channels/${targetChannelId}/voice/leave`, {
+    await apiFetch(`/channels/${targetChannelId}/voice/leave`, {
       method: 'POST',
       credentials: 'include'
     })
@@ -451,7 +450,7 @@ export const useWebRTC = (channelId?: string) => {
     const handleUnload = () => {
       const targetChannelId = activeChannelIdRef.current || channelId
       if (targetChannelId) {
-        fetch(`${API_URL}/channels/${targetChannelId}/voice/leave`, {
+        fetch(`${API_BASE}/channels/${targetChannelId}/voice/leave`, {
           method: 'POST',
           credentials: 'include',
           keepalive: true
@@ -555,7 +554,7 @@ export const useWebRTC = (channelId?: string) => {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${API_URL}/signaling/receive`, { credentials: 'include' })
+        const res = await apiFetch('/signaling/receive', { credentials: 'include' })
         const { signals } = await res.json()
 
         for (const signal of signals) {

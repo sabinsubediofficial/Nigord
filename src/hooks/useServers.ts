@@ -1,6 +1,5 @@
 import { useServerStore } from "@/store/useServerStore"
-
-const API_URL = ''
+import { apiFetch } from "@/lib/api"
 
 export const useServers = () => {
   const { servers, setServers, isLoading, setIsLoading, addServer } = useServerStore()
@@ -8,7 +7,7 @@ export const useServers = () => {
   const fetchServers = async () => {
     try {
       setIsLoading(true)
-      const res = await fetch(`${API_URL}/servers`, { credentials: 'include' })
+      const res = await apiFetch('/servers', { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setServers(data.servers)
@@ -22,7 +21,7 @@ export const useServers = () => {
 
   const createServer = async (name: string) => {
     try {
-      const res = await fetch(`${API_URL}/servers`, {
+      const res = await apiFetch('/servers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),

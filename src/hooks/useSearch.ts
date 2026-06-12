@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { apiFetch } from "@/lib/api"
 
 export const useSearch = (serverId?: string) => {
   const [searchResults, setSearchResults] = useState<any[]>([])
@@ -11,7 +12,7 @@ export const useSearch = (serverId?: string) => {
     }
     setIsSearching(true)
     try {
-      const res = await fetch(`/servers/${serverId}/search?q=${encodeURIComponent(query)}`, { credentials: 'include' })
+      const res = await apiFetch(`/servers/${serverId}/search?q=${encodeURIComponent(query)}`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setSearchResults(data.messages)

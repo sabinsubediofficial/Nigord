@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { apiFetch } from "@/lib/api"
 
 export interface Role {
   id: string
@@ -16,7 +17,7 @@ export const useServerSettings = (serverId?: string) => {
   const fetchRoles = async () => {
     if (!serverId) return
     try {
-      const res = await fetch(`/servers/${serverId}/roles`, { credentials: 'include' })
+      const res = await apiFetch(`/servers/${serverId}/roles`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setRoles(data.roles)
@@ -29,7 +30,7 @@ export const useServerSettings = (serverId?: string) => {
   const fetchMembers = async () => {
     if (!serverId) return
     try {
-      const res = await fetch(`/servers/${serverId}`, { credentials: 'include' })
+      const res = await apiFetch(`/servers/${serverId}`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setMembers(data.members)
@@ -42,7 +43,7 @@ export const useServerSettings = (serverId?: string) => {
   const updateMemberRole = async (userId: string, roleId: string | null) => {
     if (!serverId) return
     try {
-      const res = await fetch(`/servers/${serverId}/members/${userId}/role`, {
+      const res = await apiFetch(`/servers/${serverId}/members/${userId}/role`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role_id: roleId }),
@@ -59,7 +60,7 @@ export const useServerSettings = (serverId?: string) => {
   const createRole = async (name: string, color: string, permissions: string[]) => {
     if (!serverId) return
     try {
-      const res = await fetch(`/servers/${serverId}/roles`, {
+      const res = await apiFetch(`/servers/${serverId}/roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, color, permissions }),
@@ -74,7 +75,7 @@ export const useServerSettings = (serverId?: string) => {
   const createInvite = async () => {
     if (!serverId) return null
     try {
-      const res = await fetch(`/servers/${serverId}/invites`, {
+      const res = await apiFetch(`/servers/${serverId}/invites`, {
         method: 'POST',
         credentials: 'include'
       })
@@ -90,7 +91,7 @@ export const useServerSettings = (serverId?: string) => {
 
   const joinServer = async (code: string) => {
     try {
-      const res = await fetch(`/invites/${code}/join`, {
+      const res = await apiFetch(`/invites/${code}/join`, {
         method: 'POST',
         credentials: 'include'
       })

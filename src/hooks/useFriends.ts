@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { apiFetch } from "@/lib/api"
 
 export interface Friend {
   id: string
@@ -17,7 +18,7 @@ export const useFriends = () => {
 
   const fetchFriends = async () => {
     try {
-      const res = await fetch('/friends', { credentials: 'include' })
+      const res = await apiFetch('/friends', { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setFriends(data.friends)
@@ -30,7 +31,7 @@ export const useFriends = () => {
   const searchUsers = async (q: string) => {
     if (!q.trim()) return setSearchResults([])
     try {
-      const res = await fetch(`/users/search?q=${encodeURIComponent(q)}`, { credentials: 'include' })
+      const res = await apiFetch(`/users/search?q=${encodeURIComponent(q)}`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setSearchResults(data.users)
@@ -42,7 +43,7 @@ export const useFriends = () => {
 
   const sendRequest = async (targetId: string) => {
     try {
-      const res = await fetch('/friends/request', {
+      const res = await apiFetch('/friends/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_id: targetId }),
@@ -56,7 +57,7 @@ export const useFriends = () => {
 
   const acceptRequest = async (targetId: string) => {
     try {
-      const res = await fetch('/friends/accept', {
+      const res = await apiFetch('/friends/accept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_id: targetId }),
@@ -70,7 +71,7 @@ export const useFriends = () => {
 
   const removeFriend = async (targetId: string) => {
     try {
-      const res = await fetch('/friends/remove', {
+      const res = await apiFetch('/friends/remove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_id: targetId }),
@@ -84,7 +85,7 @@ export const useFriends = () => {
 
   const blockUser = async (targetId: string) => {
     try {
-      const res = await fetch('/friends/block', {
+      const res = await apiFetch('/friends/block', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target_id: targetId }),

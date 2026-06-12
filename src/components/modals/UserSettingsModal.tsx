@@ -3,6 +3,7 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, LogOut, Upload, ShieldAlert, Check } from "lucide-react"
+import { apiFetch } from "@/lib/api"
 
 export default function UserSettingsModal({ onClose }: { onClose: () => void }) {
   const { user, setUser } = useAuthStore()
@@ -41,7 +42,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     setProfileError("")
     setProfileSuccess("")
     try {
-      const res = await fetch('/users/me', {
+      const res = await apiFetch('/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ display_name: displayName, bio, status_message: statusMessage, avatar: avatarUrl }),
@@ -75,7 +76,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
       }
       
       if (Object.keys(payload).length > 0) {
-        const res = await fetch('/users/me', {
+        const res = await apiFetch('/users/me', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -99,7 +100,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
           setLoading(false)
           return
         }
-        const passRes = await fetch('/users/me/change-password', {
+        const passRes = await apiFetch('/users/me/change-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ currentPassword, newPassword }),
@@ -127,7 +128,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     setLoading(true)
     setAccountError("")
     try {
-      const res = await fetch('/users/me/recovery-code', {
+      const res = await apiFetch('/users/me/recovery-code', {
         method: 'POST',
         credentials: 'include'
       })
@@ -153,7 +154,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     setLoading(true)
     setAccountError("")
     try {
-      const res = await fetch('/users/me', {
+      const res = await apiFetch('/users/me', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: deleteConfirmPassword }),
@@ -184,7 +185,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     setProfileError("")
     setProfileSuccess("")
     try {
-      const res = await fetch('/files/upload', {
+      const res = await apiFetch('/files/upload', {
         method: 'POST',
         body: formData,
         credentials: 'include'
@@ -206,7 +207,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
 
   const handleLogout = async () => {
     try {
-      await fetch('/auth/logout', { method: 'POST', credentials: 'include' })
+      await apiFetch('/auth/logout', { method: 'POST', credentials: 'include' })
       setUser(null)
       onClose()
     } catch (e) {

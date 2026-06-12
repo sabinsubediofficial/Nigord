@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
+import { apiFetch } from "@/lib/api"
 
 export interface GlobalNotifications {
   servers: { server_id: string, unread_count: number }[]
@@ -15,7 +16,7 @@ export const useGlobalNotifications = () => {
   const fetchNotifications = async (activeChannelId?: string, activeDmId?: string) => {
     if (!user) return
     try {
-      const res = await fetch('/users/me/notifications', { credentials: 'include' })
+      const res = await apiFetch('/users/me/notifications', { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         

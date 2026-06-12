@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react"
+import { apiFetch } from "@/lib/api"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useServers } from "@/hooks/useServers"
 import { useServerStore } from "@/store/useServerStore"
@@ -162,7 +163,7 @@ export default function HomePage() {
     if (!channelId) return
     const isDm = !currentChannel?.id
     try {
-      const res = await fetch(isDm ? `/dms/${channelId}/pins` : `/channels/${channelId}/pins`, { credentials: 'include' })
+      const res = await apiFetch(isDm ? `/dms/${channelId}/pins` : `/channels/${channelId}/pins`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setPinnedMessages(data.pinned)
@@ -174,7 +175,7 @@ export default function HomePage() {
 
   const togglePin = async (msgId: string, isPinnedNow: boolean) => {
     try {
-      const res = await fetch(`/messages/${msgId}/pin`, {
+      const res = await apiFetch(`/messages/${msgId}/pin`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_pinned: !isPinnedNow }),
@@ -195,7 +196,7 @@ export default function HomePage() {
     if (!channelId) return
     const isDm = !currentChannel?.id
     try {
-      const res = await fetch(isDm ? `/dms/${channelId}/messages/${msgId}` : `/channels/${channelId}/messages/${msgId}`, {
+      const res = await apiFetch(isDm ? `/dms/${channelId}/messages/${msgId}` : `/channels/${channelId}/messages/${msgId}`, {
         method: 'DELETE',
         credentials: 'include'
       })
@@ -213,7 +214,7 @@ export default function HomePage() {
     if (!channelId) return
     const isDm = !currentChannel?.id
     try {
-      const res = await fetch(isDm ? `/dms/${channelId}/messages/${msgId}` : `/channels/${channelId}/messages/${msgId}`, {
+      const res = await apiFetch(isDm ? `/dms/${channelId}/messages/${msgId}` : `/channels/${channelId}/messages/${msgId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newContent }),
@@ -231,7 +232,7 @@ export default function HomePage() {
 
   const toggleReaction = async (msgId: string, emoji: string, hasReacted: boolean) => {
     try {
-      const res = await fetch(`/messages/${msgId}/react`, {
+      const res = await apiFetch(`/messages/${msgId}/react`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emoji, action: hasReacted ? 'remove' : 'add' }),
@@ -250,7 +251,7 @@ export default function HomePage() {
     const channelId = currentChannel?.id || activeDmId
     if (!channelId) return
     try {
-      await fetch(`/channels/${channelId}/typing`, {
+      await apiFetch(`/channels/${channelId}/typing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_typing: isTyping }),
@@ -265,7 +266,7 @@ export default function HomePage() {
     const channelId = currentChannel?.id || activeDmId
     if (!channelId) return
     try {
-      const res = await fetch(`/channels/${channelId}/typing`, { credentials: 'include' })
+      const res = await apiFetch(`/channels/${channelId}/typing`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setTypingUsers(data.typing_users)
@@ -289,7 +290,7 @@ export default function HomePage() {
 
       try {
         console.log("Starting upload for", file.name)
-        const res = await fetch('/files/upload', {
+        const res = await apiFetch('/files/upload', {
           method: 'POST',
           body: formData,
           credentials: 'include'
@@ -329,7 +330,7 @@ export default function HomePage() {
     setMessageContent("")
 
     try {
-      await fetch(`/channels/${currentChannel?.id}/messages`, {
+      await apiFetch(`/channels/${currentChannel?.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: contentToSend, attachments: attachmentsToSend, reply_to_id: replyId }),
@@ -353,7 +354,7 @@ export default function HomePage() {
     setDmMessageContent("")
 
     try {
-      await fetch(`/dms/${activeDmId}/messages`, {
+      await apiFetch(`/dms/${activeDmId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: contentToSend, attachments: attachmentsToSend, reply_to_id: replyId }),
@@ -401,7 +402,7 @@ export default function HomePage() {
 
   const fetchMembers = async (serverId: string) => {
     try {
-      const res = await fetch(`/servers/${serverId}`, { credentials: 'include' })
+      const res = await apiFetch(`/servers/${serverId}`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setMembers(data.members)
@@ -417,7 +418,7 @@ export default function HomePage() {
   const fetchVoiceParticipants = async (id: string, type: 'server' | 'channel' = 'server') => {
     try {
       const endpoint = type === 'server' ? `/servers/${id}/voice/participants` : `/channels/${id}/voice/participants`
-      const res = await fetch(endpoint, { credentials: 'include' })
+      const res = await apiFetch(endpoint, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setVoiceParticipants(data.participants)
@@ -447,7 +448,7 @@ export default function HomePage() {
     }
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`/users/${selectedUserProfileId}/profile`, { credentials: 'include' })
+        const res = await apiFetch(`/users/${selectedUserProfileId}/profile`, { credentials: 'include' })
         if (res.ok) {
           const data = await res.json()
           setUserProfileData(data.user)
@@ -469,7 +470,7 @@ export default function HomePage() {
 
     const fetchDmProfile = async () => {
       try {
-        const res = await fetch(`/users/${dmChannel.target_id}/profile`, { credentials: 'include' })
+        const res = await apiFetch(`/users/${dmChannel.target_id}/profile`, { credentials: 'include' })
         if (res.ok) {
           const data = await res.json()
           setDmUserProfile(data.user)
@@ -607,7 +608,7 @@ export default function HomePage() {
 
   const handleUpdateStatus = async (status: string) => {
     try {
-      const res = await fetch('/users/me', {
+      const res = await apiFetch('/users/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
@@ -634,7 +635,7 @@ export default function HomePage() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/auth/logout', { method: 'POST', credentials: 'include' })
+      await apiFetch('/auth/logout', { method: 'POST', credentials: 'include' })
       setUser(null)
     } catch (e) {
       console.error(e)

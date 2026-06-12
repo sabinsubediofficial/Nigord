@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/useAuthStore"
 import { ShieldAlert } from "lucide-react"
-
-const API_URL = ''
+import { apiFetch } from "@/lib/api"
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("")
@@ -23,7 +22,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      const res = await fetch(`${API_URL}/auth/register`, {
+      const res = await apiFetch('/auth/register', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password }),

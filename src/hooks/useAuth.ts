@@ -1,7 +1,6 @@
 import { useAuthStore } from "@/store/useAuthStore"
 import { useEffect } from "react"
-
-const API_URL = ''
+import { apiFetch } from "@/lib/api"
 
 export const useAuth = () => {
   const { user, setUser, isLoading, setIsLoading } = useAuthStore()
@@ -9,7 +8,7 @@ export const useAuth = () => {
   const checkAuth = async () => {
     try {
       setIsLoading(true)
-      const res = await fetch(`${API_URL}/auth/me`, {
+      const res = await apiFetch('/auth/me', {
         credentials: 'include'
       })
       if (res.ok) {

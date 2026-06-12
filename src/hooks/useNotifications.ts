@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { apiFetch } from "@/lib/api"
 
 export const useNotifications = (serverId?: string) => {
   const [unreads, setUnreads] = useState<Record<string, number>>({})
@@ -6,7 +7,7 @@ export const useNotifications = (serverId?: string) => {
   const fetchUnreads = async () => {
     if (!serverId) return
     try {
-      const res = await fetch(`/servers/${serverId}/unread`, { credentials: 'include' })
+      const res = await apiFetch(`/servers/${serverId}/unread`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         const map: Record<string, number> = {}

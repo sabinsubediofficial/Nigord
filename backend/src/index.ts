@@ -18,7 +18,16 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', logger())
 app.use('*', cors({
-  origin: 'http://localhost:5173',
+  origin: (origin) => {
+    const allowed = [
+      'http://localhost:5173',
+      'https://nigord.pages.dev',
+    ]
+    // Allow any *.nigord.pages.dev preview deploys too
+    if (!origin) return 'http://localhost:5173'
+    if (allowed.includes(origin) || origin.endsWith('.nigord.pages.dev')) return origin
+    return 'http://localhost:5173'
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowHeaders: ['Content-Type', 'Authorization'],
   exposeHeaders: ['Content-Type', 'Set-Cookie'],
@@ -149,7 +158,13 @@ const sendVerificationEmail = async (email: string, username: string, code: stri
     ].join('\r\n')
 
     const base64UrlSafe = (str: string) => {
-      const b64 = btoa(unescape(encodeURIComponent(str)))
+      const encoder = new TextEncoder()
+      const data = encoder.encode(str)
+      let binString = ""
+      for (let i = 0; i < data.length; i++) {
+        binString += String.fromCharCode(data[i])
+      }
+      const b64 = btoa(binString)
       return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
     }
 

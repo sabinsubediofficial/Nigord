@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useServerSettings } from "@/hooks/useServerSettings"
 import { Button } from "@/components/ui/button"
+import { apiFetch } from "@/lib/api"
 
 export default function InvitePage() {
   const { code } = useParams()
@@ -16,7 +17,7 @@ export default function InvitePage() {
   useEffect(() => {
     const fetchInvite = async () => {
       try {
-        const res = await fetch(`/invites/${code}`)
+        const res = await apiFetch(`/invites/${code}`)
         const data = await res.json()
         if (res.ok) {
           setInvite(data.invite)

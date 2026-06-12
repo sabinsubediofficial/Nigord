@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/useAuthStore"
 import { ShieldAlert, Check } from "lucide-react"
-
-const API_URL = ''
+import { apiFetch } from "@/lib/api"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -31,7 +30,7 @@ export default function LoginPage() {
     setLoading("login")
 
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const res = await apiFetch('/auth/login', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -68,7 +67,7 @@ export default function LoginPage() {
 
     setLoading("recover")
     try {
-      const res = await fetch(`${API_URL}/auth/recover-password`, {
+      const res = await apiFetch('/auth/recover-password', {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ usernameOrEmail, recoveryCode, newPassword }),

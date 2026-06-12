@@ -5,6 +5,7 @@ import { useDMs } from "@/hooks/useDMs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, Copy, Check, Search } from "lucide-react"
+import { apiFetch } from "@/lib/api"
 
 export default function InviteModal({ serverId, onClose }: { serverId: string, onClose: () => void }) {
   const { createInvite } = useServerSettings(serverId)
@@ -46,7 +47,7 @@ export default function InviteModal({ serverId, onClose }: { serverId: string, o
     if (dm) {
       // In a real app, this would be a special "Invite" message type
       // For now, we send a clear text message
-      await fetch(`/dms/${dm.id}/messages`, {
+      await apiFetch(`/dms/${dm.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: `Hey! Join my server: ${currentInvite}` }),

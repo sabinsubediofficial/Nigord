@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useMessageStore, Message } from "@/store/useMessageStore"
+import { apiFetch } from "@/lib/api"
 
 export const useMessages = (channelId?: string) => {
   const { messages, setMessages, addMessage, prependMessages } = useMessageStore()
@@ -9,7 +10,7 @@ export const useMessages = (channelId?: string) => {
   const fetchMessages = async (initial = false) => {
     if (!channelId) return
     try {
-      const res = await fetch(`/channels/${channelId}/messages?limit=50`, { credentials: 'include' })
+      const res = await apiFetch(`/channels/${channelId}/messages?limit=50`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         const fetchedMsgs: Message[] = data.messages
@@ -27,7 +28,7 @@ export const useMessages = (channelId?: string) => {
           }
         }
         
-        fetch(`/channels/${channelId}/read`, { method: 'POST', credentials: 'include' }).catch(console.error)
+        apiFetch(`/channels/${channelId}/read`, { method: 'POST', credentials: 'include' }).catch(console.error)
       }
     } catch (error) {
       console.error(error)
@@ -42,7 +43,7 @@ export const useMessages = (channelId?: string) => {
     const oldestId = current[current.length - 1].id
     setIsLoadingMore(true)
     try {
-      const res = await fetch(`/channels/${channelId}/messages?before=${oldestId}&limit=50`, { credentials: 'include' })
+      const res = await apiFetch(`/channels/${channelId}/messages?before=${oldestId}&limit=50`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         const fetchedMsgs = data.messages
@@ -59,7 +60,7 @@ export const useMessages = (channelId?: string) => {
   const sendMessage = async (content: string, attachments: any[] = []) => {
     if (!channelId) return
     try {
-      const res = await fetch(`/channels/${channelId}/messages`, {
+      const res = await apiFetch(`/channels/${channelId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, attachments }),

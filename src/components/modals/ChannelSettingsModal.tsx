@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, Trash2 } from "lucide-react"
+import { apiFetch } from "@/lib/api"
 
 interface ChannelSettingsModalProps {
   channelId: string
@@ -35,7 +36,7 @@ export default function ChannelSettingsModal({
     setSaving(true)
     setError("")
     try {
-      const res = await fetch(`/channels/${channelId}`, {
+      const res = await apiFetch(`/channels/${channelId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim() }),
@@ -60,7 +61,7 @@ export default function ChannelSettingsModal({
     setDeleting(true)
     setError("")
     try {
-      const res = await fetch(`/channels/${channelId}`, {
+      const res = await apiFetch(`/channels/${channelId}`, {
         method: "DELETE",
         credentials: "include"
       })

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Message } from "@/store/useMessageStore"
+import { apiFetch } from "@/lib/api"
 
 export interface DMChannel {
   id: string
@@ -17,7 +18,7 @@ export const useDMs = (activeDmId?: string) => {
 
   const fetchDMs = async () => {
     try {
-      const res = await fetch('/dms', { credentials: 'include' })
+      const res = await apiFetch('/dms', { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setDms(data.dms)
@@ -30,7 +31,7 @@ export const useDMs = (activeDmId?: string) => {
   const fetchMessages = async (initial = false) => {
     if (!activeDmId) return
     try {
-      const res = await fetch(`/dms/${activeDmId}/messages?limit=50`, { credentials: 'include' })
+      const res = await apiFetch(`/dms/${activeDmId}/messages?limit=50`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         const fetchedMsgs: Message[] = data.messages
@@ -45,7 +46,7 @@ export const useDMs = (activeDmId?: string) => {
             return uniqueNew.length > 0 ? [...uniqueNew, ...prev] : prev
           })
         }
-        fetch(`/dms/${activeDmId}/read`, { method: 'POST', credentials: 'include' }).catch(console.error)
+        apiFetch(`/dms/${activeDmId}/read`, { method: 'POST', credentials: 'include' }).catch(console.error)
       }
     } catch (e) {
       console.error(e)
@@ -59,7 +60,7 @@ export const useDMs = (activeDmId?: string) => {
     const oldestId = messages[messages.length - 1].id
     setIsLoadingMore(true)
     try {
-      const res = await fetch(`/dms/${activeDmId}/messages?before=${oldestId}&limit=50`, { credentials: 'include' })
+      const res = await apiFetch(`/dms/${activeDmId}/messages?before=${oldestId}&limit=50`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         const fetchedMsgs: Message[] = data.messages
@@ -80,7 +81,7 @@ export const useDMs = (activeDmId?: string) => {
   const sendMessage = async (content: string) => {
     if (!activeDmId) return
     try {
-      const res = await fetch(`/dms/${activeDmId}/messages`, {
+      const res = await apiFetch(`/dms/${activeDmId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),

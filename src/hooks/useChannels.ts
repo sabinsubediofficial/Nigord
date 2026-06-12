@@ -1,13 +1,12 @@
 import { useChannelStore } from "@/store/useChannelStore"
-
-const API_URL = ''
+import { apiFetch } from "@/lib/api"
 
 export const useChannels = () => {
   const { channels, setChannels, addChannel, setCurrentChannel } = useChannelStore()
 
   const fetchChannels = async (serverId: string) => {
     try {
-      const res = await fetch(`${API_URL}/servers/${serverId}`, { credentials: 'include' })
+      const res = await apiFetch(`/servers/${serverId}`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
         setChannels(data.channels)
@@ -22,7 +21,7 @@ export const useChannels = () => {
 
   const createChannel = async (serverId: string, name: string, type: 'text' | 'voice') => {
     try {
-      const res = await fetch(`${API_URL}/servers/${serverId}/channels`, {
+      const res = await apiFetch(`/servers/${serverId}/channels`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, type }),

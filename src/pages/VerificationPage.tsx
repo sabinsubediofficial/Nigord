@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/useAuthStore"
 import { ShieldAlert, Check, RefreshCw } from "lucide-react"
+import { apiFetch } from "@/lib/api"
 
 export default function VerificationPage() {
   const navigate = useNavigate()
@@ -43,7 +44,7 @@ export default function VerificationPage() {
     setLoading("verify")
 
     try {
-      const res = await fetch("/auth/verify-email", {
+      const res = await apiFetch("/auth/verify-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, code }),
@@ -69,7 +70,7 @@ export default function VerificationPage() {
     setSuccess("")
     setLoading("resend")
     try {
-      const res = await fetch("/auth/resend-verification", {
+      const res = await apiFetch("/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
