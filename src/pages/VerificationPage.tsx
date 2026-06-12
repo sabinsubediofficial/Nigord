@@ -11,7 +11,7 @@ export default function VerificationPage() {
   const location = useLocation()
   
   // Get userId from router state
-  const state = location.state as { userId?: string } | null
+  const state = location.state as { userId?: string; debugCode?: string } | null
   const userId = state?.userId || new URLSearchParams(location.search).get("userId")
 
   const [code, setCode] = useState("")
@@ -19,6 +19,7 @@ export default function VerificationPage() {
   const [success, setSuccess] = useState("")
   const [loading, setLoading] = useState("")
   const [resendTimer, setResendTimer] = useState(0)
+  const [debugCode, setDebugCode] = useState(state?.debugCode || "")
 
   const setUser = useAuthStore((state) => state.setUser)
 
@@ -76,11 +77,14 @@ export default function VerificationPage() {
         body: JSON.stringify({ userId }),
       })
 
+      const data = await res.json()
       if (res.ok) {
+        if (data.debugCode) {
+          setDebugCode(data.debugCode)
+        }
         setSuccess("A new verification code has been sent to your inbox.")
         setResendTimer(60) // 60 seconds cooldown
       } else {
-        const data = await res.json()
         setError(data.error || "Failed to resend code")
       }
     } catch (err) {
@@ -106,6 +110,17 @@ export default function VerificationPage() {
         {success && (
           <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs flex items-center gap-2">
             <Check size={14} /> {success}
+          </div>
+        )}
+        {debugCode && (
+          <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg text-xs flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 font-bold">
+              <ShieldAlert size={14} /> Fallback Verification Code
+            </div>
+            <p className="text-amber-400/80">Gmail credentials are not configured in your Cloudflare Worker environment variables. Your code is:</p>
+            <div className="text-2xl font-black text-center mt-1 text-[#e3e1db] select-all tracking-[0.25em] bg-[#141517] py-2 rounded border border-[#2d2f31]/60">
+              {debugCode}
+            </div>
           </div>
         )}
 

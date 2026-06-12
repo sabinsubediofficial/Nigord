@@ -204,7 +204,11 @@ app.post('/auth/register', async (c) => {
 
     await sendVerificationEmail(email, username, code, c.env)
 
-    return c.json({ user: { id, username, email, is_verified: 0 } })
+    const hasGmailConfig = !!(c.env.GMAIL_CLIENT_ID && c.env.GMAIL_CLIENT_SECRET && c.env.GMAIL_REFRESH_TOKEN)
+    return c.json({ 
+      user: { id, username, email, is_verified: 0 },
+      debugCode: hasGmailConfig ? undefined : code
+    })
   } catch (e: any) {
     if (e.message.includes('UNIQUE constraint failed')) return c.json({ error: 'Username or email already exists' }, 400)
     return c.json({ error: 'Database error' }, 500)
@@ -282,7 +286,11 @@ app.post('/auth/resend-verification', async (c) => {
     await c.env.DB.prepare('UPDATE users SET verification_code = ? WHERE id = ?').bind(code, userId).run()
     await sendVerificationEmail(user.email, user.username, code, c.env)
     
-    return c.json({ success: true })
+    const hasGmailConfig = !!(c.env.GMAIL_CLIENT_ID && c.env.GMAIL_CLIENT_SECRET && c.env.GMAIL_REFRESH_TOKEN)
+    return c.json({ 
+      success: true,
+      debugCode: hasGmailConfig ? undefined : code
+    })
   } catch (e) {
     return c.json({ error: 'Failed to resend code' }, 500)
   }
