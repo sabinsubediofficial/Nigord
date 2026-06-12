@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 7% 9%; /* #141517 */
+    --foreground: 48 10% 88%; /* #e3e1db */
+
+    --card: 210 5% 13%; /* #1e2022 */
+    --card-foreground: 48 10% 88%;
+
+    --popover: 210 5% 13%;
+    --popover-foreground: 48 10% 88%;
+
+    --primary: 48 10% 88%; /* #e3e1db */
+    --primary-foreground: 220 7% 9%;
+
+    --secondary: 210 4% 19%; /* #2d2f31 */
+    --secondary-foreground: 48 10% 88%;
+
+    --muted: 210 4% 19%;
+    --muted-foreground: 48 2% 63%; /* #a3a29e */
+
+    --accent: 210 4% 19%;
+    --accent-foreground: 48 10% 88%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 48 10% 88%;
+
+    --border: 210 4% 19%; /* #2d2f31 */
+    --input: 210 4% 19%;
+    --ring: 28 29% 63%; /* #bc9f84 */
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom classes for Soothing Neutral Obsidian layout */
+.obsidian-bg {
+  background-color: #141517;
+}
+
+.obsidian-card {
+  background-color: #1e2022;
+  border: 1px solid #2d2f31;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.obsidian-panel {
+  background-color: #1e2022;
+}
+
+.obsidian-border {
+  border-color: #2d2f31;
+}
+
+/* Custom dynamic scrollbars matching Obsidian theme */
+::-webkit-scrollbar {
+  width: 18px; /* wider track to make the thumb thicker */
+  height: 18px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9px;
+  /* Thick borders to force a shorter and thicker visible pill */
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 40px solid transparent;
+  border-bottom: 40px solid transparent;
+  background-clip: padding-box;
+  min-height: 24px; /* short length */
+}
+/* When container is hovered, show a faint warm-gray scrollbar thumb */
+*:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(163, 162, 158, 0.15);
+}
+/* When hovering directly over the scrollbar or dragging, show solid warm-gray */
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  background-color: rgba(163, 162, 158, 0.4) !important;
+}
+
+/* Firefox fallback support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: rgba(163, 162, 158, 0.15) transparent;
+}
+*:active {
+  scrollbar-color: rgba(163, 162, 158, 0.4) transparent;
+}
+
+/* Fallback CSS for message hover toolbar */
+.message-group-container:hover .message-hover-toolbar {
+  opacity: 1 !important;
+}
+

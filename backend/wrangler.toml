@@ -1,0 +1,16 @@
+name = "nigord-backend"
+main = "src/index.ts"
+compatibility_date = "2024-03-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nigord-db"
+database_id = "your-database-id-here" # Placeholder for local dev it uses local file
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "nigord-files"
+
+[vars]
+JWT_SECRET = "development-secret-do-not-use-in-production"
