@@ -141,6 +141,8 @@ export default function HomePage() {
   const { searchResults: msgSearchResults, searchMessages, isSearching, setSearchResults: setMsgSearchResults } = useSearch(currentServer?.id)
   const { notifications, fetchNotifications } = useGlobalNotifications()
   const [messageSearchQuery, setMessageSearchQuery] = useState('')
+  const [showMsgSearchResults, setShowMsgSearchResults] = useState(false)
+  const [hasSearchedUsers, setHasSearchedUsers] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [pendingAttachments, setPendingAttachments] = useState<any[]>([])
@@ -590,8 +592,13 @@ export default function HomePage() {
 
   const handleSearchUsers = (e: React.FormEvent) => {
     e.preventDefault()
+    setHasSearchedUsers(true)
     searchUsers(searchQuery)
   }
+
+  useEffect(() => {
+    setHasSearchedUsers(false)
+  }, [searchQuery, friendsFilter])
 
   const goHome = () => {
     setCurrentServer(null)
@@ -983,12 +990,17 @@ export default function HomePage() {
                       {searchResults.map(u => (
                         <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2d2f31] bg-[#1e2022]">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638]">{u.username[0]}</div>
+                            <div className="w-10 h-10 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638]">{u.username?.[0] || '?'}</div>
                             <span className="font-bold text-[#e3e1db]">{u.username}</span>
                           </div>
                           <Button size="sm" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]" onClick={() => sendRequest(u.id)}>Send Request</Button>
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {hasSearchedUsers && searchResults.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-[#a3a29e] text-sm">No users found with that username.</p>
                     </div>
                   )}
                 </div>
@@ -1404,8 +1416,8 @@ export default function HomePage() {
                   <Pin size={20} className={showPins ? 'fill-white' : ''} />
                 </button>
                 <div className="relative w-48">
-                  <Input value={messageSearchQuery} onChange={(e) => setMessageSearchQuery(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); searchMessages(messageSearchQuery); } }} placeholder="Search" className="h-7 text-xs bg-[#1e1f22] border-none text-white focus-visible:ring-0 focus-visible:ring-offset-0 pr-8" />
-                  <Search size={14} className="absolute right-2 top-1.5 text-[#949ba4]" />
+                  <Input value={messageSearchQuery} onChange={(e) => setMessageSearchQuery(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); setShowMsgSearchResults(true); searchMessages(messageSearchQuery); } }} placeholder="Search" className="h-7 text-xs bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus-visible:ring-0 focus-visible:ring-offset-0 pr-8" />
+                  <Search size={14} className="absolute right-2 top-1.5 text-[#a3a29e]" />
                 </div>
               </div>
             </div>
@@ -1544,11 +1556,11 @@ export default function HomePage() {
               )}
               
               {/* Search Results Sidebar */}
-              {(msgSearchResults.length > 0 || isSearching) && (
+              {showMsgSearchResults && (
                 <div className="w-80 obsidian-card flex flex-col absolute right-2.5 top-2.5 bottom-2.5 z-10 shadow-2xl border-none">
                   <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shrink-0 bg-[#1e2022]">
                     <span className="font-bold text-[#e3e1db]">Search Results</span>
-                    <Button variant="ghost" size="icon" className="w-6 h-6 hover:text-white text-[#a3a29e]" onClick={() => { setMsgSearchResults([]); setMessageSearchQuery(''); }}><XIcon size={14} /></Button>
+                    <Button variant="ghost" size="icon" className="w-6 h-6 hover:text-white text-[#a3a29e]" onClick={() => { setMsgSearchResults([]); setMessageSearchQuery(''); setShowMsgSearchResults(false); }}><XIcon size={14} /></Button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {isSearching ? (
@@ -1559,7 +1571,7 @@ export default function HomePage() {
                       msgSearchResults.map((msg: any) => (
                         <div key={msg.id} className="bg-[#141517] p-3 rounded hover:bg-[#2d2f31]/40 cursor-pointer shadow-sm border border-[#2d2f31]">
                           <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded-full bg-[#2d2f31] flex items-center justify-center text-[10px] font-bold uppercase text-[#e3e1db] border border-[#343638] shrink-0">{msg.username[0]}</div>
+                            <div className="w-6 h-6 rounded-full bg-[#2d2f31] flex items-center justify-center text-[10px] font-bold uppercase text-[#e3e1db] border border-[#343638] shrink-0">{msg.username?.[0] || '?'}</div>
                             <span className="font-bold text-sm truncate text-[#e3e1db]">{msg.username}</span>
                             <span className="text-[10px] text-[#a3a29e] whitespace-nowrap">in #{msg.channel_name}</span>
                           </div>
