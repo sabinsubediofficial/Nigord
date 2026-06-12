@@ -228,10 +228,13 @@ app.post('/auth/login', async (c) => {
   }
 
   const token = await sign({ id: user.id, username: user.username }, c.env.JWT_SECRET)
+  const origin = c.req.header('origin') || ''
+  const isProd = origin.includes('pages.dev') || origin.includes('nigord.pages.dev')
+
   setCookie(c, 'token', token, {
     httpOnly: true,
-    secure: false, // Set to true in production
-    sameSite: 'Lax',
+    secure: isProd,
+    sameSite: isProd ? 'None' : 'Lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
   })
@@ -258,10 +261,13 @@ app.post('/auth/verify-email', async (c) => {
     await c.env.DB.prepare('UPDATE users SET is_verified = 1, verification_code = NULL WHERE id = ?').bind(userId).run()
     
     const token = await sign({ id: user.id, username: user.username }, c.env.JWT_SECRET)
+    const origin = c.req.header('origin') || ''
+    const isProd = origin.includes('pages.dev') || origin.includes('nigord.pages.dev')
+
     setCookie(c, 'token', token, {
       httpOnly: true,
-      secure: false, // Set to true in production
-      sameSite: 'Lax',
+      secure: isProd,
+      sameSite: isProd ? 'None' : 'Lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 7,
     })
@@ -440,7 +446,13 @@ app.delete('/users/me', authMiddleware, async (c) => {
     ]
     await c.env.DB.batch(batch)
     
-    deleteCookie(c, 'token', { path: '/' })
+    const origin = c.req.header('origin') || ''
+    const isProd = origin.includes('pages.dev') || origin.includes('nigord.pages.dev')
+    deleteCookie(c, 'token', {
+      path: '/',
+      secure: isProd,
+      sameSite: isProd ? 'None' : 'Lax',
+    })
     return c.json({ success: true })
   } catch (e) {
     return c.json({ error: 'Failed to delete account' }, 500)
@@ -487,10 +499,13 @@ app.get('/users/:id/profile', authMiddleware, async (c) => {
 })
 
 app.post('/auth/logout', (c) => {
+  const origin = c.req.header('origin') || ''
+  const isProd = origin.includes('pages.dev') || origin.includes('nigord.pages.dev')
+
   deleteCookie(c, 'token', {
     path: '/',
-    secure: false,
-    sameSite: 'Lax',
+    secure: isProd,
+    sameSite: isProd ? 'None' : 'Lax',
   })
   return c.json({ success: true })
 })
