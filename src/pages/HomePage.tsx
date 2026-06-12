@@ -1048,16 +1048,18 @@ export default function HomePage() {
       {/* Secondary Sidebar */}
       <div className="w-60 obsidian-card flex flex-col overflow-hidden shrink-0 border-none">
         <div 
-          className="relative flex flex-col justify-end overflow-hidden group cursor-pointer hover:bg-[#2d2f31]/30 transition-all duration-200 border-b border-[#2d2f31] shrink-0 select-none" 
+          className="relative flex flex-col justify-end group cursor-pointer hover:bg-[#2d2f31]/30 transition-all duration-200 border-b border-[#2d2f31] shrink-0 select-none" 
           style={{ height: activeTab === 'server' && currentServer?.banner ? '120px' : '48px' }}
           onClick={() => activeTab === 'server' && setShowServerMenu(!showServerMenu)}
         >
           {activeTab === 'server' && currentServer?.banner && (
-            <img 
-              src={getFileUrl(currentServer.banner)} 
-              className="absolute inset-0 w-full h-full object-cover brightness-[0.5] group-hover:brightness-[0.6] transition-all duration-200" 
-              alt="" 
-            />
+            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none rounded-t-lg">
+              <img 
+                src={getFileUrl(currentServer.banner)} 
+                className="w-full h-full object-cover brightness-[0.5] group-hover:brightness-[0.6] transition-all duration-200" 
+                alt="" 
+              />
+            </div>
           )}
           <div className="flex items-center px-4 h-12 w-full relative z-10">
             {activeTab === 'server' && currentServer?.icon && (
