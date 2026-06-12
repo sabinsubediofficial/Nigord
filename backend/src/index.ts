@@ -193,6 +193,7 @@ app.post('/auth/register', async (c) => {
   const { username, email, password } = await c.req.json()
   if (!username || !email || !password) return c.json({ error: 'Missing fields' }, 400)
 
+  const normalizedEmail = email.toLowerCase().trim()
   const id = crypto.randomUUID()
   const passwordHash = await bcrypt.hash(password, 10)
   const code = Math.floor(100000 + Math.random() * 900000).toString()
@@ -200,13 +201,13 @@ app.post('/auth/register', async (c) => {
   try {
     await c.env.DB.prepare(
       'INSERT INTO users (id, username, email, password_hash, is_verified, verification_code) VALUES (?, ?, ?, ?, 0, ?)'
-    ).bind(id, username, email, passwordHash, code).run()
+    ).bind(id, username, normalizedEmail, passwordHash, code).run()
 
-    await sendVerificationEmail(email, username, code, c.env)
+    await sendVerificationEmail(normalizedEmail, username, code, c.env)
 
     const hasGmailConfig = !!(c.env.GMAIL_CLIENT_ID && c.env.GMAIL_CLIENT_SECRET && c.env.GMAIL_REFRESH_TOKEN)
     return c.json({ 
-      user: { id, username, email, is_verified: 0 },
+      user: { id, username, email: normalizedEmail, is_verified: 0 },
       debugCode: hasGmailConfig ? undefined : code
     })
   } catch (e: any) {
@@ -217,7 +218,8 @@ app.post('/auth/register', async (c) => {
 
 app.post('/auth/login', async (c) => {
   const { email, password } = await c.req.json()
-  const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first()
+  const normalizedEmail = email.toLowerCase().trim()
+  const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(normalizedEmail).first()
 
   if (!user || !(await bcrypt.compare(password, user.password_hash))) return c.json({ error: 'Invalid credentials' }, 401)
 
@@ -388,10 +390,11 @@ app.post('/auth/recover-password', async (c) => {
     return c.json({ error: 'Missing recovery fields' }, 400)
   }
   
+  const normalizedInput = usernameOrEmail.includes('@') ? usernameOrEmail.toLowerCase().trim() : usernameOrEmail.trim()
   try {
     const dbUser: any = await c.env.DB.prepare(
       'SELECT id, recovery_code_hash FROM users WHERE username = ? OR email = ?'
-    ).bind(usernameOrEmail, usernameOrEmail).first()
+    ).bind(normalizedInput, normalizedInput).first()
     
     if (!dbUser || !dbUser.recovery_code_hash) {
       return c.json({ error: 'Invalid user or no recovery code set' }, 400)
