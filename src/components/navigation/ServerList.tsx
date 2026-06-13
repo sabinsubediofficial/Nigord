@@ -98,10 +98,10 @@ export const ServerList = React.memo(function ServerList({
             {/* Server Icon */}
             <div 
               onClick={() => { sendTypingStatus(false); onSelectServer(server); }} 
-              className={`w-12 h-12 rounded-[12px] hover:rounded-[8px] transition-all flex items-center justify-center text-white cursor-pointer relative ${
+              className={`w-12 h-12 rounded-[12px] hover:rounded-[8px] transition-all flex items-center justify-center text-white cursor-pointer relative hover:bg-[#5865f2] hover:text-white ${
                 isActive 
-                  ? 'rounded-[8px] bg-[#5865f2] text-white' 
-                  : 'bg-[#2d2f31] hover:bg-[#5865f2] hover:text-white'
+                  ? 'rounded-[8px] bg-[#313338]' 
+                  : 'bg-[#2d2f31]'
               }`}
             >
               {server.icon ? (

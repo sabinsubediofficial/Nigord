@@ -1053,7 +1053,7 @@ export default function HomePage() {
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
   return (
-    <div className="flex h-screen bg-[#1e1f22] text-[#e3e1db] overflow-hidden p-0 gap-0 relative">
+    <div className="flex h-screen bg-[#111214] text-[#e3e1db] overflow-hidden p-0 gap-0 relative">
       {Object.entries(remoteStreams).map(([peerId, stream]) => (
         <RemoteStream key={peerId} stream={stream} />
       ))}
@@ -1077,11 +1077,11 @@ export default function HomePage() {
       </div>
 
       {/* Main Bordered Dashboard Layout Container (The Big Rounded Box wrapping Column 2, 3 & 4) */}
-      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-[12px] border border-[#2d2f31] bg-[#313338] overflow-hidden relative z-10">
+      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-[12px] border border-[#2d2f31] bg-[#111214] overflow-hidden relative z-10">
         {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
         <div 
           style={{ width: `${sidebarWidth}px` }}
-          className="relative flex flex-col h-full bg-[#2b2d31] shrink-0 overflow-hidden"
+          className="relative flex flex-col h-full bg-[#111214] border-r border-[#2d2f31] shrink-0 overflow-hidden"
         >
             <SidebarHeader
               activeTab={activeTab}
@@ -2132,7 +2132,7 @@ export default function HomePage() {
 
             return (
               <div 
-                className="flex-1 flex flex-col bg-[#313338] relative group/voice"
+                className="flex-1 flex flex-col bg-[#111214] relative group/voice"
                 onMouseMove={handleMouseMoveVoice}
                 onMouseLeave={() => setShowControls(false)}
               >
@@ -2334,7 +2334,7 @@ export default function HomePage() {
 
       {/* Members Sidebar */}
       {activeTab === 'server' && currentServer && currentChannel?.type === 'text' && (
-        <div className="w-60 bg-[#2b2d31] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31]">
+        <div className="w-60 bg-[#111214] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31]">
           <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0">
             <Users size={20} className="text-[#a3a29e] mr-2" />
             <span className="font-bold text-[#e3e1db]">Members</span>
@@ -2369,7 +2369,7 @@ export default function HomePage() {
 
       {/* DM User Profile Sidebar */}
       {activeTab === 'home' && activeHomeView === 'dm' && activeDmId && showDmProfile && dmUserProfile && (
-        <div className="w-72 bg-[#2b2d31] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31] select-none text-left">
+        <div className="w-72 bg-[#111214] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31] select-none text-left">
           {/* Header block (non-scrollable) to prevent avatar clipping */}
           <div className="relative shrink-0">
             <div className="h-16 bg-[#5865f2]" />
@@ -2450,7 +2450,7 @@ export default function HomePage() {
 
       {/* Floating Bottom Card: Unified Voice Connected status and User Panel card spanning both Column 1 and Column 2 */}
       <div 
-        className="absolute bottom-4 left-2 bg-[#232428] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 shadow-lg overflow-hidden select-none z-20"
+        className="absolute bottom-4 left-2 bg-[#111214] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 shadow-lg overflow-hidden select-none z-20"
         style={{ width: `${72 + sidebarWidth - 16}px` }}
       >
         
