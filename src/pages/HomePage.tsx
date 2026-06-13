@@ -1333,7 +1333,7 @@ export default function HomePage() {
                           
                           {/* Participant List */}
                           {participants.length > 0 && (
-                            <div className="ml-6 pl-2.5 border-l border-[#2d2f31] space-y-1 my-1 animate-in slide-in-from-top-1 duration-150">
+                            <div className="ml-6 pl-2.5 space-y-1 my-1 animate-in slide-in-from-top-1 duration-150">
                               {participants.map(p => {
                                 const isUserSpeaking = p.user_id === user?.id 
                                   ? (speakingUsers[user?.id || 'local'] || speakingUsers['local'])
