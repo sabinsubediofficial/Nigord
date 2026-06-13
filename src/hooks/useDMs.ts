@@ -48,8 +48,10 @@ export const useDMs = (activeDmId?: string) => {
             const fetchedIds = new Set(fetchedMsgs.map(m => m.id))
             
             let oldestFetchedTime = 0
+            let newestFetchedTime = 0
             if (fetchedMsgs.length > 0) {
               oldestFetchedTime = new Date(fetchedMsgs[fetchedMsgs.length - 1].created_at).getTime()
+              newestFetchedTime = new Date(fetchedMsgs[0].created_at).getTime()
             }
             
             const updatedCurrent = prev.map(m => {
@@ -71,6 +73,7 @@ export const useDMs = (activeDmId?: string) => {
               const mTime = new Date(m.created_at).getTime()
               if (fetchedIds.has(m.id)) return true
               if (mTime < oldestFetchedTime) return true
+              if (mTime > newestFetchedTime) return true // Safeguard for newly sent local messages
               return false
             })
             
