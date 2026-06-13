@@ -1,5 +1,5 @@
 import React from "react"
-import { ChevronDown, Settings, UserPlus, LogOut } from "lucide-react"
+import { ChevronDown, Settings, UserPlus, LogOut, Plus } from "lucide-react"
 import { getFileUrl } from "@/lib/api"
 import { Server } from "./ServerList"
 
@@ -13,6 +13,8 @@ interface SidebarHeaderProps {
   onLeaveServer: () => void
   isOwner: boolean
   isAdmin: boolean
+  isManageChannels?: boolean
+  onCreateChannel?: () => void
 }
 
 export const SidebarHeader = React.memo(function SidebarHeader({
@@ -24,7 +26,9 @@ export const SidebarHeader = React.memo(function SidebarHeader({
   setShowServerSettingsModal,
   onLeaveServer,
   isOwner,
-  isAdmin
+  isAdmin,
+  isManageChannels = false,
+  onCreateChannel
 }: SidebarHeaderProps) {
   return (
     <div 
@@ -69,6 +73,15 @@ export const SidebarHeader = React.memo(function SidebarHeader({
             <span className="text-xs font-semibold">Invite People</span>
             <UserPlus size={15} />
           </div>
+          {(isOwner || isAdmin || isManageChannels) && (
+            <div 
+              className="flex items-center justify-between p-2 rounded-md text-[#a3a29e] hover:bg-[#5865f2] hover:text-white cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
+              onClick={(e) => { e.stopPropagation(); setShowServerMenu(false); onCreateChannel?.(); }}
+            >
+              <span className="text-xs font-semibold">Create Channel</span>
+              <Plus size={15} />
+            </div>
+          )}
           {(isOwner || isAdmin) && (
             <div 
               className="flex items-center justify-between p-2 rounded-md text-[#a3a29e] hover:bg-[#5865f2] hover:text-white cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"

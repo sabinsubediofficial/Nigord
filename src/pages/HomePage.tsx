@@ -1093,6 +1093,8 @@ export default function HomePage() {
               onLeaveServer={handleLeaveServer}
               isOwner={currentServer?.owner_id === user?.id}
               isAdmin={!!(currentServer as any)?.permissions?.includes('ADMINISTRATOR')}
+              isManageChannels={!!(currentServer as any)?.permissions?.includes('MANAGE_CHANNELS')}
+              onCreateChannel={() => { setNewChannelType('text'); setShowCreateChannelModal(true); }}
             />
             
             <div className={`flex-1 overflow-y-auto p-2 no-scrollbar ${activeVoiceChannel ? 'pb-[160px]' : 'pb-[68px]'}`}>
