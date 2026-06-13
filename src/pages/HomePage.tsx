@@ -1022,6 +1022,7 @@ export default function HomePage() {
   const handleLogout = async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST', credentials: 'include' })
+      useChannelStore.getState().clearCache()
       setUser(null)
     } catch (e) {
       console.error(e)

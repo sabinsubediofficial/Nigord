@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useChannelStore } from "@/store/useChannelStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, LogOut, Upload, ShieldAlert, Check } from "lucide-react"
@@ -230,6 +231,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
   const handleLogout = async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST', credentials: 'include' })
+      useChannelStore.getState().clearCache()
       setUser(null)
       onClose()
     } catch (e) {

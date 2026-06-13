@@ -5,13 +5,35 @@ export const useChannels = () => {
   const { channels, setChannels, addChannel, setCurrentChannel } = useChannelStore()
 
   const fetchChannels = async (serverId: string) => {
+    // 1. Instantly load from cache if available
+    const cache = useChannelStore.getState().channelsCache
+    const cached = cache[serverId]
+    if (cached && cached.length > 0) {
+      setChannels(cached)
+      
+      // If currentChannel is not already on this server, set it to the first cached channel
+      const current = useChannelStore.getState().currentChannel
+      if (!current || current.server_id !== serverId) {
+        setCurrentChannel(cached[0])
+      }
+    }
+
+    // 2. Revalidate in the background (Stale-While-Revalidate)
     try {
       const res = await apiFetch(`/servers/${serverId}`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        setChannels(data.channels)
-        if (data.channels.length > 0) {
-          setCurrentChannel(data.channels[0])
+        const latestChannels = data.channels
+        
+        // Update both the active channel list and the cache
+        setChannels(latestChannels)
+        useChannelStore.getState().cacheChannels(serverId, latestChannels)
+        
+        // Ensure currentChannel remains valid
+        const current = useChannelStore.getState().currentChannel
+        const isCurrentValid = current && latestChannels.some((c: any) => c.id === current.id)
+        if (!isCurrentValid && latestChannels.length > 0) {
+          setCurrentChannel(latestChannels[0])
         }
       }
     } catch (error) {
