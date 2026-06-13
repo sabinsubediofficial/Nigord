@@ -2452,7 +2452,7 @@ export default function HomePage() {
       <div 
         className="absolute bottom-0 left-0 bg-[#111214] z-[15] pointer-events-none"
         style={{ 
-          width: `${72 + sidebarWidth - 1}px`, 
+          width: `${72 + sidebarWidth}px`, 
           height: '24px' 
         }}
       />
