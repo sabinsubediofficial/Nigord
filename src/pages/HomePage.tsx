@@ -2448,6 +2448,15 @@ export default function HomePage() {
 
       </div>
 
+      {/* Mask to hide the bottom border line and curved corner of the Big Rounded Box under the floating card */}
+      <div 
+        className="absolute bottom-0 left-0 bg-[#111214] z-[15] pointer-events-none"
+        style={{ 
+          width: `${72 + sidebarWidth - 1}px`, 
+          height: '24px' 
+        }}
+      />
+
       {/* Floating Bottom Card: Unified Voice Connected status and User Panel card spanning both Column 1 and Column 2 */}
       <div 
         className="absolute bottom-4 left-2 bg-[#111214] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 shadow-lg overflow-hidden select-none z-20"
