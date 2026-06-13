@@ -199,7 +199,8 @@ export default function HomePage() {
       isVideoEnabled,
       isAudioEnabled,
       isDeafened,
-      stream: localStream
+      stream: localStream,
+      avatar: user?.avatar
     },
     ...(isScreenSharing && localScreenStream ? [{
       id: 'local-screen',
@@ -209,7 +210,8 @@ export default function HomePage() {
       isAudioEnabled: false,
       isDeafened: false,
       stream: localScreenStream,
-      isScreenShare: true
+      isScreenShare: true,
+      avatar: user?.avatar
     }] : []),
     ...Object.entries(remoteStreams).map(([peerId, stream]) => {
       const actualUserId = peerId.replace('-screen', '');
@@ -229,26 +231,11 @@ export default function HomePage() {
         isAudioEnabled: !isMuted,
         isDeafened: isDeaf,
         stream,
-        isScreenShare
+        isScreenShare,
+        avatar: (peer as any).avatar
       }
     })
   ];
-
-  const getCardBg = (name: string) => {
-    const bgColors = [
-      'from-[#2a2622] to-[#141517]',
-      'from-[#202522] to-[#141517]',
-      'from-[#1c2229] to-[#141517]',
-      'from-[#271f29] to-[#141517]',
-      'from-[#291f24] to-[#141517]',
-    ]
-    let hash = 0
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash)
-    }
-    const idx = Math.abs(hash) % bgColors.length
-    return bgColors[idx]
-  }
 
   const renderParticipantCard = (p: any, size: 'large' | 'small' | 'normal') => {
     const isLocal = p.isLocal;
@@ -262,13 +249,15 @@ export default function HomePage() {
       ? (speakingUsers[user?.id || 'local'] || speakingUsers['local'])
       : speakingUsers[p.id.replace('-screen', '')] === true;
 
-    const cardClasses = `bg-[#1e2022] rounded-xl flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all cursor-pointer group shadow-lg ${
+    const cardClasses = `bg-[#1e1f22] rounded-[8px] flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all cursor-pointer group shadow-md ${
       isSpeaking 
-        ? 'ring-2 ring-[#23a55a] border-[#23a55a] shadow-[0_0_12px_rgba(35,165,90,0.4)]' 
-        : (isFocused && size !== 'small' ? 'border-[#bc9f84]' : 'border-[#2d2f31] hover:border-[#bc9f84]')
+        ? 'border-[#23a55a]' 
+        : (isFocused && size !== 'small' ? 'border-[#b5bac1]' : 'border-[#2b2d31] hover:border-[#35373c]')
     } ${
       size === 'small' ? 'w-48 aspect-video shrink-0 text-[10px]' : 'w-full h-full aspect-video'
     }`;
+
+    const avatarSizeClass = size === 'small' ? 'w-12 h-12 text-sm' : 'w-20 h-20 text-2xl';
 
     return (
       <div 
@@ -291,42 +280,31 @@ export default function HomePage() {
             className="w-full h-full object-cover" 
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#2d2f31]">
-            <div className={`absolute inset-0 bg-gradient-to-tr ${getCardBg(p.username)} opacity-60`} />
-            <div className={`relative z-10 rounded-full border-4 border-[#1e2022] shadow-2xl flex items-center justify-center font-bold uppercase ${
-              size === 'small' ? 'w-10 h-10 text-sm border-2' : 'w-24 h-24 text-3xl border-[6px]'
-            } ${isLocal ? 'bg-[#bc9f84] text-[#141517]' : 'bg-[#2d2f31] text-[#e3e1db] border border-[#bc9f84]'}`}>
-              {p.username[0]}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#2b2d31]">
+            <div className={`relative z-10 rounded-full bg-[#1e1f22] text-[#e3e1db] flex items-center justify-center font-bold uppercase transition-all duration-150 overflow-hidden ${avatarSizeClass} ${
+              isSpeaking 
+                ? 'ring-[3px] ring-[#23a55a] ring-offset-2 ring-offset-[#2b2d31]' 
+                : ''
+            }`}>
+              {p.avatar ? (
+                <img src={getFileUrl(p.avatar)} alt={p.username} className="w-full h-full object-cover" />
+              ) : (
+                p.username[0]
+              )}
             </div>
           </div>
         )}
-        <div className={`absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-white flex items-center gap-1 z-10 ${
-          size === 'small' ? 'text-[10px] px-1.5 py-0.5 bottom-1.5 left-1.5 gap-0.5' : ''
+        <div className={`absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-[4px] text-xs font-medium text-white flex items-center gap-1.5 z-10 ${
+          size === 'small' ? 'text-[10px] px-1.5 py-0.5 bottom-1.5 left-1.5 gap-1' : ''
         }`}>
-          {isLocal ? (
-            <>
-              {isAudioEnabled ? <Mic size={size === 'small' ? 10 : 14} className="text-[#bc9f84]" /> : <MicOff size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />}
-              {isDeafened && (
-                <div className="relative flex items-center justify-center">
-                  <Headphones size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-[1.5px] h-[14px] bg-[#ed4245] rotate-45" />
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              {!isScreenShare && (!isAudioEnabled ? <MicOff size={size === 'small' ? 10 : 14} className="text-[#ed4245]" /> : <Mic size={size === 'small' ? 10 : 14} className="text-[#bc9f84]" />)}
-              {!isScreenShare && isDeafened && (
-                <div className="relative flex items-center justify-center">
-                  <Headphones size={size === 'small' ? 10 : 14} className="text-[#ed4245]" />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-[1.5px] h-[14px] bg-[#ed4245] rotate-45" />
-                  </div>
-                </div>
-              )}
-            </>
+          {!isScreenShare && !isAudioEnabled && <MicOff size={size === 'small' ? 10 : 12} className="text-[#f23f43]" />}
+          {!isScreenShare && isDeafened && (
+            <div className="relative flex items-center justify-center">
+              <Headphones size={size === 'small' ? 10 : 12} className="text-[#f23f43]" />
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-[1.2px] h-[12px] bg-[#f23f43] rotate-45" />
+              </div>
+            </div>
           )}
           <span className="truncate max-w-[100px]">{p.username} {isLocal ? '(You)' : ''}</span>
         </div>
@@ -1773,7 +1751,7 @@ export default function HomePage() {
                     {/* Controls Row */}
                     <div className="flex items-center gap-4">
                       {/* Audio, Video, Deafen Controls Container */}
-                      <div className="bg-[#1e2022] border border-[#2d2f31] p-1 rounded-xl flex items-center gap-1 shadow-md">
+                      <div className="bg-[#1e1f22] border border-[#2d2f31] p-1.5 rounded-[8px] flex items-center gap-1.5 shadow-md">
                         {/* Mic */}
                         <div className="flex items-center">
                           <button 
@@ -1801,7 +1779,7 @@ export default function HomePage() {
                             onClick={toggleVideo}
                             className={`p-2 rounded-lg transition-all flex items-center justify-center ${
                               isVideoEnabled 
-                                ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]' 
+                                ? 'bg-[#5865f2] text-white hover:bg-[#4752c4]' 
                                 : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'
                             }`}
                             title={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
@@ -1839,12 +1817,12 @@ export default function HomePage() {
                       </div>
 
                       {/* Screen, Grid, Soundboard Options Container */}
-                      <div className="bg-[#1e2022] border border-[#2d2f31] p-1 rounded-xl flex items-center gap-1 shadow-md">
+                      <div className="bg-[#1e1f22] border border-[#2d2f31] p-1.5 rounded-[8px] flex items-center gap-1.5 shadow-md">
                         <button 
                           onClick={toggleScreenShare}
                           className={`p-2 rounded-lg transition-all flex items-center justify-center ${
                             isScreenSharing 
-                              ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]' 
+                              ? 'bg-[#5865f2] text-white hover:bg-[#4752c4]' 
                               : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'
                           }`}
                           title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen"}
@@ -1868,7 +1846,7 @@ export default function HomePage() {
                       {/* Red End Call Button */}
                       <button 
                         onClick={handleLeaveVoice}
-                        className="bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white p-2.5 rounded-xl transition-all flex items-center justify-center shadow-md cursor-pointer"
+                        className="bg-[#ed4245] text-white hover:bg-[#c93b3e] p-2.5 rounded-[8px] transition-all flex items-center justify-center shadow-md cursor-pointer"
                         title="Disconnect"
                       >
                         <PhoneOff size={18} className="rotate-[135deg]" />
@@ -2226,23 +2204,24 @@ export default function HomePage() {
 
             const renderInviteCard = () => {
               return (
-                <div className="aspect-video bg-[#1e2022] rounded-xl flex flex-col items-center justify-center p-6 relative overflow-hidden border border-[#2d2f31] border-dashed shadow-lg group">
+                <div className="aspect-video bg-[#1e1f22] rounded-[8px] flex flex-col items-center justify-center p-6 relative overflow-hidden border border-[#2d2f31] border-dashed shadow group">
                   <div className="flex flex-col items-center justify-center text-center space-y-4">
-                    <svg width="120" height="90" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#bc9f84] opacity-80 group-hover:scale-105 transition-transform duration-300">
-                      <path d="M40 50C40 60 48 65 60 65C72 65 80 60 80 50V25H40V50Z" fill="#bc9f84" fillOpacity="0.15" stroke="#bc9f84" strokeWidth="2" />
-                      <path d="M40 30H32C28 30 25 33 25 37V40C25 44 28 47 32 47H40" stroke="#bc9f84" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M80 30H88C92 30 95 33 95 37V40C95 44 92 47 88 47H80" stroke="#bc9f84" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M60 65V75" stroke="#bc9f84" strokeWidth="2" />
-                      <path d="M48 75H72" stroke="#bc9f84" strokeWidth="2" strokeLinecap="round" />
-                      <rect x="75" y="55" width="22" height="15" rx="7.5" fill="#bc9f84" fillOpacity="0.15" stroke="#bc9f84" strokeWidth="2" />
-                      <circle cx="81" cy="62.5" r="1.5" fill="#bc9f84" />
-                      <circle cx="91" cy="62.5" r="1.5" fill="#bc9f84" />
-                      <path d="M30 65L32 60L37 59L33 55L34 50L30 53L26 50L27 55L23 59L28 60L30 65Z" fill="#bc9f84" fillOpacity="0.2" stroke="#bc9f84" strokeWidth="1.5" />
+                    <svg width="100" height="75" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#949ba4] opacity-70 group-hover:scale-105 transition-transform duration-300">
+                      <path d="M40 50C40 60 48 65 60 65C72 65 80 60 80 50V25H40V50Z" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
+                      <path d="M40 30H32C28 30 25 33 25 37V40C25 44 28 47 32 47H40" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <path d="M80 30H88C92 30 95 33 95 37V40C95 44 92 47 88 47H80" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <path d="M60 65V75" stroke="currentColor" strokeWidth="2" />
+                      <path d="M48 75H72" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <rect x="75" y="55" width="22" height="15" rx="7.5" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
+                      <circle cx="81" cy="62.5" r="1.5" fill="currentColor" />
+                      <circle cx="91" cy="62.5" r="1.5" fill="currentColor" />
+                      <path d="M30 65L32 60L37 59L33 55L34 50L30 53L26 50L27 55L23 59L28 60L30 65Z" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5" />
                     </svg>
-                    <div className="flex items-center gap-2 pt-2">
+                    <div className="flex flex-col items-center gap-2 pt-2">
+                      <span className="text-xs text-[#949ba4]">Invite friends to join this voice call!</span>
                       <button 
                         onClick={() => setShowInviteModal(true)} 
-                        className="bg-[#2d2f31] hover:bg-[#bc9f84] hover:text-[#141517] font-semibold text-xs px-3 py-1.5 rounded flex items-center gap-1.5 transition-colors cursor-pointer shadow border border-[#343638]"
+                        className="bg-[#5865f2] hover:bg-[#4752c4] text-white font-semibold text-xs px-4 py-2 rounded-[3px] flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
                       >
                         <UserPlus size={14} />
                         Invite to Voice
@@ -2269,7 +2248,7 @@ export default function HomePage() {
                             {renderParticipantCard(focusedParticipant, 'large')}
                           </div>
                           {otherParticipants.length > 0 && (
-                            <div className="w-full max-w-5xl flex items-center justify-center gap-3 overflow-x-auto py-2 px-4 bg-[#1e1f22]/40 rounded-xl backdrop-blur-sm shrink-0 no-scrollbar">
+                            <div className="w-full max-w-5xl flex items-center justify-center gap-3 overflow-x-auto py-2 px-4 bg-[#1e1f22]/60 rounded-[8px] shrink-0 no-scrollbar">
                               {otherParticipants.map(p => renderParticipantCard(p, 'small'))}
                             </div>
                           )}
@@ -2331,14 +2310,14 @@ export default function HomePage() {
                     <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 flex items-center gap-4 ${
                       showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
                     }`}>
-                      <div className="bg-[#1e2022]/95 backdrop-blur-md px-4 py-2.5 rounded-2xl flex items-center gap-3 shadow-2xl border border-[#2d2f31]">
+                      <div className="bg-[#1e1f22]/95 backdrop-blur-md px-4 py-2.5 rounded-[8px] flex items-center gap-3 shadow-2xl border border-[#2d2f31]">
                         {/* Mute Mic */}
                         <button 
                           onClick={toggleAudio}
                           className={`p-3 rounded-full transition-all ${
                             !isAudioEnabled 
                               ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white' 
-                              : 'bg-[#2d2f31] text-[#a3a29e] hover:bg-[#bc9f84] hover:text-[#141517]'
+                              : 'bg-[#313338] text-[#dbdee1] hover:bg-[#35373c] hover:text-white'
                           }`}
                           title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
                         >
@@ -2351,7 +2330,7 @@ export default function HomePage() {
                           className={`p-3 rounded-full transition-all ${
                             isDeafened 
                               ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white' 
-                              : 'bg-[#2d2f31] text-[#a3a29e] hover:bg-[#bc9f84] hover:text-[#141517]'
+                              : 'bg-[#313338] text-[#dbdee1] hover:bg-[#35373c] hover:text-white'
                           }`}
                           title={isDeafened ? "Undeafen" : "Deafen"}
                         >
@@ -2363,8 +2342,8 @@ export default function HomePage() {
                           onClick={toggleVideo}
                           className={`p-3 rounded-full transition-all ${
                             isVideoEnabled 
-                              ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]' 
-                              : 'bg-[#2d2f31] text-[#a3a29e] hover:bg-[#bc9f84] hover:text-[#141517]'
+                              ? 'bg-[#5865f2] text-white hover:bg-[#4752c4]' 
+                              : 'bg-[#313338] text-[#dbdee1] hover:bg-[#35373c] hover:text-white'
                           }`}
                           title={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
                         >
@@ -2376,8 +2355,8 @@ export default function HomePage() {
                           onClick={toggleScreenShare}
                           className={`p-3 rounded-full transition-all ${
                             isScreenSharing 
-                              ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]' 
-                              : 'bg-[#2d2f31] text-[#a3a29e] hover:bg-[#bc9f84] hover:text-[#141517]'
+                              ? 'bg-[#5865f2] text-white hover:bg-[#4752c4]' 
+                              : 'bg-[#313338] text-[#dbdee1] hover:bg-[#35373c] hover:text-white'
                           }`}
                           title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen"}
                         >
@@ -2390,7 +2369,7 @@ export default function HomePage() {
                         {/* Disconnect Button */}
                         <button 
                           onClick={handleLeaveVoice}
-                          className="bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white p-3 px-5 rounded-xl transition-all flex items-center justify-center shadow"
+                          className="bg-[#ed4245] text-white hover:bg-[#c93b3e] p-3 px-5 rounded-[8px] transition-all flex items-center justify-center shadow"
                           title="Disconnect"
                         >
                           <PhoneOff size={18} className="rotate-[135deg]" />
