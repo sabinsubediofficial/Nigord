@@ -1074,7 +1074,7 @@ export default function HomePage() {
       />
 
       {/* Main Bordered Dashboard Layout Container */}
-      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-[12px] border border-[#2d2f31] bg-[#141517] overflow-hidden relative">
+      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-r-[12px] rounded-l-none border border-[#2d2f31] bg-[#141517] overflow-hidden relative">
         
         {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
         <div 
