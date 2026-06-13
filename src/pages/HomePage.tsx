@@ -61,6 +61,28 @@ export default function HomePage() {
     speakingUsers
   } = useWebRTC(activeVoiceChannel?.id || undefined)
 
+  const [sidebarWidth, setSidebarWidth] = useState<number>(240) // Default 240px
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const newWidth = Math.max(160, Math.min(480, startWidth + deltaX)); // clamp between 160px and 480px
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   const [showControls, setShowControls] = useState(true)
   const controlsTimeoutRef = useRef<any>(null)
 
@@ -1049,7 +1071,7 @@ export default function HomePage() {
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
   return (
-    <div className="flex h-screen bg-[#141517] text-[#e3e1db] overflow-hidden p-2.5 gap-2.5">
+    <div className="flex h-screen bg-[#141517] text-[#e3e1db] overflow-hidden p-0 gap-0">
       {Object.entries(remoteStreams).map(([peerId, stream]) => (
         <RemoteStream key={peerId} stream={stream} />
       ))}
@@ -1070,7 +1092,15 @@ export default function HomePage() {
       />
 
       {/* Secondary Sidebar */}
-      <div className="w-60 obsidian-card flex flex-col overflow-hidden shrink-0 border-none">
+      <div 
+        style={{ width: `${sidebarWidth}px` }}
+        className="relative bg-[#1e2022] flex flex-col overflow-hidden shrink-0 border-r border-[#2d2f31]"
+      >
+        {/* Resize handle */}
+        <div 
+          onMouseDown={handleMouseDown}
+          className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-[#bc9f84]/30 active:bg-[#bc9f84]/50 z-30 transition-colors"
+        />
         <SidebarHeader
           activeTab={activeTab}
           currentServer={currentServer}
@@ -1474,7 +1504,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col obsidian-card overflow-hidden">
+      <div className="flex-1 flex flex-col bg-[#141517] overflow-hidden">
         {activeTab === 'home' && activeHomeView === 'friends' ? (
           <div className="flex-1 flex flex-col">
             <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0 gap-4 overflow-x-auto">
@@ -2357,7 +2387,7 @@ export default function HomePage() {
 
       {/* Members Sidebar */}
       {activeTab === 'server' && currentServer && currentChannel?.type === 'text' && (
-        <div className="w-60 obsidian-card flex flex-col overflow-hidden shrink-0 border-none">
+        <div className="w-60 bg-[#1e2022] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31]">
           <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0">
             <Users size={20} className="text-[#a3a29e] mr-2" />
             <span className="font-bold text-[#e3e1db]">Members</span>
@@ -2392,7 +2422,7 @@ export default function HomePage() {
 
       {/* DM User Profile Sidebar */}
       {activeTab === 'home' && activeHomeView === 'dm' && activeDmId && showDmProfile && dmUserProfile && (
-        <div className="w-72 obsidian-card flex flex-col overflow-hidden shrink-0 border-none select-none text-left">
+        <div className="w-72 bg-[#1e2022] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31] select-none text-left">
           {/* Header block (non-scrollable) to prevent avatar clipping */}
           <div className="relative shrink-0">
             <div className="h-16 bg-[#bc9f84]" />
