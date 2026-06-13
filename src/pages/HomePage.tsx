@@ -238,9 +238,9 @@ export default function HomePage() {
       : speakingUsers[p.id.replace('-screen', '')] === true;
 
     const cardClasses = `bg-[#1e2022] rounded-xl flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all cursor-pointer group shadow-lg ${
-      isSpeaking ? 'ring-2 ring-[#bc9f84]' : ''
-    } ${
-      isFocused && size !== 'small' ? 'border-[#bc9f84]' : 'border-[#2d2f31] hover:border-[#bc9f84]'
+      isSpeaking 
+        ? 'ring-2 ring-[#23a55a] border-[#23a55a] shadow-[0_0_12px_rgba(35,165,90,0.4)]' 
+        : (isFocused && size !== 'small' ? 'border-[#bc9f84]' : 'border-[#2d2f31] hover:border-[#bc9f84]')
     } ${
       size === 'small' ? 'w-48 aspect-video shrink-0 text-[10px]' : 'w-full h-full aspect-video'
     }`;
@@ -1261,37 +1261,46 @@ export default function HomePage() {
                         return true
                       });
                       const isActive = currentChannel?.id === channel.id;
+                      const isConnected = activeVoiceChannel?.id === channel.id;
                       return (
                         <div key={channel.id} className="flex flex-col">
                           <div 
                             onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); }} 
                             className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
-                              isActive 
-                                ? 'bg-[#2d2f31] text-[#e3e1db]' 
-                                : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'
+                              isConnected
+                                ? 'bg-[#2d2f31]/40 text-[#23a55a]'
+                                : (isActive 
+                                  ? 'bg-[#2d2f31] text-[#e3e1db]' 
+                                  : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]')
                             }`}
                           >
                             {/* Left accent pill */}
                             <div 
                               className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
-                                isActive 
-                                  ? 'h-5 bg-[#bc9f84]' 
-                                  : 'h-0 bg-[#bc9f84]/40 group-hover:h-3'
+                                isConnected
+                                  ? 'h-5 bg-[#23a55a]'
+                                  : (isActive 
+                                    ? 'h-5 bg-[#bc9f84]' 
+                                    : 'h-0 bg-[#bc9f84]/40 group-hover:h-3')
                               }`} 
                             />
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               <Volume2 
                                 size={18} 
                                 className={`transition-colors shrink-0 ${
-                                  isActive 
-                                    ? 'text-[#e3e1db]' 
-                                    : 'text-[#767572] group-hover:text-[#dbdee1]'
+                                  isConnected
+                                    ? 'text-[#23a55a]'
+                                    : (isActive 
+                                      ? 'text-[#e3e1db]' 
+                                      : 'text-[#767572] group-hover:text-[#dbdee1]')
                                 }`} 
                               />
                               <span className={`text-[14px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
-                                isActive
-                                  ? 'font-medium text-[#e3e1db]'
-                                  : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]'
+                                isConnected
+                                  ? 'font-medium text-[#23a55a]'
+                                  : (isActive
+                                    ? 'font-medium text-[#e3e1db]'
+                                    : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]')
                               }`}>{channel.name}</span>
                             </div>
                             
@@ -1346,9 +1355,6 @@ export default function HomePage() {
                                       <span className={`text-xs truncate transition-colors duration-150 font-medium ${
                                         isUserSpeaking ? 'text-[#23a55a] font-semibold' : 'text-[#949ba4] group-hover/p:text-[#dbdee1]'
                                       }`}>{p.username}</span>
-                                      {isUserSpeaking && (
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#23a55a] animate-ping shrink-0" />
-                                      )}
                                     </div>
                                     <div className="flex items-center gap-1 pr-1 shrink-0">
                                       {p.is_muted === 1 && <MicOff size={11} className="text-[#ed4245]" />}
