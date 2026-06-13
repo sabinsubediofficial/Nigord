@@ -720,7 +720,27 @@ export default function HomePage() {
       const res = await apiFetch(endpoint, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        setVoiceParticipants(data.participants)
+        let participants = data.participants || []
+        
+        // Prevent stale server response from overwriting local join state (race condition safeguard)
+        if (activeVoiceChannel && user) {
+          const hasSelf = participants.some((p: any) => p.user_id === user.id)
+          if (!hasSelf) {
+            participants = [
+              ...participants,
+              {
+                user_id: user.id,
+                username: user.username,
+                avatar: user.avatar,
+                channel_id: activeVoiceChannel.id,
+                is_muted: !isAudioEnabled ? 1 : 0,
+                is_deafened: isDeafened ? 1 : 0
+              }
+            ]
+          }
+        }
+        
+        setVoiceParticipants(participants)
       } else if (res.status === 404) {
         await handleLeaveVoice()
       }
