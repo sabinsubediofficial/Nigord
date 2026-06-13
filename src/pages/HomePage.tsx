@@ -1053,37 +1053,36 @@ export default function HomePage() {
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
   return (
-    <div className="flex h-screen bg-[#141517] text-[#e3e1db] overflow-hidden p-0 gap-0">
+    <div className="flex h-screen bg-[#1e1f22] text-[#e3e1db] overflow-hidden p-0 gap-0 relative">
       {Object.entries(remoteStreams).map(([peerId, stream]) => (
         <RemoteStream key={peerId} stream={stream} />
       ))}
 
-      {/* Combined Left Column Group (Servers Sidebar & Channels Sidebar & Floating Bottom Panels) */}
-      <div className="h-full flex flex-col shrink-0 select-none bg-[#1e1f22] relative" style={{ width: `${72 + sidebarWidth}px` }}>
-        
-        {/* Top Area: Servers & Channels side-by-side */}
-        <div className="h-full w-full flex overflow-hidden">
-          {/* Server Sidebar (Far Left) */}
-          <ServerList
-            servers={servers}
-            currentServer={currentServer}
-            activeTab={activeTab}
-            notifications={notifications}
-            goHome={goHome}
-            onSelectServer={(server) => {
-              setCurrentServer(server);
-              setActiveTab('server');
-            }}
-            onAddServer={() => setShowCreateServerModal(true)}
-            sendTypingStatus={sendTypingStatus}
-            isVoiceConnected={!!activeVoiceChannel}
-          />
+      {/* Column 1: Server Sidebar (Far Left, floating directly on base background) */}
+      <div className="w-[72px] h-full flex flex-col shrink-0 select-none bg-transparent relative z-10">
+        <ServerList
+          servers={servers}
+          currentServer={currentServer}
+          activeTab={activeTab}
+          notifications={notifications}
+          goHome={goHome}
+          onSelectServer={(server) => {
+            setCurrentServer(server);
+            setActiveTab('server');
+          }}
+          onAddServer={() => setShowCreateServerModal(true)}
+          sendTypingStatus={sendTypingStatus}
+          isVoiceConnected={!!activeVoiceChannel}
+        />
+      </div>
 
-          {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
-          <div 
-            style={{ width: `${sidebarWidth}px` }}
-            className="relative flex flex-col h-full bg-[#2b2d31] shrink-0 overflow-hidden"
-          >
+      {/* Main Bordered Dashboard Layout Container (The Big Rounded Box wrapping Column 2, 3 & 4) */}
+      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-[12px] border border-[#2d2f31] bg-[#313338] overflow-hidden relative z-10">
+        {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
+        <div 
+          style={{ width: `${sidebarWidth}px` }}
+          className="relative flex flex-col h-full bg-[#2b2d31] shrink-0 overflow-hidden"
+        >
             <SidebarHeader
               activeTab={activeTab}
               currentServer={currentServer}
@@ -1449,140 +1448,7 @@ export default function HomePage() {
               className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-white/10 active:bg-white/20 z-30 transition-colors"
             />
           </div>
-        </div>
 
-        {/* Floating Bottom Card: Unified Voice Connected status and User Panel card spanning both Column 1 and Column 2 */}
-        <div className="absolute bottom-2 left-2 right-2 bg-[#232428] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 shadow-lg overflow-hidden select-none z-20">
-          {/* Voice Connection Status */}
-          {activeVoiceChannel && (() => {
-            const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
-            const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
-            return (
-              <div className="w-full p-2.5 flex flex-col gap-2 border-b border-[#2d2f31] text-left">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[#23a55a]">
-                    <Volume2 size={20} className="text-[#23a55a] shrink-0" />
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-bold leading-tight text-[#23a55a]">Voice Connected</span>
-                      <span className="text-[10px] leading-tight text-[#949ba4] truncate">{voiceSubtitle}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* Animated Soundwave Visualizer matching Discord style */}
-                    <div className="flex items-end gap-[2px] h-3.5 px-1 shrink-0">
-                      <div className="w-[2px] h-2 bg-[#23a55a] rounded-full animate-pulse" />
-                      <div className="w-[2px] h-3.5 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                      <div className="w-[2px] h-2.5 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-                      <div className="w-[2px] h-3 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-8 w-8 text-[#b5bac1] hover:text-[#ed4245] hover:bg-white/5 rounded"><PhoneOff size={18} /></Button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="secondary" size="icon" onClick={toggleVideo} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isVideoEnabled ? 'bg-[#23a55a] text-white hover:bg-[#1a7f47]' : ''}`} title={isVideoEnabled ? 'Stop Video' : 'Video'}>
-                    {isVideoEnabled ? <VideoOff size={16} /> : <Video size={16} />}
-                  </Button>
-                  <Button variant="secondary" size="icon" onClick={toggleScreenShare} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isScreenSharing ? 'bg-[#23a55a] text-white hover:bg-[#1a7f47]' : ''}`} title={isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}>
-                    <MonitorUp size={16} />
-                  </Button>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* User Panel */}
-          <div className="h-[52px] px-2 flex items-center justify-between shrink-0 relative">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="relative group cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
-                <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
-                  {user?.avatar ? (
-                    <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
-                  ) : (
-                    user?.username[0]
-                  )}
-                </div>
-                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#232428] ${getStatusColor(user?.status)}`} />
-                
-                {showStatusMenu && (
-                  <div className="absolute bottom-12 left-0 w-48 bg-[#232428] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
-                    <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#23a559]" />
-                      <span className="text-xs font-medium text-[#e3e1db]">Online</span>
-                    </div>
-                    <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#f0b232]" />
-                      <span className="text-xs font-medium text-[#e3e1db]">Idle</span>
-                    </div>
-                    <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#f23f43]" />
-                      <span className="text-xs font-medium text-[#e3e1db]">Do Not Disturb</span>
-                    </div>
-                    <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#80848e]" />
-                      <span className="text-xs font-medium text-[#e3e1db]">Invisible</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex flex-col min-w-0 cursor-pointer text-left" onClick={() => setShowUserSettingsModal(true)}>
-                <span className="text-xs font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
-                {isJoined ? (
-                  <span className="text-[10px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
-                    <Volume2 size={10} className="text-[#23a55a] shrink-0" />
-                    In voice
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-[#949ba4] truncate leading-tight font-normal">{user?.status_message || user?.status || 'Online'}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-0.5 shrink-0">
-              {/* Mic Controls */}
-              <div className="flex items-center hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors">
-                <button 
-                  onClick={toggleAudio} 
-                  className={`p-1 rounded transition-colors ${!isAudioEnabled ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
-                  title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
-                >
-                  {isAudioEnabled ? <Mic size={16} /> : <MicOff size={16} />}
-                </button>
-                <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
-              </div>
-
-              {/* Deafen Controls */}
-              <div className="flex items-center hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors">
-                <button 
-                  onClick={toggleDeafen} 
-                  className={`p-1 rounded relative transition-colors ${isDeafened ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
-                  title={isDeafened ? "Undeafen" : "Deafen"}
-                >
-                  <Headphones size={16} />
-                  {isDeafened && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-[1.5px] h-[14px] bg-[#f23f43] rotate-45" />
-                    </div>
-                  )}
-                </button>
-                <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
-              </div>
-
-              {/* Settings Control */}
-              <button 
-                onClick={() => setShowUserSettingsModal(true)} 
-                className="p-1.5 hover:bg-white/5 text-[#dbdee1] hover:text-white rounded transition-colors"
-                title="User Settings"
-              >
-                <Settings size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Bordered Dashboard Layout Container */}
-      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-[12px] border border-[#2d2f31] bg-[#313338] overflow-hidden relative">
         {/* Column 3: Main Chat Content wrapper */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {activeTab === 'home' && activeHomeView === 'friends' ? (
@@ -2468,7 +2334,7 @@ export default function HomePage() {
 
       {/* Members Sidebar */}
       {activeTab === 'server' && currentServer && currentChannel?.type === 'text' && (
-        <div className="w-60 bg-[#1e2022] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31]">
+        <div className="w-60 bg-[#2b2d31] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31]">
           <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0">
             <Users size={20} className="text-[#a3a29e] mr-2" />
             <span className="font-bold text-[#e3e1db]">Members</span>
@@ -2503,7 +2369,7 @@ export default function HomePage() {
 
       {/* DM User Profile Sidebar */}
       {activeTab === 'home' && activeHomeView === 'dm' && activeDmId && showDmProfile && dmUserProfile && (
-        <div className="w-72 bg-[#1e2022] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31] select-none text-left">
+        <div className="w-72 bg-[#2b2d31] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31] select-none text-left">
           {/* Header block (non-scrollable) to prevent avatar clipping */}
           <div className="relative shrink-0">
             <div className="h-16 bg-[#5865f2]" />
@@ -2580,6 +2446,141 @@ export default function HomePage() {
         </div>
       )}
 
+      </div>
+
+      {/* Floating Bottom Card: Unified Voice Connected status and User Panel card spanning both Column 1 and Column 2 */}
+      <div 
+        className="absolute bottom-4 left-2 bg-gradient-to-br from-[#29172e] via-[#241d31] to-[#1e1f22] border border-[#38203d]/60 rounded-[8px] flex flex-col shrink-0 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] overflow-hidden select-none z-20"
+        style={{ width: `${72 + sidebarWidth - 16}px` }}
+      >
+        {/* Ambient glow decoration mimicking custom banner theme */}
+        <div className="absolute bottom-0 right-0 w-[120px] h-[52px] bg-gradient-to-tr from-[#ff7300]/15 via-[#ff00c8]/15 to-[#00ffd5]/15 blur-md pointer-events-none rounded-full transform translate-x-4 translate-y-4 z-0" />
+        
+        {/* Voice Connection Status */}
+        {activeVoiceChannel && (() => {
+          const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
+          const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
+          return (
+            <div className="w-full p-2.5 flex flex-col gap-2 border-b border-[#2d2f31] text-left relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[#23a55a]">
+                  <Volume2 size={20} className="text-[#23a55a] shrink-0" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold leading-tight text-[#23a55a]">Voice Connected</span>
+                    <span className="text-[10px] leading-tight text-[#949ba4] truncate">{voiceSubtitle}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Animated Soundwave Visualizer matching Discord style */}
+                  <div className="flex items-end gap-[2px] h-3.5 px-1 shrink-0">
+                    <div className="w-[2px] h-2 bg-[#23a55a] rounded-full animate-pulse" />
+                    <div className="w-[2px] h-3.5 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-[2px] h-2.5 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                    <div className="w-[2px] h-3 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-8 w-8 text-[#b5bac1] hover:text-[#ed4245] hover:bg-white/5 rounded"><PhoneOff size={18} /></Button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="icon" onClick={toggleVideo} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isVideoEnabled ? 'bg-[#23a55a] text-white hover:bg-[#1a7f47]' : ''}`} title={isVideoEnabled ? 'Stop Video' : 'Video'}>
+                  {isVideoEnabled ? <VideoOff size={16} /> : <Video size={16} />}
+                </Button>
+                <Button variant="secondary" size="icon" onClick={toggleScreenShare} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isScreenSharing ? 'bg-[#23a55a] text-white hover:bg-[#1a7f47]' : ''}`} title={isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}>
+                  <MonitorUp size={16} />
+                </Button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* User Panel */}
+        <div className="h-[52px] px-2 flex items-center justify-between shrink-0 relative z-10">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="relative group cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
+              <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
+                {user?.avatar ? (
+                  <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
+                ) : (
+                  user?.username[0]
+                )}
+              </div>
+              <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#251930] ${getStatusColor(user?.status)}`} />
+              
+              {showStatusMenu && (
+                <div className="absolute bottom-12 left-0 w-48 bg-[#232428] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
+                  <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#23a559]" />
+                    <span className="text-xs font-medium text-[#e3e1db]">Online</span>
+                  </div>
+                  <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#f0b232]" />
+                    <span className="text-xs font-medium text-[#e3e1db]">Idle</span>
+                  </div>
+                  <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#f23f43]" />
+                    <span className="text-xs font-medium text-[#e3e1db]">Do Not Disturb</span>
+                  </div>
+                  <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#80848e]" />
+                    <span className="text-xs font-medium text-[#e3e1db]">Invisible</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex flex-col min-w-0 cursor-pointer text-left" onClick={() => setShowUserSettingsModal(true)}>
+              <span className="text-xs font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
+              {isJoined ? (
+                <span className="text-[10px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
+                  <Volume2 size={10} className="text-[#23a55a] shrink-0" />
+                  In voice
+                </span>
+              ) : (
+                <span className="text-[10px] text-[#949ba4] truncate leading-tight font-normal">{user?.status_message || user?.status || 'Online'}</span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-0.5 shrink-0">
+            {/* Mic Controls */}
+            <div className="flex items-center hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors">
+              <button 
+                onClick={toggleAudio} 
+                className={`p-1 rounded transition-colors ${!isAudioEnabled ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
+                title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
+              >
+                {isAudioEnabled ? <Mic size={16} /> : <MicOff size={16} />}
+              </button>
+              <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
+            </div>
+
+            {/* Deafen Controls */}
+            <div className="flex items-center hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors">
+              <button 
+                onClick={toggleDeafen} 
+                className={`p-1 rounded relative transition-colors ${isDeafened ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
+                title={isDeafened ? "Undeafen" : "Deafen"}
+              >
+                <Headphones size={16} />
+                {isDeafened && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[1.5px] h-[14px] bg-[#f23f43] rotate-45" />
+                  </div>
+                )}
+              </button>
+              <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
+            </div>
+
+            {/* Settings Control */}
+            <button 
+              onClick={() => setShowUserSettingsModal(true)} 
+              className="p-1.5 hover:bg-white/5 text-[#dbdee1] hover:text-white rounded transition-colors"
+              title="User Settings"
+            >
+              <Settings size={16} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Modals... */}

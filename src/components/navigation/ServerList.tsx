@@ -41,7 +41,7 @@ export const ServerList = React.memo(function ServerList({
   const dmsUnread = notifications.dms.reduce((acc, curr) => acc + curr.unread_count, 0)
 
   return (
-    <div className={`w-[72px] bg-[#1e1f22] flex flex-col items-center py-3 gap-1 overflow-y-auto no-scrollbar shrink-0 border-none ${isVoiceConnected ? 'pb-[160px]' : 'pb-[68px]'}`}>
+    <div className={`w-[72px] bg-transparent flex flex-col items-center py-3 gap-1 overflow-y-auto no-scrollbar shrink-0 border-none ${isVoiceConnected ? 'pb-[170px]' : 'pb-[80px]'}`}>
       {/* Home / DMs Item */}
       <div className="relative flex items-center justify-center w-full group py-0.5">
         {/* Left accent pill */}
