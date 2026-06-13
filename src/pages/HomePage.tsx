@@ -1076,31 +1076,36 @@ export default function HomePage() {
         <RemoteStream key={peerId} stream={stream} />
       ))}
 
-      {/* Server Sidebar */}
-      <ServerList
-        servers={servers}
-        currentServer={currentServer}
-        activeTab={activeTab}
-        notifications={notifications}
-        goHome={goHome}
-        onSelectServer={(server) => {
-          setCurrentServer(server);
-          setActiveTab('server');
-        }}
-        onAddServer={() => setShowCreateServerModal(true)}
-        sendTypingStatus={sendTypingStatus}
-      />
-
-      {/* Secondary Sidebar */}
+      {/* Combined Left Panel Container */}
       <div 
-        style={{ width: `${sidebarWidth}px` }}
-        className="relative bg-[#1e2022] flex flex-col overflow-hidden shrink-0 border-r border-[#2d2f31]"
+        style={{ width: `${72 + sidebarWidth}px` }}
+        className="relative flex flex-col h-full overflow-hidden shrink-0 border-r border-[#2d2f31]"
       >
-        {/* Resize handle */}
+        {/* Resize handle on the absolute right of the combined panel */}
         <div 
           onMouseDown={handleMouseDown}
           className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-[#bc9f84]/30 active:bg-[#bc9f84]/50 z-30 transition-colors"
         />
+
+        {/* Top split area */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Server Sidebar */}
+          <ServerList
+            servers={servers}
+            currentServer={currentServer}
+            activeTab={activeTab}
+            notifications={notifications}
+            goHome={goHome}
+            onSelectServer={(server) => {
+              setCurrentServer(server);
+              setActiveTab('server');
+            }}
+            onAddServer={() => setShowCreateServerModal(true)}
+            sendTypingStatus={sendTypingStatus}
+          />
+
+          {/* Secondary Sidebar */}
+          <div className="flex-1 bg-[#1e2022] flex flex-col overflow-hidden">
         <SidebarHeader
           activeTab={activeTab}
           currentServer={currentServer}
@@ -1411,8 +1416,10 @@ export default function HomePage() {
             </div>
           ) : null}
         </div>
+      </div>
+    </div>
 
-        {/* Voice Connection Status */}
+    {/* Voice Connection Status */}
         {activeVoiceChannel && (() => {
           const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
           const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
