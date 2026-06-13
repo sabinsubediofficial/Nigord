@@ -2911,7 +2911,7 @@ function MessageItem({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   return (
-    <div className={`flex flex-col group message-group-container relative hover:bg-[#2e3035] -mx-4 px-4 transition-colors duration-100 ease-in-out ${isGrouped ? 'py-[2px] mt-[2px]' : 'py-1.5 mt-3'}`}>
+    <div className={`flex flex-col group message-group-container relative hover:bg-[#2e3035] -mx-4 px-4 transition-colors duration-100 ease-in-out ${isGrouped ? 'py-[1px] mt-0' : 'py-1 mt-3'}`}>
       {/* Reply header */}
       {msg.reply_to_id && (
         <div className="flex items-center gap-1.5 text-xs text-[#b5bac1] ml-14 mb-1 select-none">
@@ -2924,7 +2924,7 @@ function MessageItem({
       <div className="flex gap-4">
         {isGrouped ? (
           /* Gutter placeholder with hover timestamp */
-          <div className="w-10 shrink-0 select-none flex items-center justify-center text-[9px] text-[#949ba4] opacity-0 group-hover:opacity-100 pr-1 h-5 mt-0.5 font-medium">
+          <div className="w-10 shrink-0 select-none flex items-center justify-center text-[9px] text-[#949ba4] opacity-0 group-hover:opacity-100 pr-1 font-medium h-4 mt-0.5">
             {new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M$/i, '')}
           </div>
         ) : (
