@@ -95,13 +95,16 @@ export const useServerSettings = (serverId?: string) => {
         method: 'POST',
         credentials: 'include'
       })
+      const data = await res.json()
       if (res.ok) {
-        return await res.json()
+        return data
+      } else {
+        return { error: data.error || "Failed to join server" }
       }
     } catch (e) {
       console.error(e)
+      return { error: "Failed to join server due to network error." }
     }
-    return null
   }
 
   useEffect(() => {

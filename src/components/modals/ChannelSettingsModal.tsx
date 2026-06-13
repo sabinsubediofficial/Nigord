@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, Trash2 } from "lucide-react"
@@ -26,6 +26,22 @@ export default function ChannelSettingsModal({
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showConfirmDelete) {
+          setShowConfirmDelete(false)
+        } else {
+          if (!saving && !deleting) {
+            onClose()
+          }
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [onClose, saving, deleting, showConfirmDelete])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()

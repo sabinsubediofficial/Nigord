@@ -1,21 +1,35 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useServerSettings } from "@/hooks/useServerSettings"
 import { useFriends } from "@/hooks/useFriends"
 import { useDMs } from "@/hooks/useDMs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, Copy, Check, Search } from "lucide-react"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, getFileUrl } from "@/lib/api"
 
 export default function InviteModal({ serverId, onClose }: { serverId: string, onClose: () => void }) {
   const { createInvite } = useServerSettings(serverId)
   const { friends } = useFriends()
-  const { dms, sendMessage } = useDMs()
+  const { dms, sendMessage, fetchDMs } = useDMs()
   const [inviteLink, setInviteLink] = useState("")
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [invitedFriends, setInvitedFriends] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose()
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [onClose])
+
+  useEffect(() => {
+    handleGenerate()
+  }, [])
 
   const handleGenerate = async () => {
     setLoading(true)
@@ -39,21 +53,33 @@ export default function InviteModal({ serverId, onClose }: { serverId: string, o
       if (code) {
         currentInvite = `${window.location.origin}/invite/${code}`
         setInviteLink(currentInvite)
-      } else return
+      } else {
+        alert("Failed to generate server invite link. Please try again.")
+        return
+      }
     }
 
     // Find DM channel for this friend
-    const dm = dms.find(d => d.target_id === friend.id)
+    let dm = dms.find(d => d.target_id === friend.id)
+    if (!dm) {
+      const latestDms = await fetchDMs()
+      dm = latestDms?.find((d: any) => d.target_id === friend.id)
+    }
+
     if (dm) {
-      // In a real app, this would be a special "Invite" message type
-      // For now, we send a clear text message
-      await apiFetch(`/dms/${dm.id}/messages`, {
+      const res = await apiFetch(`/dms/${dm.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: `Hey! Join my server: ${currentInvite}` }),
         credentials: 'include'
       })
-      setInvitedFriends(prev => ({ ...prev, [friend.id]: true }))
+      if (res.ok) {
+        setInvitedFriends(prev => ({ ...prev, [friend.id]: true }))
+      } else {
+        alert("Failed to send invite message. Please try again.")
+      }
+    } else {
+      alert("No direct message channel found for this friend. Please message them first to open a chat.")
     }
   }
 
@@ -87,8 +113,12 @@ export default function InviteModal({ serverId, onClose }: { serverId: string, o
           {filteredFriends.map(friend => (
             <div key={friend.id} className="flex items-center justify-between p-2 rounded hover:bg-[#35373c] group">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#5865f2] flex items-center justify-center text-white font-bold uppercase">
-                  {friend.username[0]}
+                <div className="w-8 h-8 rounded-full bg-[#5865f2] flex items-center justify-center text-white font-bold uppercase overflow-hidden">
+                  {friend.avatar ? (
+                    <img src={getFileUrl(friend.avatar)} alt={friend.username} className="w-full h-full object-cover" />
+                  ) : (
+                    friend.username[0]
+                  )}
                 </div>
                 <span className="font-medium text-[#dbdee1]">{friend.username}</span>
               </div>

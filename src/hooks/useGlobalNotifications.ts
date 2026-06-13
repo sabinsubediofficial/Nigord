@@ -3,7 +3,7 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { apiFetch } from "@/lib/api"
 
 export interface GlobalNotifications {
-  servers: { server_id: string, unread_count: number }[]
+  servers: { server_id: string, channel_id: string, unread_count: number }[]
   dms: { channel_id: string, unread_count: number }[]
 }
 
@@ -22,8 +22,8 @@ export const useGlobalNotifications = () => {
         
         // Filter out unreads for the channel/DM the user is currently LOOKING at
         // This prevents sound from playing for the conversation you are active in
-        const relevantServers = data.servers.filter((s: any) => s.channel_id !== activeChannelId)
-        const relevantDms = data.dms.filter((d: any) => d.channel_id !== activeDmId)
+        const relevantServers = data.servers.filter((s: { channel_id: string }) => s.channel_id !== activeChannelId)
+        const relevantDms = data.dms.filter((d: { channel_id: string }) => d.channel_id !== activeDmId)
 
         const currentTotal = [...relevantServers, ...relevantDms].reduce((acc, curr) => acc + curr.unread_count, 0)
         

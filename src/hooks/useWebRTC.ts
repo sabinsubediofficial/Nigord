@@ -39,6 +39,7 @@ export const useWebRTC = (channelId?: string) => {
   const screenStreamRef = useRef<MediaStream | null>(null)
   const pendingCandidates = useRef<Record<string, any[]>>({})
   const audioContextRef = useRef<AudioContext | null>(null)
+  const callTimeoutRef = useRef<any>(null)
   const rawStreamRef = useRef<MediaStream | null>(null)
   
   const activeChannelIdRef = useRef<string | null>(null)
@@ -48,11 +49,27 @@ export const useWebRTC = (channelId?: string) => {
 
   const analysers = useRef<Record<string, AnalyserNode>>({})
   const checkSpeakingInterval = useRef<any>(null)
+  const mainStreamIds = useRef<Record<string, string>>({})
+  const isDeafenedRef = useRef(false)
 
   // Tracking refs for call log updates
   const isDmCall = useRef(false)
   const dmChannelIdRef = useRef<string | null>(null)
   const callConnectTime = useRef<number | null>(null)
+
+  const clearCallTimeout = () => {
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current)
+      callTimeoutRef.current = null
+    }
+  }
+
+  const setCallTimeout = (action: () => void) => {
+    clearCallTimeout()
+    callTimeoutRef.current = setTimeout(() => {
+      action()
+    }, 30000)
+  }
 
   const sendSystemMessage = async (channelId: string, content: string) => {
     try {
@@ -93,8 +110,15 @@ export const useWebRTC = (channelId?: string) => {
   const monitorStream = (userId: string, stream: MediaStream) => {
     try {
       if (stream.getAudioTracks().length === 0) return
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-      const ctx = new AudioContextClass()
+      if (analysers.current[userId]) return
+      
+      let ctx = audioContextRef.current
+      if (!ctx || ctx.state === 'closed') {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+        ctx = new AudioContextClass()
+        audioContextRef.current = ctx
+      }
+      
       const source = ctx.createMediaStreamSource(stream)
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 512
@@ -121,6 +145,9 @@ export const useWebRTC = (channelId?: string) => {
     if (analysers.current[targetId]) {
       delete analysers.current[targetId]
     }
+    if (mainStreamIds.current[targetId]) {
+      delete mainStreamIds.current[targetId]
+    }
   }
 
   const syncStatus = async () => {
@@ -146,8 +173,13 @@ export const useWebRTC = (channelId?: string) => {
   }, [isAudioEnabled, isDeafened, isJoined, channelId])
 
   useEffect(() => {
+    isDeafenedRef.current = isDeafened
+  }, [isDeafened])
+
+  useEffect(() => {
     return () => {
       stopRingtone()
+      clearCallTimeout()
       // Stop all camera and mic tracks on unmount
       streamRef.current?.getTracks().forEach(track => track.stop())
       rawStreamRef.current?.getTracks().forEach(track => track.stop())
@@ -158,6 +190,15 @@ export const useWebRTC = (channelId?: string) => {
       screenStreamRef.current?.getTracks().forEach(track => track.stop())
       // Close all WebRTC peer connections on unmount
       Object.values(pcs.current).forEach(pc => pc.close())
+      
+      const targetChannelId = activeChannelIdRef.current
+      if (targetChannelId) {
+        fetch(`${API_BASE}/channels/${targetChannelId}/voice/leave`, {
+          method: 'POST',
+          credentials: 'include',
+          keepalive: true
+        }).catch(() => {})
+      }
     }
   }, [])
 
@@ -222,6 +263,11 @@ export const useWebRTC = (channelId?: string) => {
     })
 
     stream.getTracks().forEach(track => pc.addTrack(track, stream))
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => {
+        pc.addTrack(track, screenStreamRef.current!)
+      })
+    }
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
@@ -242,11 +288,29 @@ export const useWebRTC = (channelId?: string) => {
     }
 
     pc.ontrack = (event) => {
+      const remoteStream = event.streams[0]
+      if (!remoteStream) return
+
+      if (!mainStreamIds.current[targetId]) {
+        mainStreamIds.current[targetId] = remoteStream.id
+      }
+
+      const isScreenTrack = remoteStream.id !== mainStreamIds.current[targetId]
+      const streamKey = isScreenTrack ? `${targetId}-screen` : targetId
+
       setRemoteStreams(prev => ({
         ...prev,
-        [targetId]: event.streams[0]
+        [streamKey]: remoteStream
       }))
-      monitorStream(targetId, event.streams[0])
+
+      if (!isScreenTrack) {
+        if (isDeafenedRef.current) {
+          remoteStream.getAudioTracks().forEach(track => {
+            track.enabled = false
+          })
+        }
+        monitorStream(targetId, remoteStream)
+      }
     }
 
     // Handle negotiation needed
@@ -317,6 +381,7 @@ export const useWebRTC = (channelId?: string) => {
     const targetChannelId = activeChannelIdRef.current || channelId
     if (!targetChannelId || !isJoinedRef.current) return
     isJoinedRef.current = false
+    clearCallTimeout()
     
     // Notify all peers that we are leaving instantly
     Object.keys(pcs.current).forEach(targetId => {
@@ -340,6 +405,7 @@ export const useWebRTC = (channelId?: string) => {
     setRemoteStreams({})
     analysers.current = {}
     setSpeakingUsers({})
+    mainStreamIds.current = {}
 
     await apiFetch(`/channels/${targetChannelId}/voice/leave`, {
       method: 'POST',
@@ -474,6 +540,10 @@ export const useWebRTC = (channelId?: string) => {
     setOutgoingCall({ targetId, targetName, channelId: dmChannelId, isVideo: withVideo })
     startRingtone('/sounds/outgoing-ring.mp3')
     
+    setCallTimeout(async () => {
+      await cancelCall()
+    })
+
     await sendSignal(targetId, 'call-invite', {
       channelId: dmChannelId,
       isVideo: withVideo,
@@ -483,6 +553,7 @@ export const useWebRTC = (channelId?: string) => {
   }
 
   const cancelCall = async () => {
+    clearCallTimeout()
     if (!outgoingCallRef.current) return
     const { targetId } = outgoingCallRef.current
     setOutgoingCall(null)
@@ -492,6 +563,7 @@ export const useWebRTC = (channelId?: string) => {
   }
 
   const acceptCall = async () => {
+    clearCallTimeout()
     if (!incomingCallRef.current) return
     const { callerId, channelId, isVideo } = incomingCallRef.current
     isDmCall.current = true
@@ -504,6 +576,7 @@ export const useWebRTC = (channelId?: string) => {
   }
 
   const declineCall = async () => {
+    clearCallTimeout()
     if (!incomingCallRef.current) return
     const { callerId, channelId } = incomingCallRef.current
     setIncomingCall(null)
@@ -559,7 +632,7 @@ export const useWebRTC = (channelId?: string) => {
 
         for (const signal of signals) {
           const { from_id, type, data } = signal
-            if (type === 'call-invite') {
+          if (type === 'call-invite') {
             if (!isJoinedRef.current && !incomingCallRef.current && !outgoingCallRef.current) {
               setIncomingCall({
                 callerId: from_id,
@@ -570,13 +643,19 @@ export const useWebRTC = (channelId?: string) => {
               isDmCall.current = true
               dmChannelIdRef.current = data.channelId
               startRingtone('/sounds/incoming-ring.mp3')
+
+              setCallTimeout(async () => {
+                await declineCall()
+              })
             } else {
               sendSignal(from_id, 'call-decline', {}).catch(() => {})
             }
           } else if (type === 'call-cancel') {
+            clearCallTimeout()
             setIncomingCall(null)
             stopRingtone()
           } else if (type === 'call-accept') {
+            clearCallTimeout()
             stopRingtone()
             const callConfig = outgoingCallRef.current
             setOutgoingCall(null)
@@ -584,6 +663,7 @@ export const useWebRTC = (channelId?: string) => {
               await join(callConfig.isVideo, callConfig.channelId)
             }
           } else if (type === 'call-decline') {
+            clearCallTimeout()
             setOutgoingCall(null)
             stopRingtone()
             playSound('/sounds/deconnected.mp3')

@@ -21,6 +21,8 @@ import ServerSettingsModal from "@/components/modals/ServerSettingsModal"
 import UserSettingsModal from "@/components/modals/UserSettingsModal"
 import ChannelSettingsModal from "@/components/modals/ChannelSettingsModal"
 import MessageContent from "@/components/MessageContent"
+import { ServerList } from "@/components/navigation/ServerList"
+import { SidebarHeader } from "@/components/navigation/SidebarHeader"
 import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal } from "lucide-react"
 
 export default function HomePage() {
@@ -146,7 +148,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   const { friends, searchResults, searchUsers, sendRequest, acceptRequest, removeFriend, blockUser } = useFriends()
-  const { dms, messages: dmMessages, setMessages: setDmMessages, sendMessage: sendDmMessage, fetchMessages: fetchDmMessages, fetchMoreMessages: fetchMoreDmMessages, hasMore: dmHasMore, isLoadingMore: dmLoadingMore } = useDMs(activeDmId || undefined)
+  const { dms, messages: dmMessages, setMessages: setDmMessages, sendMessage: sendDmMessage, fetchMessages: fetchDmMessages, fetchMoreMessages: fetchMoreDmMessages, hasMore: dmHasMore, isLoadingMore: dmLoadingMore, fetchDMs } = useDMs(activeDmId || undefined)
   const { unreads } = useNotifications(currentServer?.id)
   const { searchResults: msgSearchResults, searchMessages, isSearching, setSearchResults: setMsgSearchResults } = useSearch(currentServer?.id)
   const { notifications, fetchNotifications } = useGlobalNotifications()
@@ -191,7 +193,7 @@ export default function HomePage() {
         || members.find(m => m.id === actualUserId) 
         || dms.find(d => d.target_id === actualUserId)
         || { username: 'Unknown' };
-      const hasVideo = stream.getVideoTracks().length > 0;
+      const hasVideo = stream.getVideoTracks().some(track => track.enabled && !track.muted && track.readyState !== 'ended');
       const isMuted = voiceParticipants.find(p => p.user_id === actualUserId)?.is_muted === 1;
       const isDeaf = voiceParticipants.find(p => p.user_id === actualUserId)?.is_deafened === 1;
       return {
@@ -326,6 +328,10 @@ export default function HomePage() {
       return () => clearTimeout(timer)
     }
   }, [toast])
+
+  useEffect(() => {
+    setTypingUsers([])
+  }, [currentChannel?.id, activeDmId])
 
   const fetchPins = async () => {
     const isDm = activeTab === 'home'
@@ -551,6 +557,10 @@ export default function HomePage() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
+      if (file.size > 25 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Maximum size allowed is 25MB.`)
+        continue
+      }
       const formData = new FormData()
       formData.append('file', file)
 
@@ -673,6 +683,28 @@ export default function HomePage() {
         if (data.permissions) {
           setPermissions(data.permissions)
         }
+        if (data.channels) {
+          setChannels(data.channels)
+          
+          if (currentChannel && currentChannel.server_id === serverId) {
+            const currentStillExists = data.channels.some((c: any) => c.id === currentChannel.id)
+            if (!currentStillExists) {
+              const textChans = data.channels.filter((c: any) => c.type === 'text')
+              if (textChans.length > 0) {
+                setCurrentChannel(textChans[0])
+              } else {
+                setCurrentChannel(null)
+              }
+            }
+          }
+          
+          if (activeVoiceChannel && activeVoiceChannel.server_id === serverId) {
+            const voiceStillExists = data.channels.some((c: any) => c.id === activeVoiceChannel.id)
+            if (!voiceStillExists) {
+              await handleLeaveVoice()
+            }
+          }
+        }
       }
     } catch (e) {
       console.error(e)
@@ -686,6 +718,8 @@ export default function HomePage() {
       if (res.ok) {
         const data = await res.json()
         setVoiceParticipants(data.participants)
+      } else if (res.status === 404) {
+        await handleLeaveVoice()
       }
     } catch (e) {
       console.error(e)
@@ -991,6 +1025,26 @@ export default function HomePage() {
     }
   }
 
+  const handleLeaveServer = async () => {
+    if (!currentServer) return;
+    if (window.confirm("Are you sure you want to leave this server?")) {
+      try {
+        const res = await apiFetch(`/servers/${currentServer.id}/leave`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          const data = await res.json();
+          alert(data.error || "Failed to leave server");
+        }
+      } catch (err) {
+        alert("Failed to leave server due to network error.");
+      }
+    }
+  }
+
   const textChannels = channels.filter(c => c.type === 'text')
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
@@ -1001,135 +1055,33 @@ export default function HomePage() {
       ))}
 
       {/* Server Sidebar */}
-      <div className="w-[72px] obsidian-card flex flex-col items-center py-3 gap-2 overflow-y-auto no-scrollbar shrink-0 border-none">
-        <div 
-          onClick={goHome}
-          className={`w-12 h-12 rounded-[24px] hover:rounded-[16px] transition-all flex items-center justify-center text-[#e3e1db] cursor-pointer group mb-2 relative ${activeTab === 'home' ? 'bg-[#bc9f84] text-[#141517] rounded-[16px]' : 'bg-[#2d2f31] hover:bg-[#bc9f84] hover:text-[#141517]'}`}
-        >
-          <div className={`absolute left-0 bg-white rounded-r-full transition-all origin-left ${activeTab === 'home' ? 'h-10 scale-y-100' : 'h-5 scale-y-0 group-hover:scale-y-50'}`} style={{ width: '4px' }} />
-          <MessageSquare size={24} />
-          {notifications.dms.reduce((acc, curr) => acc + curr.unread_count, 0) > 0 && (
-            <div className="absolute -bottom-1 -right-1 bg-[#f23f43] text-white text-[10px] font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border-4 border-[#1e1f22] ring-0">
-              {notifications.dms.reduce((acc, curr) => acc + curr.unread_count, 0)}
-            </div>
-          )}
-        </div>
-        <div className="w-8 h-[2px] bg-[#2d2f31] rounded-full mb-2" />
-        {servers.map((server) => {
-          const unreadCount = notifications.servers.find(s => s.server_id === server.id)?.unread_count || 0;
-          return (
-          <div 
-            key={server.id} 
-            onClick={() => { sendTypingStatus(false); setCurrentServer(server); setActiveTab('server'); }} 
-            className={`w-12 h-12 rounded-[24px] hover:rounded-[16px] transition-all flex items-center justify-center text-white cursor-pointer group relative mb-2 ${activeTab === 'server' && currentServer?.id === server.id ? 'rounded-[16px] bg-[#bc9f84] text-[#141517]' : 'bg-[#2d2f31] hover:bg-[#bc9f84] hover:text-[#141517]'}`}
-          >
-            <div className={`absolute left-0 bg-[#e3e1db] rounded-r-full transition-all origin-left ${activeTab === 'server' && currentServer?.id === server.id ? 'h-10 scale-y-100' : (unreadCount > 0 ? 'h-2 scale-y-100' : 'h-5 scale-y-0 group-hover:scale-y-50')}`} style={{ width: '4px' }} />
-            {server.icon ? (
-              <img 
-                src={getFileUrl(server.icon)} 
-                alt={server.name} 
-                className="w-full h-full object-cover rounded-[inherit] transition-all"
-              />
-            ) : (
-              <span className="text-sm font-medium">{server.name.substring(0, 2).toUpperCase()}</span>
-            )}
-            {unreadCount > 0 && (
-              <div className="absolute -bottom-1 -right-1 bg-[#bc9f84] text-[#141517] text-[10px] font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border-4 border-[#1e2022] ring-0">
-                {unreadCount}
-              </div>
-            )}
-          </div>
-        )})}
-        <div onClick={() => setShowCreateServerModal(true)} className="w-12 h-12 bg-[#2d2f31] rounded-[24px] hover:rounded-[16px] transition-all flex items-center justify-center text-[#bc9f84] hover:bg-[#bc9f84] hover:text-[#141517] cursor-pointer group mb-2">
-          <Plus size={24} />
-        </div>
-      </div>
+      <ServerList
+        servers={servers}
+        currentServer={currentServer}
+        activeTab={activeTab}
+        notifications={notifications}
+        goHome={goHome}
+        onSelectServer={(server) => {
+          setCurrentServer(server);
+          setActiveTab('server');
+        }}
+        onAddServer={() => setShowCreateServerModal(true)}
+        sendTypingStatus={sendTypingStatus}
+      />
 
       {/* Secondary Sidebar */}
       <div className="w-60 obsidian-card flex flex-col overflow-hidden shrink-0 border-none">
-        <div 
-          className="relative flex flex-col justify-end group cursor-pointer hover:bg-[#2d2f31]/30 transition-all duration-200 border-b border-[#2d2f31] shrink-0 select-none" 
-          style={{ height: activeTab === 'server' && currentServer?.banner ? '120px' : '48px' }}
-          onClick={() => activeTab === 'server' && setShowServerMenu(!showServerMenu)}
-        >
-          {activeTab === 'server' && currentServer?.banner && (
-            <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none rounded-t-lg">
-              <img 
-                src={getFileUrl(currentServer.banner)} 
-                className="w-full h-full object-cover brightness-[0.5] group-hover:brightness-[0.6] transition-all duration-200" 
-                alt="" 
-              />
-            </div>
-          )}
-          <div className="flex items-center px-4 h-12 w-full relative z-10">
-            {activeTab === 'server' && currentServer?.icon && (
-              <img 
-                src={getFileUrl(currentServer.icon)} 
-                className="w-5 h-5 rounded-full object-cover mr-2 border border-[#2d2f31]" 
-                alt="" 
-              />
-            )}
-            <h2 className="font-bold truncate flex-1 text-[#e3e1db] transition-colors group-hover:text-white drop-shadow-md">
-              {activeTab === 'server' ? currentServer?.name : "Find or start a conversation"}
-            </h2>
-            {activeTab === 'server' && (
-              <ChevronDown 
-                size={18} 
-                className={`text-[#a3a29e] shrink-0 transition-transform duration-200 drop-shadow-md ${showServerMenu ? 'rotate-180 text-white' : ''}`} 
-              />
-            )}
-          </div>
-          
-          {showServerMenu && activeTab === 'server' && (
-            <div className="absolute top-[52px] left-2 right-2 bg-[#1e2022]/95 backdrop-blur-md rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.6)] border border-[#2d2f31]/80 p-1.5 z-50 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-150 ease-out">
-              <div 
-                className="flex items-center justify-between p-2 rounded-md text-[#bc9f84] hover:bg-[#bc9f84] hover:text-[#141517] cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
-                onClick={(e) => { e.stopPropagation(); setShowServerMenu(false); setShowInviteModal(true); }}
-              >
-                <span className="text-xs font-semibold">Invite People</span>
-                <UserPlus size={15} />
-              </div>
-              {(currentServer?.owner_id === user?.id || (currentServer as any).permissions?.includes('ADMINISTRATOR')) && (
-                <div 
-                  className="flex items-center justify-between p-2 rounded-md text-[#a3a29e] hover:bg-[#bc9f84] hover:text-[#141517] cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
-                  onClick={(e) => { e.stopPropagation(); setShowServerMenu(false); setShowServerSettingsModal(true); }}
-                >
-                  <span className="text-xs font-semibold">Server Settings</span>
-                  <Settings size={15} />
-                </div>
-              )}
-              {currentServer?.owner_id !== user?.id && (
-                <div 
-                  className="flex items-center justify-between p-2 rounded-md text-red-400 hover:bg-red-500/20 cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    if (!currentServer) return;
-                    setShowServerMenu(false);
-                    if (window.confirm("Are you sure you want to leave this server?")) {
-                      try {
-                        const res = await apiFetch(`/servers/${currentServer.id}/leave`, {
-                          method: 'POST',
-                          credentials: 'include'
-                        });
-                        if (res.ok) {
-                          window.location.reload();
-                        } else {
-                          const data = await res.json();
-                          alert(data.error || "Failed to leave server");
-                        }
-                      } catch (err) {
-                        alert("Failed to leave server due to network error.");
-                      }
-                    }
-                  }}
-                >
-                  <span className="text-xs font-semibold">Leave Server</span>
-                  <LogOut size={15} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <SidebarHeader
+          activeTab={activeTab}
+          currentServer={currentServer}
+          showServerMenu={showServerMenu}
+          setShowServerMenu={setShowServerMenu}
+          setShowInviteModal={setShowInviteModal}
+          setShowServerSettingsModal={setShowServerSettingsModal}
+          onLeaveServer={handleLeaveServer}
+          isOwner={currentServer?.owner_id === user?.id}
+          isAdmin={!!(currentServer as any)?.permissions?.includes('ADMINISTRATOR')}
+        />
         
         <div className="flex-1 overflow-y-auto p-2 no-scrollbar">
           {activeTab === 'home' ? (
@@ -1152,8 +1104,12 @@ export default function HomePage() {
                     className={`flex items-center gap-3 p-2 rounded cursor-pointer group relative ${activeHomeView === 'dm' && activeDmId === dm.id ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
                   >
                     <div className="relative shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638]">
-                        {dm.name[0]}
+                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
+                        {dm.avatar ? (
+                          <img src={getFileUrl(dm.avatar)} alt={dm.name} className="w-full h-full object-cover" />
+                        ) : (
+                          dm.name[0]
+                        )}
                       </div>
                       {dm.active_call && dm.active_call > 0 ? (
                         <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#bc9f84] border border-[#1e2022] flex items-center justify-center text-[#141517]">
@@ -1450,8 +1406,12 @@ export default function HomePage() {
         {/* User Panel */}
         <div className="h-[54px] bg-[#141517] border-t border-[#2d2f31] px-2 flex items-center gap-2 shrink-0 relative">
           <div className="relative group cursor-pointer" onClick={() => setShowStatusMenu(!showStatusMenu)}>
-            <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shrink-0 border border-[#343638]">
-              {user?.username[0]}
+            <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shrink-0 border border-[#343638] overflow-hidden">
+              {user?.avatar ? (
+                <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
+              ) : (
+                user?.username[0]
+              )}
             </div>
             <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#141517] ${getStatusColor(user?.status)}`} />
             
@@ -1518,7 +1478,7 @@ export default function HomePage() {
               <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'all' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('all')}>All</Button>
               <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'pending' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('pending')}>Pending</Button>
               <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'blocked' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('blocked')}>Blocked</Button>
-              <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'add' ? 'text-[#bc9f84] bg-transparent hover:bg-transparent' : 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold'}`} onClick={() => setFriendsFilter('add')}>Add Friend</Button>
+              <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'add' ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold' : 'text-[#bc9f84] bg-transparent hover:bg-[#2d2f31]/50'}`} onClick={() => setFriendsFilter('add')}>Add Friend</Button>
             </div>
             
             <div className="flex-1 p-6 overflow-y-auto">
@@ -1538,7 +1498,13 @@ export default function HomePage() {
                       {searchResults.map(u => (
                         <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2d2f31] bg-[#1e2022]">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638]">{u.username?.[0] || '?'}</div>
+                            <div className="w-10 h-10 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638] overflow-hidden">
+                              {u.avatar ? (
+                                <img src={getFileUrl(u.avatar)} alt={u.username} className="w-full h-full object-cover" />
+                              ) : (
+                                u.username?.[0] || '?'
+                              )}
+                            </div>
                             <span className="font-bold text-[#e3e1db]">{u.username}</span>
                           </div>
                           <Button size="sm" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]" onClick={async () => { const ok = await sendRequest(u.id); if (ok) showToast("Friend request sent!"); }}>Send Request</Button>
@@ -1558,7 +1524,13 @@ export default function HomePage() {
                     <div key={friend.id} className="flex items-center justify-between p-3 rounded-lg border-b border-[#2d2f31]/40 hover:bg-[#2d2f31]/30 group cursor-pointer" onClick={() => setSelectedUserProfileId(friend.id)}>
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638]">{friend.username[0]}</div>
+                          <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638] overflow-hidden">
+                            {friend.avatar ? (
+                              <img src={getFileUrl(friend.avatar)} alt={friend.username} className="w-full h-full object-cover" />
+                            ) : (
+                              friend.username[0]
+                            )}
+                          </div>
                           {friend.status === 'accepted' && (
                             <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-[#1e2022] ${getStatusColor(friend.presence_status)}`} />
                           )}
@@ -1574,7 +1546,16 @@ export default function HomePage() {
                       <div className="flex gap-2">
                         {friend.status === 'pending' && friend.direction === 'incoming' && (
                           <>
-                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => acceptRequest(friend.id)} title="Accept"><Check size={16} /></Button>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={async () => {
+                              const success = await acceptRequest(friend.id)
+                              if (success) {
+                                const latestDms = await fetchDMs()
+                                const newDm = latestDms?.find((d: any) => d.target_id === friend.id)
+                                if (newDm) {
+                                  openDm(newDm.id)
+                                }
+                              }
+                            }} title="Accept"><Check size={16} /></Button>
                             <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => removeFriend(friend.id)} title="Decline"><XIcon size={16} /></Button>
                           </>
                         )}
@@ -1583,9 +1564,17 @@ export default function HomePage() {
                         )}
                         {friend.status === 'accepted' && (
                           <>
-                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => {
-                              const existingDm = dms.find(d => d.target_id === friend.id)
-                              if (existingDm) openDm(existingDm.id)
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={async () => {
+                              let existingDm = dms.find(d => d.target_id === friend.id)
+                              if (!existingDm) {
+                                const latestDms = await fetchDMs()
+                                existingDm = latestDms?.find((d: any) => d.target_id === friend.id)
+                              }
+                              if (existingDm) {
+                                openDm(existingDm.id)
+                              } else {
+                                alert("Failed to find or create DM channel. Please try again.")
+                              }
                             }} title="Message"><MessageSquare size={16} /></Button>
                             <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => removeFriend(friend.id)} title="Remove Friend"><UserMinus size={16} /></Button>
                             <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => blockUser(friend.id)} title="Block User"><Ban size={16} /></Button>
@@ -1847,15 +1836,20 @@ export default function HomePage() {
                         <Input 
                           value={dmMessageContent} 
                           onChange={(e) => {
-                            setDmMessageContent(e.target.value);
-                            const now = Date.now();
-                            if (now - lastTypingSentRef.current > 3000) {
-                              lastTypingSentRef.current = now;
-                              sendTypingStatus(true);
+                            const val = e.target.value;
+                            setDmMessageContent(val);
+                            if (!val.trim()) {
+                              sendTypingStatus(false);
+                            } else {
+                              const now = Date.now();
+                              if (now - lastTypingSentRef.current > 3000) {
+                                lastTypingSentRef.current = now;
+                                sendTypingStatus(true);
+                              }
                             }
                           }} 
                           className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white p-0" 
-                          placeholder={uploading ? "Uploading..." : `Message @${dms.find(d => d.id === activeDmId)?.name}`} 
+                          placeholder={uploading ? "Uploading..." : `Message @${dms.find(d => d.id === activeDmId)?.name || 'user'}`} 
                         />
                       </form>
                     </div>
@@ -1885,7 +1879,13 @@ export default function HomePage() {
                       pinnedMessages.map((msg: any) => (
                         <div key={msg.id} className="bg-[#1e1f22] p-3 rounded shadow-sm border border-[#1e1f22] relative group/pin-item text-left">
                           <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded-full bg-[#5865f2] flex items-center justify-center text-[10px] font-bold uppercase shrink-0">{msg.username?.[0] || 'U'}</div>
+                            <div className="w-6 h-6 rounded-full bg-[#5865f2] flex items-center justify-center text-[10px] font-bold uppercase shrink-0 overflow-hidden">
+                              {msg.avatar ? (
+                                <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
+                              ) : (
+                                msg.username?.[0] || 'U'
+                              )}
+                            </div>
                             <span className="font-bold text-xs truncate">{msg.username}</span>
                             <span className="text-[10px] text-[#949ba4] whitespace-nowrap ml-auto">{new Date(msg.created_at).toLocaleDateString()}</span>
                           </div>
@@ -2007,11 +2007,16 @@ export default function HomePage() {
                         <Input 
                           value={messageContent} 
                           onChange={(e) => {
-                            setMessageContent(e.target.value);
-                            const now = Date.now();
-                            if (now - lastTypingSentRef.current > 3000) {
-                              lastTypingSentRef.current = now;
-                              sendTypingStatus(true);
+                            const val = e.target.value;
+                            setMessageContent(val);
+                            if (!val.trim()) {
+                              sendTypingStatus(false);
+                            } else {
+                              const now = Date.now();
+                              if (now - lastTypingSentRef.current > 3000) {
+                                lastTypingSentRef.current = now;
+                                sendTypingStatus(true);
+                              }
                             }
                           }} 
                           className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white p-0" 
@@ -2045,7 +2050,13 @@ export default function HomePage() {
                       pinnedMessages.map((msg: any) => (
                         <div key={msg.id} className="bg-[#141517] p-3 rounded shadow-sm border border-[#2d2f31] relative group/pin-item text-left">
                           <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded-full bg-[#2d2f31] flex items-center justify-center text-[10px] font-bold uppercase text-[#e3e1db] border border-[#343638] shrink-0">{msg.username?.[0] || 'U'}</div>
+                            <div className="w-6 h-6 rounded-full bg-[#2d2f31] flex items-center justify-center text-[10px] font-bold uppercase text-[#e3e1db] border border-[#343638] shrink-0 overflow-hidden">
+                              {msg.avatar ? (
+                                <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
+                              ) : (
+                                msg.username?.[0] || 'U'
+                              )}
+                            </div>
                             <span className="font-bold text-xs truncate text-[#e3e1db]">{msg.username}</span>
                             <span className="text-[10px] text-[#a3a29e] whitespace-nowrap ml-auto">{new Date(msg.created_at).toLocaleDateString()}</span>
                           </div>
@@ -2079,7 +2090,13 @@ export default function HomePage() {
                       msgSearchResults.map((msg: any) => (
                         <div key={msg.id} className="bg-[#141517] p-3 rounded hover:bg-[#2d2f31]/40 cursor-pointer shadow-sm border border-[#2d2f31]">
                           <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded-full bg-[#2d2f31] flex items-center justify-center text-[10px] font-bold uppercase text-[#e3e1db] border border-[#343638] shrink-0">{msg.username?.[0] || '?'}</div>
+                            <div className="w-6 h-6 rounded-full bg-[#2d2f31] flex items-center justify-center text-[10px] font-bold uppercase text-[#e3e1db] border border-[#343638] shrink-0 overflow-hidden">
+                              {msg.avatar ? (
+                                <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
+                              ) : (
+                                msg.username?.[0] || '?'
+                              )}
+                            </div>
                             <span className="font-bold text-sm truncate text-[#e3e1db]">{msg.username}</span>
                             <span className="text-[10px] text-[#a3a29e] whitespace-nowrap">in #{msg.channel_name}</span>
                           </div>
@@ -2297,10 +2314,14 @@ export default function HomePage() {
                           {activeParticipants.map(p => (
                             <div 
                               key={p.user_id} 
-                              className="w-10 h-10 rounded-full bg-[#2d2f31] border-2 border-[#141517] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shadow"
+                              className="w-10 h-10 rounded-full bg-[#2d2f31] border-2 border-[#141517] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shadow overflow-hidden"
                               title={p.username}
                             >
-                              {p.username[0]}
+                              {p.avatar ? (
+                                <img src={getFileUrl(p.avatar)} alt={p.username} className="w-full h-full object-cover" />
+                              ) : (
+                                p.username[0]
+                              )}
                             </div>
                           ))}
                         </div>
@@ -2342,7 +2363,13 @@ export default function HomePage() {
                 {members.map(member => (
                   <div key={member.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31]/40 cursor-pointer group" onClick={() => setSelectedUserProfileId(member.id)}>
                     <div className="relative">
-                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638]">{member.username[0]}</div>
+                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
+                        {member.avatar ? (
+                          <img src={getFileUrl(member.avatar)} alt={member.username} className="w-full h-full object-cover" />
+                        ) : (
+                          member.username[0]
+                        )}
+                      </div>
                       <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-[#1e2022] ${getStatusColor(member.status)}`} />
                     </div>
                     <div className="flex flex-col min-w-0">
@@ -2365,8 +2392,12 @@ export default function HomePage() {
             <div className="h-16 bg-[#bc9f84]" />
             <div className="px-4 -mt-10 mb-2">
               <div className="w-20 h-20 rounded-full bg-[#1e2022] p-1.5 relative z-10">
-                <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] shadow-lg border border-[#343638]">
-                  {dmUserProfile.username[0]}
+                <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] shadow-lg border border-[#343638] overflow-hidden">
+                  {dmUserProfile.avatar ? (
+                    <img src={getFileUrl(dmUserProfile.avatar)} alt={dmUserProfile.username} className="w-full h-full object-cover" />
+                  ) : (
+                    dmUserProfile.username[0]
+                  )}
                 </div>
                 {dmUserProfile.status && (
                   <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 border-[#1e2022] ${getStatusColor(dmUserProfile.status)}`} />
@@ -2516,8 +2547,12 @@ export default function HomePage() {
                   <div className="h-16 bg-[#bc9f84]" />
                   <div className="px-4 -mt-8 mb-2">
                     <div className="w-16 h-16 rounded-full bg-[#1e2022] p-1 relative z-10">
-                      <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-2xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-md">
-                        {userProfileData.username[0]}
+                      <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-2xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-md overflow-hidden">
+                        {userProfileData.avatar ? (
+                          <img src={getFileUrl(userProfileData.avatar)} alt={userProfileData.username} className="w-full h-full object-cover" />
+                        ) : (
+                          userProfileData.username[0]
+                        )}
                       </div>
                       {userProfileData.status && (
                         <div className={`absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-[#1e2022] ${getStatusColor(userProfileData.status)}`} />
@@ -2698,8 +2733,12 @@ function MessageItem({
 
       <div className="flex gap-4">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-[#5865f2] flex items-center justify-center shrink-0 mt-0.5 uppercase font-bold text-white shadow-sm cursor-pointer hover:opacity-85" onClick={() => onProfileClick?.(msg.author_id)}>
-          {msg.username?.[0] || 'U'}
+        <div className="w-10 h-10 rounded-full bg-[#5865f2] flex items-center justify-center shrink-0 mt-0.5 uppercase font-bold text-white shadow-sm cursor-pointer hover:opacity-85 overflow-hidden" onClick={() => onProfileClick?.(msg.author_id)}>
+          {msg.avatar ? (
+            <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
+          ) : (
+            msg.username?.[0] || 'U'
+          )}
         </div>
 
         <div className="flex-1 min-w-0">

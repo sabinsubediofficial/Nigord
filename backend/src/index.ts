@@ -16,6 +16,54 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+app.onError((err, c) => {
+  if (err instanceof SyntaxError && err.message.includes('JSON')) {
+    return c.json({ error: 'Malformed or missing JSON body' }, 400)
+  }
+  console.error('Unhandled server error:', err)
+  return c.json({ error: 'Internal Server Error' }, 500)
+})
+
+const isValidFileUrl = (url: any) => {
+  if (url === null || url === undefined || url === "") return true;
+  if (typeof url !== 'string') return false;
+  return /^\/files\/get\/[a-f0-9-]{36}-.+$/.test(url);
+};
+
+const deleteR2File = async (env: any, fileUrl: string) => {
+  if (!fileUrl) return
+  const match = fileUrl.match(/\/files\/get\/(.+)$/)
+  if (match && match[1]) {
+    const key = match[1]
+    await env.FILES.delete(key).catch((e: any) => {
+      console.error(`Failed to delete R2 file ${key}:`, e)
+    })
+  }
+}
+
+const normalizeUserPresence = (user: any) => {
+  if (!user) return user
+  let status = user.presence_status || user.status || 'offline'
+  if (status === 'invisible') {
+    status = 'offline'
+  } else if (user.last_active_at) {
+    const dateStr = user.last_active_at.replace(' ', 'T')
+    const lastActiveTime = dateStr.includes('Z') ? new Date(dateStr).getTime() : new Date(dateStr + 'Z').getTime()
+    const diffSeconds = (Date.now() - lastActiveTime) / 1000
+    if (diffSeconds > 15) {
+      status = 'offline'
+    }
+  } else {
+    status = 'offline'
+  }
+  if (user.presence_status !== undefined) {
+    user.presence_status = status
+  } else {
+    user.status = status
+  }
+  return user
+}
+
 app.use('*', logger())
 app.use('*', cors({
   origin: (origin) => {
@@ -65,7 +113,7 @@ const getUserPermissions = async (env: any, serverId: string, userId: string) =>
   const member: any = await env.DB.prepare('SELECT role_id FROM members WHERE server_id = ? AND user_id = ?').bind(serverId, userId).first()
   if (!member || !member.role_id) return []
 
-  const role: any = await env.DB.prepare('SELECT permissions FROM roles WHERE id = ?').bind(member.role_id).first()
+  const role: any = await env.DB.prepare('SELECT permissions FROM roles WHERE id = ? AND server_id = ?').bind(member.role_id, serverId).first()
   if (!role) return []
 
   return JSON.parse(role.permissions) || []
@@ -78,9 +126,12 @@ app.get('/', (c) => {
 // File Routes
 app.post('/files/upload', authMiddleware, async (c) => {
   const body = await c.req.parseBody()
-  const file = body['file'] as File
-
+  const file = body['file'] as any
   if (!file) return c.json({ error: 'No file uploaded' }, 400)
+
+  if (file.size > 25 * 1024 * 1024) {
+    return c.json({ error: 'File size exceeds maximum limit of 25MB' }, 400)
+  }
 
   const id = crypto.randomUUID()
   const key = `${id}-${file.name}`
@@ -110,7 +161,8 @@ app.get('/files/get/:key', async (c) => {
   headers.set('etag', file.httpEtag)
   
   const originalName = key.split('-').slice(1).join('-')
-  headers.set('Content-Disposition', `attachment; filename="${originalName}"`)
+  const sanitizedFilename = encodeURIComponent(originalName)
+  headers.set('Content-Disposition', `attachment; filename*=UTF-8''${sanitizedFilename}`)
 
   return c.body(file.body, 200, Object.fromEntries(headers))
 })
@@ -193,22 +245,39 @@ app.post('/auth/register', async (c) => {
   const { username, email, password } = await c.req.json()
   if (!username || !email || !password) return c.json({ error: 'Missing fields' }, 400)
 
+  const usernameTrim = username.trim()
+  if (!/^[a-zA-Z0-9_-]{3,20}$/.test(usernameTrim)) {
+    return c.json({ error: 'Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens' }, 400)
+  }
   const normalizedEmail = email.toLowerCase().trim()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    return c.json({ error: 'Invalid email address' }, 400)
+  }
+  if (password.length < 6) {
+    return c.json({ error: 'Password must be at least 6 characters' }, 400)
+  }
+
+  // Purge unverified accounts older than 15 minutes with the same username/email
+  await c.env.DB.prepare(
+    "DELETE FROM users WHERE is_verified = 0 AND (username = ? OR email = ?) AND created_at < datetime('now', '-15 minutes')"
+  ).bind(usernameTrim, normalizedEmail).run().catch(() => {})
+
   const id = crypto.randomUUID()
   const passwordHash = await bcrypt.hash(password, 10)
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
+  const codeVal = Math.floor(100000 + Math.random() * 900000).toString()
+  const verificationCodeField = `${codeVal}:${Date.now()}`
 
   try {
     await c.env.DB.prepare(
       'INSERT INTO users (id, username, email, password_hash, is_verified, verification_code) VALUES (?, ?, ?, ?, 0, ?)'
-    ).bind(id, username, normalizedEmail, passwordHash, code).run()
+    ).bind(id, usernameTrim, normalizedEmail, passwordHash, verificationCodeField).run()
 
-    await sendVerificationEmail(normalizedEmail, username, code, c.env)
+    await sendVerificationEmail(normalizedEmail, usernameTrim, codeVal, c.env)
 
     const hasGmailConfig = !!(c.env.GMAIL_CLIENT_ID && c.env.GMAIL_CLIENT_SECRET && c.env.GMAIL_REFRESH_TOKEN)
     return c.json({ 
-      user: { id, username, email: normalizedEmail, is_verified: 0 },
-      debugCode: hasGmailConfig ? undefined : code
+      user: { id, username: usernameTrim, email: normalizedEmail, is_verified: 0 },
+      debugCode: hasGmailConfig ? undefined : codeVal
     })
   } catch (e: any) {
     if (e.message.includes('UNIQUE constraint failed')) return c.json({ error: 'Username or email already exists' }, 400)
@@ -217,7 +286,11 @@ app.post('/auth/register', async (c) => {
 })
 
 app.post('/auth/login', async (c) => {
-  const { email, password } = await c.req.json()
+  const body = await c.req.json().catch(() => ({}))
+  const email = body?.email
+  const password = body?.password
+  if (!email || !password) return c.json({ error: 'Missing fields' }, 400)
+
   const normalizedEmail = email.toLowerCase().trim()
   const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(normalizedEmail).first()
 
@@ -227,7 +300,8 @@ app.post('/auth/login', async (c) => {
     return c.json({ error: 'Email not verified', unverified: true, userId: user.id }, 403)
   }
 
-  const token = await sign({ id: user.id, username: user.username }, c.env.JWT_SECRET)
+  const exp = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days
+  const token = await sign({ id: user.id, username: user.username, exp }, c.env.JWT_SECRET)
   const origin = c.req.header('origin') || ''
   const isProd = origin.includes('pages.dev') || origin.includes('nigord.pages.dev')
 
@@ -254,13 +328,22 @@ app.post('/auth/verify-email', async (c) => {
       return c.json({ error: 'Email is already verified' }, 400)
     }
     
-    if (user.verification_code !== code.trim()) {
+    const parts = user.verification_code ? user.verification_code.split(':') : []
+    const storedCode = parts[0]
+    const timestamp = parts[1] ? parseInt(parts[1]) : 0
+
+    if (!storedCode || storedCode !== code.trim()) {
       return c.json({ error: 'Invalid verification code' }, 400)
+    }
+
+    if (Date.now() - timestamp > 15 * 60 * 1000) {
+      return c.json({ error: 'Verification code has expired. Please request a new one.' }, 400)
     }
     
     await c.env.DB.prepare('UPDATE users SET is_verified = 1, verification_code = NULL WHERE id = ?').bind(userId).run()
     
-    const token = await sign({ id: user.id, username: user.username }, c.env.JWT_SECRET)
+    const exp = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days
+    const token = await sign({ id: user.id, username: user.username, exp }, c.env.JWT_SECRET)
     const origin = c.req.header('origin') || ''
     const isProd = origin.includes('pages.dev') || origin.includes('nigord.pages.dev')
 
@@ -290,14 +373,24 @@ app.post('/auth/resend-verification', async (c) => {
       return c.json({ error: 'Email is already verified' }, 400)
     }
     
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
-    await c.env.DB.prepare('UPDATE users SET verification_code = ? WHERE id = ?').bind(code, userId).run()
-    await sendVerificationEmail(user.email, user.username, code, c.env)
+    if (user.verification_code) {
+      const parts = user.verification_code.split(':')
+      const lastSent = parts[1] ? parseInt(parts[1]) : 0
+      if (Date.now() - lastSent < 60000) {
+        const secondsLeft = Math.ceil((60000 - (Date.now() - lastSent)) / 1000)
+        return c.json({ error: `Please wait ${secondsLeft} seconds before requesting a new code` }, 429)
+      }
+    }
+
+    const codeVal = Math.floor(100000 + Math.random() * 900000).toString()
+    const verificationCodeField = `${codeVal}:${Date.now()}`
+    await c.env.DB.prepare('UPDATE users SET verification_code = ? WHERE id = ?').bind(verificationCodeField, userId).run()
+    await sendVerificationEmail(user.email, user.username, codeVal, c.env)
     
     const hasGmailConfig = !!(c.env.GMAIL_CLIENT_ID && c.env.GMAIL_CLIENT_SECRET && c.env.GMAIL_REFRESH_TOKEN)
     return c.json({ 
       success: true,
-      debugCode: hasGmailConfig ? undefined : code
+      debugCode: hasGmailConfig ? undefined : codeVal
     })
   } catch (e) {
     return c.json({ error: 'Failed to resend code' }, 500)
@@ -321,13 +414,27 @@ app.patch('/users/me', authMiddleware, async (c) => {
   const user = c.get('user')
   const { username, display_name, bio, status_message, status, avatar } = await c.req.json()
   
+  if (avatar !== undefined && !isValidFileUrl(avatar)) {
+    return c.json({ error: 'Invalid file URL format' }, 400)
+  }
+  
   try {
+    let oldAvatarUrl: string | null = null
+    if (avatar !== undefined) {
+      const dbUser: any = await c.env.DB.prepare('SELECT avatar FROM users WHERE id = ?').bind(user.id).first()
+      if (dbUser) {
+        oldAvatarUrl = dbUser.avatar
+      }
+    }
+
     const updates: string[] = []
     const params: any[] = []
     
     if (username !== undefined) {
       const trimmed = username.trim()
-      if (trimmed.length === 0) return c.json({ error: 'Username cannot be empty' }, 400)
+      if (!/^[a-zA-Z0-9_-]{3,20}$/.test(trimmed)) {
+        return c.json({ error: 'Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens' }, 400)
+      }
       const existing = await c.env.DB.prepare('SELECT id FROM users WHERE username = ? AND id != ?').bind(trimmed, user.id).first()
       if (existing) return c.json({ error: 'Username is already taken' }, 400)
       updates.push('username = ?')
@@ -344,6 +451,24 @@ app.patch('/users/me', authMiddleware, async (c) => {
     params.push(user.id)
     await c.env.DB.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).bind(...params).run()
     
+    if (avatar !== undefined && oldAvatarUrl && oldAvatarUrl !== avatar) {
+      await deleteR2File(c.env, oldAvatarUrl)
+    }
+
+    if (username !== undefined) {
+      const exp = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days
+      const token = await sign({ id: user.id, username: username.trim(), exp }, c.env.JWT_SECRET)
+      const origin = c.req.header('origin') || ''
+      const isProd = origin.includes('pages.dev') || origin.includes('nigord.pages.dev')
+      setCookie(c, 'token', token, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'None' : 'Lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+      })
+    }
+
     const updatedUser: any = await c.env.DB.prepare('SELECT id, username, email, avatar, display_name, bio, status_message, status, created_at FROM users WHERE id = ?').bind(user.id).first()
     return c.json({ user: updatedUser })
   } catch (e) {
@@ -355,6 +480,10 @@ app.post('/users/me/change-password', authMiddleware, async (c) => {
   const user = c.get('user')
   const { currentPassword, newPassword } = await c.req.json()
   if (!currentPassword || !newPassword) return c.json({ error: 'Missing current or new password' }, 400)
+  
+  if (newPassword.length < 6) {
+    return c.json({ error: 'New password must be at least 6 characters' }, 400)
+  }
   
   try {
     const dbUser: any = await c.env.DB.prepare('SELECT password_hash FROM users WHERE id = ?').bind(user.id).first()
@@ -396,6 +525,10 @@ app.post('/auth/recover-password', async (c) => {
     return c.json({ error: 'Missing recovery fields' }, 400)
   }
   
+  if (newPassword.length < 6) {
+    return c.json({ error: 'New password must be at least 6 characters' }, 400)
+  }
+  
   const normalizedInput = usernameOrEmail.includes('@') ? usernameOrEmail.toLowerCase().trim() : usernameOrEmail.trim()
   try {
     const dbUser: any = await c.env.DB.prepare(
@@ -428,20 +561,87 @@ app.delete('/users/me', authMiddleware, async (c) => {
   if (!password) return c.json({ error: 'Password is required to delete account' }, 400)
   
   try {
-    const dbUser: any = await c.env.DB.prepare('SELECT password_hash FROM users WHERE id = ?').bind(user.id).first()
+    const dbUser: any = await c.env.DB.prepare('SELECT password_hash, avatar FROM users WHERE id = ?').bind(user.id).first()
     if (!dbUser) return c.json({ error: 'User not found' }, 404)
     
     const matches = await bcrypt.compare(password, dbUser.password_hash)
     if (!matches) return c.json({ error: 'Incorrect password' }, 400)
     
+    // R2 file deletion for user's avatar
+    if (dbUser.avatar) {
+      await deleteR2File(c.env, dbUser.avatar)
+    }
+
+    // Query all servers owned by the user, and delete them cascadingly (using server deletion logic)
+    const { results: ownedServers } = await c.env.DB.prepare('SELECT id, icon, banner FROM servers WHERE owner_id = ?').bind(user.id).all()
+    for (const s of ownedServers as any[]) {
+      // Delete server's channel message attachments from R2
+      const { results: atts } = await c.env.DB.prepare(`
+        SELECT url FROM attachments 
+        WHERE message_id IN (
+          SELECT id FROM messages 
+          WHERE channel_id IN (
+            SELECT id FROM channels WHERE server_id = ?
+          )
+        )
+      `).bind(s.id).all()
+      for (const att of atts as any[]) {
+        await deleteR2File(c.env, att.url)
+      }
+      if (s.icon) await deleteR2File(c.env, s.icon)
+      if (s.banner) await deleteR2File(c.env, s.banner)
+      
+      // Clean up D1 server tables
+      await c.env.DB.batch([
+        c.env.DB.prepare('DELETE FROM reactions WHERE message_id IN (SELECT id FROM messages WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?))').bind(s.id),
+        c.env.DB.prepare('DELETE FROM voice_sessions WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?)').bind(s.id),
+        c.env.DB.prepare('DELETE FROM channel_reads WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?)').bind(s.id),
+        c.env.DB.prepare('DELETE FROM attachments WHERE message_id IN (SELECT id FROM messages WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?))').bind(s.id),
+        c.env.DB.prepare('DELETE FROM messages WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?)').bind(s.id),
+        c.env.DB.prepare('DELETE FROM channels WHERE server_id = ?').bind(s.id),
+        c.env.DB.prepare('DELETE FROM members WHERE server_id = ?').bind(s.id),
+        c.env.DB.prepare('DELETE FROM invites WHERE server_id = ?').bind(s.id),
+        c.env.DB.prepare('DELETE FROM roles WHERE server_id = ?').bind(s.id),
+        c.env.DB.prepare('DELETE FROM servers WHERE id = ?').bind(s.id)
+      ])
+    }
+
+    // Query all DM channels where the user is a participant and delete their attachments from R2
+    const { results: dmChans } = await c.env.DB.prepare('SELECT id FROM direct_channels WHERE user1_id = ? OR user2_id = ?').bind(user.id, user.id).all()
+    for (const chan of dmChans as any[]) {
+      const { results: chanDmAtts } = await c.env.DB.prepare('SELECT url FROM dm_attachments WHERE message_id IN (SELECT id FROM direct_messages WHERE channel_id = ?)').bind(chan.id).all()
+      for (const att of chanDmAtts as any[]) {
+        await deleteR2File(c.env, att.url)
+      }
+    }
+
+    // Query and delete all other user-sent attachments and DM attachments from R2
+    const { results: userAtts } = await c.env.DB.prepare('SELECT url FROM attachments WHERE message_id IN (SELECT id FROM messages WHERE author_id = ?)').bind(user.id).all()
+    for (const att of userAtts as any[]) {
+      await deleteR2File(c.env, att.url)
+    }
+    const { results: userDmAtts } = await c.env.DB.prepare('SELECT url FROM dm_attachments WHERE message_id IN (SELECT id FROM direct_messages WHERE author_id = ?)').bind(user.id).all()
+    for (const att of userDmAtts as any[]) {
+      await deleteR2File(c.env, att.url)
+    }
+
     const batch = [
+      c.env.DB.prepare('DELETE FROM reactions WHERE user_id = ?').bind(user.id),
+      c.env.DB.prepare('DELETE FROM reactions WHERE message_id IN (SELECT id FROM messages WHERE author_id = ?)').bind(user.id),
+      c.env.DB.prepare('DELETE FROM reactions WHERE message_id IN (SELECT id FROM direct_messages WHERE author_id = ? OR channel_id IN (SELECT id FROM direct_channels WHERE user1_id = ? OR user2_id = ?))').bind(user.id, user.id, user.id),
+      c.env.DB.prepare('DELETE FROM channel_reads WHERE user_id = ?').bind(user.id),
+      c.env.DB.prepare('DELETE FROM dm_reads WHERE user_id = ?').bind(user.id),
+      c.env.DB.prepare('DELETE FROM dm_reads WHERE channel_id IN (SELECT id FROM direct_channels WHERE user1_id = ? OR user2_id = ?)').bind(user.id, user.id),
+      c.env.DB.prepare('DELETE FROM voice_sessions WHERE user_id = ?').bind(user.id),
+      c.env.DB.prepare('DELETE FROM dm_attachments WHERE message_id IN (SELECT id FROM direct_messages WHERE author_id = ? OR channel_id IN (SELECT id FROM direct_channels WHERE user1_id = ? OR user2_id = ?))').bind(user.id, user.id, user.id),
+      c.env.DB.prepare('DELETE FROM direct_messages WHERE author_id = ? OR channel_id IN (SELECT id FROM direct_channels WHERE user1_id = ? OR user2_id = ?)').bind(user.id, user.id, user.id),
+      c.env.DB.prepare('DELETE FROM direct_channels WHERE user1_id = ? OR user2_id = ?').bind(user.id, user.id),
+      c.env.DB.prepare('DELETE FROM attachments WHERE message_id IN (SELECT id FROM messages WHERE author_id = ?)').bind(user.id),
       c.env.DB.prepare('DELETE FROM messages WHERE author_id = ?').bind(user.id),
-      c.env.DB.prepare('DELETE FROM messages WHERE channel_id IN (SELECT id FROM channels WHERE server_id IN (SELECT id FROM servers WHERE owner_id = ?))').bind(user.id),
-      c.env.DB.prepare('DELETE FROM channels WHERE server_id IN (SELECT id FROM servers WHERE owner_id = ?)').bind(user.id),
-      c.env.DB.prepare('DELETE FROM members WHERE server_id IN (SELECT id FROM servers WHERE owner_id = ?)').bind(user.id),
-      c.env.DB.prepare('DELETE FROM servers WHERE owner_id = ?').bind(user.id),
       c.env.DB.prepare('DELETE FROM members WHERE user_id = ?').bind(user.id),
       c.env.DB.prepare('DELETE FROM friends WHERE user1_id = ? OR user2_id = ?').bind(user.id, user.id),
+      c.env.DB.prepare('DELETE FROM signals WHERE from_id = ? OR to_id = ?').bind(user.id, user.id),
+      c.env.DB.prepare('DELETE FROM typing_status WHERE user_id = ?').bind(user.id),
       c.env.DB.prepare('DELETE FROM users WHERE id = ?').bind(user.id)
     ]
     await c.env.DB.batch(batch)
@@ -455,6 +655,7 @@ app.delete('/users/me', authMiddleware, async (c) => {
     })
     return c.json({ success: true })
   } catch (e) {
+    console.error('Failed to delete account:', e)
     return c.json({ error: 'Failed to delete account' }, 500)
   }
 })
@@ -463,7 +664,7 @@ app.get('/users/:id/profile', authMiddleware, async (c) => {
   const userId = c.req.param('id')
   const currentUser = c.get('user')
   try {
-    const user: any = await c.env.DB.prepare('SELECT id, username, avatar, display_name, bio, status_message, status, created_at FROM users WHERE id = ?').bind(userId).first()
+    const user: any = await c.env.DB.prepare('SELECT id, username, avatar, display_name, bio, status_message, status, last_active_at, created_at FROM users WHERE id = ?').bind(userId).first()
     if (!user) return c.json({ error: 'User not found' }, 404)
 
     // Calculate mutual servers
@@ -485,9 +686,11 @@ app.get('/users/:id/profile', authMiddleware, async (c) => {
       )
     `).bind(currentUser.id, currentUser.id, currentUser.id, userId, userId, userId).first()
 
+    const normalizedUser = normalizeUserPresence(user)
+
     return c.json({ 
       user: {
-        ...user,
+        ...normalizedUser,
         mutual_servers: mutualServers?.count || 0,
         mutual_friends: mutualFriends?.count || 0
       } 
@@ -515,6 +718,10 @@ app.post('/servers', authMiddleware, async (c) => {
   const user = c.get('user')
   const { name, icon, banner } = await c.req.json()
   if (!name) return c.json({ error: 'Server name is required' }, 400)
+
+  if (!isValidFileUrl(icon) || !isValidFileUrl(banner)) {
+    return c.json({ error: 'Invalid file URL format' }, 400)
+  }
 
   const serverId = crypto.randomUUID()
   const memberId = crypto.randomUUID()
@@ -561,10 +768,12 @@ app.get('/servers/:id', authMiddleware, async (c) => {
 
     const { results: channels } = await c.env.DB.prepare('SELECT * FROM channels WHERE server_id = ?').bind(serverId).all()
     const { results: members } = await c.env.DB.prepare(
-      'SELECT u.id, u.username, u.avatar, u.display_name, u.bio, u.status_message, u.status, m.role_id FROM users u JOIN members m ON u.id = m.user_id WHERE m.server_id = ?'
+      'SELECT u.id, u.username, u.avatar, u.display_name, u.bio, u.status_message, u.status, u.last_active_at, m.role_id FROM users u JOIN members m ON u.id = m.user_id WHERE m.server_id = ?'
     ).bind(serverId).all()
 
-    return c.json({ server, channels, members, permissions: perms })
+    const normalizedMembers = members.map((mem: any) => normalizeUserPresence(mem))
+
+    return c.json({ server, channels, members: normalizedMembers, permissions: perms })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
   }
@@ -575,6 +784,10 @@ app.patch('/servers/:id', authMiddleware, async (c) => {
   const user = c.get('user')
   const { name, icon, banner } = await c.req.json()
   if (!name && icon === undefined && banner === undefined) return c.json({ error: 'Nothing to update' }, 400)
+
+  if (!isValidFileUrl(icon) || !isValidFileUrl(banner)) {
+    return c.json({ error: 'Invalid file URL format' }, 400)
+  }
 
   try {
     const server: any = await c.env.DB.prepare('SELECT * FROM servers WHERE id = ?').bind(serverId).first()
@@ -605,6 +818,14 @@ app.patch('/servers/:id', authMiddleware, async (c) => {
       WHERE id = ?
     `).bind(...params).run()
 
+    // Delete old icon/banner from R2
+    if (icon !== undefined && server.icon && server.icon !== icon) {
+      await deleteR2File(c.env, server.icon)
+    }
+    if (banner !== undefined && server.banner && server.banner !== banner) {
+      await deleteR2File(c.env, server.banner)
+    }
+
     const updatedServer = await c.env.DB.prepare('SELECT * FROM servers WHERE id = ?').bind(serverId).first()
     return c.json({ server: updatedServer })
   } catch (e) {
@@ -621,7 +842,28 @@ app.delete('/servers/:id', authMiddleware, async (c) => {
     if (!server) return c.json({ error: 'Server not found' }, 404)
     if (server.owner_id !== user.id) return c.json({ error: 'Only the server owner can delete this server' }, 403)
 
+    // Delete server message attachments from R2
+    const { results: atts } = await c.env.DB.prepare(`
+      SELECT url FROM attachments 
+      WHERE message_id IN (
+        SELECT id FROM messages 
+        WHERE channel_id IN (
+          SELECT id FROM channels WHERE server_id = ?
+        )
+      )
+    `).bind(serverId).all()
+    for (const att of atts as any[]) {
+      await deleteR2File(c.env, att.url)
+    }
+
+    if (server.icon) await deleteR2File(c.env, server.icon)
+    if (server.banner) await deleteR2File(c.env, server.banner)
+
     await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM reactions WHERE message_id IN (SELECT id FROM messages WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?))').bind(serverId),
+      c.env.DB.prepare('DELETE FROM voice_sessions WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?)').bind(serverId),
+      c.env.DB.prepare('DELETE FROM channel_reads WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?)').bind(serverId),
+      c.env.DB.prepare('DELETE FROM attachments WHERE message_id IN (SELECT id FROM messages WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?))').bind(serverId),
       c.env.DB.prepare('DELETE FROM messages WHERE channel_id IN (SELECT id FROM channels WHERE server_id = ?)').bind(serverId),
       c.env.DB.prepare('DELETE FROM channels WHERE server_id = ?').bind(serverId),
       c.env.DB.prepare('DELETE FROM members WHERE server_id = ?').bind(serverId),
@@ -714,6 +956,9 @@ app.post('/servers/:id/channels', authMiddleware, async (c) => {
 
   if (!name || !type) return c.json({ error: 'Missing fields' }, 400)
 
+  const normalizedName = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '')
+  if (!normalizedName) return c.json({ error: 'Invalid channel name' }, 400)
+
   try {
     const perms = await getUserPermissions(c.env, serverId, user.id)
     if (!perms.includes('ADMINISTRATOR') && !perms.includes('MANAGE_CHANNELS')) {
@@ -721,9 +966,9 @@ app.post('/servers/:id/channels', authMiddleware, async (c) => {
     }
 
     const id = crypto.randomUUID()
-    await c.env.DB.prepare('INSERT INTO channels (id, server_id, name, type) VALUES (?, ?, ?, ?)').bind(id, serverId, name, type).run()
+    await c.env.DB.prepare('INSERT INTO channels (id, server_id, name, type) VALUES (?, ?, ?, ?)').bind(id, serverId, normalizedName, type).run()
 
-    return c.json({ channel: { id, server_id: serverId, name, type } })
+    return c.json({ channel: { id, server_id: serverId, name: normalizedName, type } })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
   }
@@ -757,7 +1002,7 @@ app.delete('/channels/:id', authMiddleware, async (c) => {
   const user = c.get('user')
 
   try {
-    const channel: any = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    const channel: any = await c.env.DB.prepare('SELECT server_id, type FROM channels WHERE id = ?').bind(channelId).first()
     if (!channel) return c.json({ error: 'Channel not found' }, 404)
 
     const perms = await getUserPermissions(c.env, channel.server_id, user.id)
@@ -765,7 +1010,21 @@ app.delete('/channels/:id', authMiddleware, async (c) => {
       return c.json({ error: 'Forbidden' }, 403)
     }
 
+    if (channel.type === 'text') {
+      const textChannelsCount: any = await c.env.DB.prepare('SELECT COUNT(*) as count FROM channels WHERE server_id = ? AND type = "text"').bind(channel.server_id).first()
+      if (textChannelsCount && textChannelsCount.count <= 1) {
+        return c.json({ error: 'Cannot delete the last remaining text channel in the server' }, 400)
+      }
+    }
+
+    // Delete message attachments in this channel from R2
+    const { results: atts } = await c.env.DB.prepare('SELECT url FROM attachments WHERE message_id IN (SELECT id FROM messages WHERE channel_id = ?)').bind(channelId).all()
+    for (const att of atts as any[]) {
+      await deleteR2File(c.env, att.url)
+    }
+
     await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM reactions WHERE message_id IN (SELECT id FROM messages WHERE channel_id = ?)').bind(channelId),
       c.env.DB.prepare('DELETE FROM attachments WHERE message_id IN (SELECT id FROM messages WHERE channel_id = ?)').bind(channelId),
       c.env.DB.prepare('DELETE FROM messages WHERE channel_id = ?').bind(channelId),
       c.env.DB.prepare('DELETE FROM channel_reads WHERE channel_id = ?').bind(channelId),
@@ -787,7 +1046,20 @@ app.post('/channels/:id/messages', authMiddleware, async (c) => {
 
   if (!content && (!attachments || attachments.length === 0)) return c.json({ error: 'Content or attachment is required' }, 400)
 
+  if (attachments && Array.isArray(attachments)) {
+    for (const att of attachments) {
+      if (!isValidFileUrl(att.url)) {
+        return c.json({ error: 'Invalid file URL format in attachments' }, 400)
+      }
+    }
+  }
+
   try {
+    const channel: any = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    if (!channel) return c.json({ error: 'Channel not found' }, 404)
+    const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(channel.server_id, user.id).first()
+    if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+
     const id = crypto.randomUUID()
     await c.env.DB.prepare(
       'INSERT INTO messages (id, channel_id, author_id, content, reply_to_id) VALUES (?, ?, ?, ?, ?)'
@@ -826,8 +1098,13 @@ app.get('/channels/:id/messages', authMiddleware, async (c) => {
   const channelId = c.req.param('id')
   const before = c.req.query('before')
   const limit = parseInt(c.req.query('limit') || '50')
+  const user = c.get('user')
 
   try {
+    const channel: any = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    if (!channel) return c.json({ error: 'Channel not found' }, 404)
+    const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(channel.server_id, user.id).first()
+    if (!isMember) return c.json({ error: 'Forbidden' }, 403)
     let query = `
       SELECT m.*, u.username, u.avatar,
              parent.content as reply_content, parent_author.username as reply_username
@@ -885,6 +1162,11 @@ app.post('/channels/:id/read', authMiddleware, async (c) => {
   const channelId = c.req.param('id')
   const user = c.get('user')
   try {
+    const channel: any = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    if (!channel) return c.json({ error: 'Channel not found' }, 404)
+    const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(channel.server_id, user.id).first()
+    if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+
     await c.env.DB.prepare('INSERT OR REPLACE INTO channel_reads (user_id, channel_id, last_read_at) VALUES (?, ?, CURRENT_TIMESTAMP)').bind(user.id, channelId).run()
     return c.json({ success: true })
   } catch (e) {
@@ -896,6 +1178,9 @@ app.get('/servers/:id/unread', authMiddleware, async (c) => {
   const serverId = c.req.param('id')
   const user = c.get('user')
   try {
+    const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(serverId, user.id).first()
+    if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+
     const { results } = await c.env.DB.prepare(`
       SELECT c.id as channel_id, COUNT(m.id) as unread_count
       FROM channels c
@@ -915,6 +1200,21 @@ app.post('/channels/:id/voice/join', authMiddleware, async (c) => {
   const channelId = c.req.param('id')
   const user = c.get('user')
   try {
+    // Authorize voice channel join
+    // 1. Is it a server channel?
+    const channel: any = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    if (channel) {
+      const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(channel.server_id, user.id).first()
+      if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+    } else {
+      // 2. Is it a DM channel?
+      const dmChan: any = await c.env.DB.prepare('SELECT user1_id, user2_id FROM direct_channels WHERE id = ?').bind(channelId).first()
+      if (!dmChan) return c.json({ error: 'Channel not found' }, 404)
+      if (dmChan.user1_id !== user.id && dmChan.user2_id !== user.id) {
+        return c.json({ error: 'Forbidden' }, 403)
+      }
+    }
+
     // Clean up stale voice sessions first
     await c.env.DB.prepare(`
       DELETE FROM voice_sessions 
@@ -958,7 +1258,11 @@ app.post('/channels/:id/voice/status', authMiddleware, async (c) => {
 
 app.get('/servers/:id/voice/participants', authMiddleware, async (c) => {
   const serverId = c.req.param('id')
+  const user = c.get('user')
   try {
+    const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(serverId, user.id).first()
+    if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+
     // Clean up stale voice sessions first
     await c.env.DB.prepare(`
       DELETE FROM voice_sessions 
@@ -982,7 +1286,22 @@ app.get('/servers/:id/voice/participants', authMiddleware, async (c) => {
 
 app.get('/channels/:id/voice/participants', authMiddleware, async (c) => {
   const channelId = c.req.param('id')
+  const user = c.get('user')
   try {
+    // Check if it's a server channel
+    let exists = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    if (exists) {
+      const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(exists.server_id, user.id).first()
+      if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+    } else {
+      // Check if DM channel
+      const dmChan: any = await c.env.DB.prepare('SELECT user1_id, user2_id FROM direct_channels WHERE id = ?').bind(channelId).first()
+      if (!dmChan) return c.json({ error: 'Channel not found' }, 404)
+      if (dmChan.user1_id !== user.id && dmChan.user2_id !== user.id) {
+        return c.json({ error: 'Forbidden' }, 403)
+      }
+    }
+
     // Clean up stale voice sessions first
     await c.env.DB.prepare(`
       DELETE FROM voice_sessions 
@@ -1017,6 +1336,18 @@ app.post('/channels/:id/voice/leave', authMiddleware, async (c) => {
 app.post('/signaling/send', authMiddleware, async (c) => {
   const fromUser = c.get('user')
   const { to_id, type, data } = await c.req.json()
+  
+  // Check blocking
+  const blockRelation = await c.env.DB.prepare(`
+    SELECT 1 FROM friends 
+    WHERE (user1_id = ? AND user2_id = ? AND status = 'blocked') 
+       OR (user1_id = ? AND user2_id = ? AND status = 'blocked')
+  `).bind(fromUser.id, to_id, to_id, fromUser.id).first()
+
+  if (blockRelation) {
+    return c.json({ error: 'Cannot send signals to a blocked user' }, 403)
+  }
+
   const id = crypto.randomUUID()
   try {
     await c.env.DB.prepare(
@@ -1062,7 +1393,7 @@ app.post('/servers/:id/invites', authMiddleware, async (c) => {
     if (!isMember) return c.json({ error: 'Forbidden' }, 403)
 
     const code = Math.random().toString(36).substring(2, 10)
-    await c.env.DB.prepare('INSERT INTO invites (code, server_id, inviter_id) VALUES (?, ?, ?)').bind(code, serverId, user.id).run()
+    await c.env.DB.prepare("INSERT INTO invites (code, server_id, inviter_id, expires_at, max_uses, uses) VALUES (?, ?, ?, datetime('now', '+7 days'), 0, 0)").bind(code, serverId, user.id).run()
     return c.json({ invite: { code, server_id: serverId } })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
@@ -1073,10 +1404,22 @@ app.get('/invites/:code', async (c) => {
   const code = c.req.param('code')
   try {
     const invite: any = await c.env.DB.prepare(`
-      SELECT i.code, s.id as server_id, s.name as server_name, s.icon as server_icon
+      SELECT i.code, i.expires_at, i.max_uses, i.uses, s.id as server_id, s.name as server_name, s.icon as server_icon
       FROM invites i JOIN servers s ON i.server_id = s.id WHERE i.code = ?
     `).bind(code).first()
     if (!invite) return c.json({ error: 'Invite not found or expired' }, 404)
+
+    if (invite.expires_at) {
+      const dateStr = invite.expires_at.replace(' ', 'T')
+      const expiresTime = dateStr.includes('Z') ? new Date(dateStr).getTime() : new Date(dateStr + 'Z').getTime()
+      if (expiresTime < Date.now()) {
+        return c.json({ error: 'Invite has expired' }, 410)
+      }
+    }
+    if (invite.max_uses > 0 && invite.uses >= invite.max_uses) {
+      return c.json({ error: 'Invite usage limit exceeded' }, 410)
+    }
+
     return c.json({ invite })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
@@ -1089,6 +1432,17 @@ app.post('/invites/:code/join', authMiddleware, async (c) => {
   try {
     const invite: any = await c.env.DB.prepare('SELECT * FROM invites WHERE code = ?').bind(code).first()
     if (!invite) return c.json({ error: 'Invite not found' }, 404)
+
+    if (invite.expires_at) {
+      const dateStr = invite.expires_at.replace(' ', 'T')
+      const expiresTime = dateStr.includes('Z') ? new Date(dateStr).getTime() : new Date(dateStr + 'Z').getTime()
+      if (expiresTime < Date.now()) {
+        return c.json({ error: 'Invite has expired' }, 400)
+      }
+    }
+    if (invite.max_uses > 0 && invite.uses >= invite.max_uses) {
+      return c.json({ error: 'Invite usage limit exceeded' }, 400)
+    }
 
     const existingMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(invite.server_id, user.id).first()
     if (existingMember) return c.json({ error: 'Already a member' }, 400)
@@ -1119,6 +1473,8 @@ app.post('/servers/:id/roles', authMiddleware, async (c) => {
 
   if (!name) return c.json({ error: 'Name is required' }, 400)
 
+  const validatedColor = (color && /^#[0-9a-fA-F]{6}$/.test(color)) ? color : '#99aab5'
+
   try {
     const isOwner = await c.env.DB.prepare('SELECT 1 FROM servers WHERE id = ? AND owner_id = ?').bind(serverId, user.id).first()
     if (!isOwner) return c.json({ error: 'Forbidden' }, 403)
@@ -1126,9 +1482,9 @@ app.post('/servers/:id/roles', authMiddleware, async (c) => {
     const id = crypto.randomUUID()
     await c.env.DB.prepare(
       'INSERT INTO roles (id, server_id, name, permissions, color) VALUES (?, ?, ?, ?, ?)'
-    ).bind(id, serverId, name, JSON.stringify(permissions || []), color || '#99aab5').run()
+    ).bind(id, serverId, name, JSON.stringify(permissions || []), validatedColor).run()
 
-    return c.json({ role: { id, server_id: serverId, name, permissions, color } })
+    return c.json({ role: { id, server_id: serverId, name, permissions, color: validatedColor } })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
   }
@@ -1136,7 +1492,11 @@ app.post('/servers/:id/roles', authMiddleware, async (c) => {
 
 app.get('/servers/:id/roles', authMiddleware, async (c) => {
   const serverId = c.req.param('id')
+  const user = c.get('user')
   try {
+    const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(serverId, user.id).first()
+    if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+
     const { results } = await c.env.DB.prepare('SELECT * FROM roles WHERE server_id = ?').bind(serverId).all()
     return c.json({ roles: results.map((r: any) => ({ ...r, permissions: JSON.parse(r.permissions) })) })
   } catch (e) {
@@ -1151,10 +1511,21 @@ app.put('/servers/:id/members/:userId/role', authMiddleware, async (c) => {
   const { role_id } = await c.req.json()
 
   try {
-    const isOwner = await c.env.DB.prepare('SELECT 1 FROM servers WHERE id = ? AND owner_id = ?').bind(serverId, user.id).first()
+    const server: any = await c.env.DB.prepare('SELECT owner_id FROM servers WHERE id = ?').bind(serverId).first()
+    if (!server) return c.json({ error: 'Server not found' }, 404)
+    if (server.owner_id === memberUserId) {
+      return c.json({ error: 'Cannot change role of server owner' }, 400)
+    }
+
+    const isOwner = user.id === server.owner_id
     const perms = await getUserPermissions(c.env, serverId, user.id)
     if (!isOwner && !perms.includes('ADMINISTRATOR') && !perms.includes('MANAGE_ROLES')) {
       return c.json({ error: 'Forbidden' }, 403)
+    }
+
+    if (role_id) {
+      const roleExists = await c.env.DB.prepare('SELECT 1 FROM roles WHERE id = ? AND server_id = ?').bind(role_id, serverId).first()
+      if (!roleExists) return c.json({ error: 'Role not found on this server' }, 400)
     }
 
     await c.env.DB.prepare('UPDATE members SET role_id = ? WHERE server_id = ? AND user_id = ?').bind(role_id || null, serverId, memberUserId).run()
@@ -1175,7 +1546,7 @@ app.get('/users/me/notifications', authMiddleware, async (c) => {
       LEFT JOIN channel_reads cr ON c.id = cr.channel_id AND cr.user_id = ?
       JOIN messages m ON m.channel_id = c.id AND (cr.last_read_at IS NULL OR m.created_at > cr.last_read_at)
       WHERE c.server_id IN (SELECT server_id FROM members WHERE user_id = ?)
-      AND m.author_id != ? AND m.author_id != 'system'
+      AND m.author_id != ?
       GROUP BY c.id
     `).bind(user.id, user.id, user.id).all()
 
@@ -1200,6 +1571,12 @@ app.post('/dms/:id/read', authMiddleware, async (c) => {
   const dmId = c.req.param('id')
   const user = c.get('user')
   try {
+    const dmChan: any = await c.env.DB.prepare('SELECT user1_id, user2_id FROM direct_channels WHERE id = ?').bind(dmId).first()
+    if (!dmChan) return c.json({ error: 'DM Channel not found' }, 404)
+    if (dmChan.user1_id !== user.id && dmChan.user2_id !== user.id) {
+      return c.json({ error: 'Forbidden' }, 403)
+    }
+
     await c.env.DB.prepare('INSERT OR REPLACE INTO dm_reads (user_id, channel_id, last_read_at) VALUES (?, ?, CURRENT_TIMESTAMP)').bind(user.id, dmId).run()
     return c.json({ success: true })
   } catch (e) {
@@ -1223,12 +1600,22 @@ app.get('/friends', authMiddleware, async (c) => {
   try {
     const { results } = await c.env.DB.prepare(`
       SELECT f.status, 
-             u.id, u.username, u.avatar, u.display_name, u.bio, u.status_message, u.status as presence_status,
+             u.id, u.username, u.avatar, u.display_name, u.bio, u.status_message, u.status as presence_status, u.last_active_at,
              CASE WHEN f.user1_id = ? THEN 'outgoing' ELSE 'incoming' END as direction
       FROM friends f
       JOIN users u ON (f.user1_id = u.id AND f.user2_id = ?) OR (f.user2_id = u.id AND f.user1_id = ?)
     `).bind(user.id, user.id, user.id).all()
-    return c.json({ friends: results })
+
+    const filtered = results.filter((row: any) => {
+      // Hide incoming blocked statuses to preserve blocker privacy
+      if (row.status === 'blocked' && row.direction === 'incoming') {
+        return false
+      }
+      return true
+    })
+
+    const normalized = filtered.map((row: any) => normalizeUserPresence(row))
+    return c.json({ friends: normalized })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
   }
@@ -1239,8 +1626,22 @@ app.post('/friends/request', authMiddleware, async (c) => {
   const { target_id } = await c.req.json()
   if (user.id === target_id) return c.json({ error: 'Cannot add yourself' }, 400)
   try {
+    const targetExists = await c.env.DB.prepare('SELECT 1 FROM users WHERE id = ?').bind(target_id).first()
+    if (!targetExists) return c.json({ error: 'User not found' }, 404)
+
     const existing = await c.env.DB.prepare('SELECT 1 FROM friends WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)').bind(user.id, target_id, target_id, user.id).first()
-    if (existing) return c.json({ error: 'Friend request already exists' }, 400)
+    if (existing) return c.json({ error: 'Relationship already exists' }, 400)
+
+    // Check if blocked
+    const blockRelation = await c.env.DB.prepare(`
+      SELECT 1 FROM friends 
+      WHERE (user1_id = ? AND user2_id = ? AND status = 'blocked') 
+         OR (user1_id = ? AND user2_id = ? AND status = 'blocked')
+    `).bind(user.id, target_id, target_id, user.id).first()
+    if (blockRelation) {
+      return c.json({ error: 'Cannot send a friend request to a blocked user or if blocked' }, 400)
+    }
+
     await c.env.DB.prepare('INSERT INTO friends (user1_id, user2_id, status) VALUES (?, ?, ?)').bind(user.id, target_id, 'pending').run()
     return c.json({ success: true })
   } catch (e) {
@@ -1252,6 +1653,12 @@ app.post('/friends/accept', authMiddleware, async (c) => {
   const user = c.get('user')
   const { target_id } = await c.req.json()
   try {
+    // Ensure there is a pending request from target_id (user1_id) to user.id (user2_id)
+    const pendingRequest = await c.env.DB.prepare('SELECT 1 FROM friends WHERE user1_id = ? AND user2_id = ? AND status = "pending"').bind(target_id, user.id).first()
+    if (!pendingRequest) {
+      return c.json({ error: 'No pending friend request found from this user' }, 400)
+    }
+
     await c.env.DB.prepare('UPDATE friends SET status = ? WHERE user1_id = ? AND user2_id = ?').bind('accepted', target_id, user.id).run()
     const dmExists = await c.env.DB.prepare('SELECT 1 FROM direct_channels WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)').bind(user.id, target_id, target_id, user.id).first()
     if (!dmExists) {
@@ -1279,6 +1686,9 @@ app.post('/friends/block', authMiddleware, async (c) => {
   const user = c.get('user')
   const { target_id } = await c.req.json()
   try {
+    const targetExists = await c.env.DB.prepare('SELECT 1 FROM users WHERE id = ?').bind(target_id).first()
+    if (!targetExists) return c.json({ error: 'User not found' }, 404)
+
     await c.env.DB.prepare('DELETE FROM friends WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)').bind(user.id, target_id, target_id, user.id).run()
     await c.env.DB.prepare('INSERT INTO friends (user1_id, user2_id, status) VALUES (?, ?, ?)').bind(user.id, target_id, 'blocked').run()
     return c.json({ success: true })
@@ -1291,12 +1701,13 @@ app.get('/dms', authMiddleware, async (c) => {
   const user = c.get('user')
   try {
     const { results } = await c.env.DB.prepare(`
-      SELECT dc.id, u.id as target_id, u.username as name, u.avatar, u.display_name, u.status,
+      SELECT dc.id, u.id as target_id, u.username as name, u.avatar, u.display_name, u.status, u.last_active_at,
              (SELECT COUNT(*) FROM voice_sessions WHERE channel_id = dc.id) as active_call
       FROM direct_channels dc
       JOIN users u ON (dc.user1_id = u.id AND dc.user2_id = ?) OR (dc.user2_id = u.id AND dc.user1_id = ?)
     `).bind(user.id, user.id).all()
-    return c.json({ dms: results })
+    const normalized = results.map((row: any) => normalizeUserPresence(row))
+    return c.json({ dms: normalized })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
   }
@@ -1306,8 +1717,14 @@ app.get('/dms/:id/messages', authMiddleware, async (c) => {
   const dmId = c.req.param('id')
   const before = c.req.query('before')
   const limit = parseInt(c.req.query('limit') || '50')
+  const user = c.get('user')
 
   try {
+    const dmChan: any = await c.env.DB.prepare('SELECT user1_id, user2_id FROM direct_channels WHERE id = ?').bind(dmId).first()
+    if (!dmChan) return c.json({ error: 'DM Channel not found' }, 404)
+    if (dmChan.user1_id !== user.id && dmChan.user2_id !== user.id) {
+      return c.json({ error: 'Forbidden' }, 403)
+    }
     let query = `
       SELECT m.*, u.username, u.avatar,
              parent.content as reply_content, parent_author.username as reply_username
@@ -1368,7 +1785,31 @@ app.post('/dms/:id/messages', authMiddleware, async (c) => {
 
   if (!content && (!attachments || attachments.length === 0)) return c.json({ error: 'Content or attachment is required' }, 400)
 
+  if (attachments && Array.isArray(attachments)) {
+    for (const att of attachments) {
+      if (!isValidFileUrl(att.url)) {
+        return c.json({ error: 'Invalid file URL format in attachments' }, 400)
+      }
+    }
+  }
+
   try {
+    // Check if blocked relation exists
+    const dmChan: any = await c.env.DB.prepare('SELECT user1_id, user2_id FROM direct_channels WHERE id = ?').bind(dmId).first()
+    if (!dmChan) return c.json({ error: 'DM Channel not found' }, 404)
+    if (dmChan.user1_id !== user.id && dmChan.user2_id !== user.id) return c.json({ error: 'Forbidden' }, 403)
+
+    const targetId = dmChan.user1_id === user.id ? dmChan.user2_id : dmChan.user1_id
+    const blockRelation = await c.env.DB.prepare(`
+      SELECT 1 FROM friends 
+      WHERE (user1_id = ? AND user2_id = ? AND status = 'blocked') 
+         OR (user1_id = ? AND user2_id = ? AND status = 'blocked')
+    `).bind(user.id, targetId, targetId, user.id).first()
+
+    if (blockRelation) {
+      return c.json({ error: 'Cannot send messages to a blocked user or if blocked' }, 403)
+    }
+
     const id = crypto.randomUUID()
     await c.env.DB.prepare('INSERT INTO direct_messages (id, channel_id, author_id, content, reply_to_id) VALUES (?, ?, ?, ?, ?)').bind(id, dmId, user.id, content || '', reply_to_id || null).run()
     
@@ -1426,9 +1867,17 @@ app.delete('/channels/:id/messages/:msgId', authMiddleware, async (c) => {
     if (!msg) return c.json({ error: 'Message not found' }, 404)
     if (msg.author_id !== user.id) return c.json({ error: 'Forbidden' }, 403)
 
-    await c.env.DB.prepare('DELETE FROM messages WHERE id = ?').bind(msgId).run()
-    await c.env.DB.prepare('DELETE FROM attachments WHERE message_id = ?').bind(msgId).run()
-    await c.env.DB.prepare('DELETE FROM reactions WHERE message_id = ?').bind(msgId).run()
+    // Delete message attachments from R2
+    const { results: atts } = await c.env.DB.prepare('SELECT url FROM attachments WHERE message_id = ?').bind(msgId).all()
+    for (const att of atts as any[]) {
+      await deleteR2File(c.env, att.url)
+    }
+
+    await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM attachments WHERE message_id = ?').bind(msgId),
+      c.env.DB.prepare('DELETE FROM reactions WHERE message_id = ?').bind(msgId),
+      c.env.DB.prepare('DELETE FROM messages WHERE id = ?').bind(msgId)
+    ])
     return c.json({ success: true })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
@@ -1460,9 +1909,17 @@ app.delete('/dms/:id/messages/:msgId', authMiddleware, async (c) => {
     if (!msg) return c.json({ error: 'Message not found' }, 404)
     if (msg.author_id !== user.id) return c.json({ error: 'Forbidden' }, 403)
 
-    await c.env.DB.prepare('DELETE FROM direct_messages WHERE id = ?').bind(msgId).run()
-    await c.env.DB.prepare('DELETE FROM dm_attachments WHERE message_id = ?').bind(msgId).run()
-    await c.env.DB.prepare('DELETE FROM reactions WHERE message_id = ?').bind(msgId).run()
+    // Delete attachments from R2
+    const { results: atts } = await c.env.DB.prepare('SELECT url FROM dm_attachments WHERE message_id = ?').bind(msgId).all()
+    for (const att of atts as any[]) {
+      await deleteR2File(c.env, att.url)
+    }
+
+    await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM dm_attachments WHERE message_id = ?').bind(msgId),
+      c.env.DB.prepare('DELETE FROM reactions WHERE message_id = ?').bind(msgId),
+      c.env.DB.prepare('DELETE FROM direct_messages WHERE id = ?').bind(msgId)
+    ])
     return c.json({ success: true })
   } catch (e) {
     return c.json({ error: 'Database error' }, 500)
@@ -1472,9 +1929,42 @@ app.delete('/dms/:id/messages/:msgId', authMiddleware, async (c) => {
 // Pinning / Unpinning Server/DM Messages
 app.put('/messages/:msgId/pin', authMiddleware, async (c) => {
   const msgId = c.req.param('msgId')
+  const user = c.get('user')
   const { is_pinned } = await c.req.json()
   const pinVal = is_pinned ? 1 : 0
   try {
+    // Authorize pin
+    const sMsg: any = await c.env.DB.prepare(`
+      SELECT m.channel_id, c.server_id 
+      FROM messages m
+      JOIN channels c ON m.channel_id = c.id
+      WHERE m.id = ?
+    `).bind(msgId).first()
+
+    if (sMsg) {
+      const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(sMsg.server_id, user.id).first()
+      if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+
+      const perms = await getUserPermissions(c.env, sMsg.server_id, user.id)
+      const server: any = await c.env.DB.prepare('SELECT owner_id FROM servers WHERE id = ?').bind(sMsg.server_id).first()
+      const isOwner = server && server.owner_id === user.id
+      if (!isOwner && !perms.includes('ADMINISTRATOR') && !perms.includes('MANAGE_MESSAGES')) {
+        return c.json({ error: 'Forbidden' }, 403)
+      }
+    } else {
+      const dMsg: any = await c.env.DB.prepare(`
+        SELECT dm.channel_id, dc.user1_id, dc.user2_id
+        FROM direct_messages dm
+        JOIN direct_channels dc ON dm.channel_id = dc.id
+        WHERE dm.id = ?
+      `).bind(msgId).first()
+
+      if (!dMsg) return c.json({ error: 'Message not found' }, 404)
+      if (dMsg.user1_id !== user.id && dMsg.user2_id !== user.id) {
+        return c.json({ error: 'Forbidden' }, 403)
+      }
+    }
+
     // Attempt server message pin
     let result = await c.env.DB.prepare('UPDATE messages SET is_pinned = ? WHERE id = ?').bind(pinVal, msgId).run()
     if (result.meta.changes === 0) {
@@ -1489,7 +1979,13 @@ app.put('/messages/:msgId/pin', authMiddleware, async (c) => {
 
 app.get('/channels/:id/pins', authMiddleware, async (c) => {
   const channelId = c.req.param('id')
+  const user = c.get('user')
   try {
+    const channel: any = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    if (!channel) return c.json({ error: 'Channel not found' }, 404)
+    const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(channel.server_id, user.id).first()
+    if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+
     const { results } = await c.env.DB.prepare(`
       SELECT m.*, u.username, u.avatar 
       FROM messages m 
@@ -1510,7 +2006,14 @@ app.get('/channels/:id/pins', authMiddleware, async (c) => {
 
 app.get('/dms/:id/pins', authMiddleware, async (c) => {
   const dmId = c.req.param('id')
+  const user = c.get('user')
   try {
+    const dmChan: any = await c.env.DB.prepare('SELECT user1_id, user2_id FROM direct_channels WHERE id = ?').bind(dmId).first()
+    if (!dmChan) return c.json({ error: 'DM Channel not found' }, 404)
+    if (dmChan.user1_id !== user.id && dmChan.user2_id !== user.id) {
+      return c.json({ error: 'Forbidden' }, 403)
+    }
+
     const { results } = await c.env.DB.prepare(`
       SELECT m.*, u.username, u.avatar 
       FROM direct_messages m 
@@ -1536,6 +2039,31 @@ app.post('/messages/:msgId/react', authMiddleware, async (c) => {
   const { emoji, action } = await c.req.json()
 
   try {
+    // Authorize reaction
+    const sMsg: any = await c.env.DB.prepare(`
+      SELECT m.channel_id, c.server_id 
+      FROM messages m
+      JOIN channels c ON m.channel_id = c.id
+      WHERE m.id = ?
+    `).bind(msgId).first()
+
+    if (sMsg) {
+      const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(sMsg.server_id, user.id).first()
+      if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+    } else {
+      const dMsg: any = await c.env.DB.prepare(`
+        SELECT dm.channel_id, dc.user1_id, dc.user2_id
+        FROM direct_messages dm
+        JOIN direct_channels dc ON dm.channel_id = dc.id
+        WHERE dm.id = ?
+      `).bind(msgId).first()
+
+      if (!dMsg) return c.json({ error: 'Message not found' }, 404)
+      if (dMsg.user1_id !== user.id && dMsg.user2_id !== user.id) {
+        return c.json({ error: 'Forbidden' }, 403)
+      }
+    }
+
     if (action === 'add') {
       const id = crypto.randomUUID()
       await c.env.DB.prepare('INSERT OR IGNORE INTO reactions (id, message_id, user_id, emoji) VALUES (?, ?, ?, ?)').bind(id, msgId, user.id, emoji).run()
@@ -1554,6 +2082,18 @@ app.post('/channels/:id/typing', authMiddleware, async (c) => {
   const user = c.get('user')
   const { is_typing } = await c.req.json()
   try {
+    const channel: any = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    if (channel) {
+      const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(channel.server_id, user.id).first()
+      if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+    } else {
+      const dmChan: any = await c.env.DB.prepare('SELECT user1_id, user2_id FROM direct_channels WHERE id = ?').bind(channelId).first()
+      if (!dmChan) return c.json({ error: 'Channel not found' }, 404)
+      if (dmChan.user1_id !== user.id && dmChan.user2_id !== user.id) {
+        return c.json({ error: 'Forbidden' }, 403)
+      }
+    }
+
     if (is_typing) {
       await c.env.DB.prepare(`
         INSERT OR REPLACE INTO typing_status (channel_id, user_id, last_typed_at) 
@@ -1575,6 +2115,18 @@ app.get('/channels/:id/typing', authMiddleware, async (c) => {
   const channelId = c.req.param('id')
   const currentUser = c.get('user')
   try {
+    const channel: any = await c.env.DB.prepare('SELECT server_id FROM channels WHERE id = ?').bind(channelId).first()
+    if (channel) {
+      const isMember = await c.env.DB.prepare('SELECT 1 FROM members WHERE server_id = ? AND user_id = ?').bind(channel.server_id, currentUser.id).first()
+      if (!isMember) return c.json({ error: 'Forbidden' }, 403)
+    } else {
+      const dmChan: any = await c.env.DB.prepare('SELECT user1_id, user2_id FROM direct_channels WHERE id = ?').bind(channelId).first()
+      if (!dmChan) return c.json({ error: 'Channel not found' }, 404)
+      if (dmChan.user1_id !== currentUser.id && dmChan.user2_id !== currentUser.id) {
+        return c.json({ error: 'Forbidden' }, 403)
+      }
+    }
+
     // Cleanup stale typing sessions older than 4s
     await c.env.DB.prepare("DELETE FROM typing_status WHERE last_typed_at < datetime('now', '-4 seconds')").run().catch(() => {})
 

@@ -19,6 +19,25 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    if (!usernameRegex.test(username) || username.length < 3 || username.length > 20) {
+      setError("Username must be alphanumeric (can include underscores and dashes) and between 3 and 20 characters.")
+      return
+    }
+
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.")
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters in length.")
+      return
+    }
+
     setLoading(true)
 
     try {

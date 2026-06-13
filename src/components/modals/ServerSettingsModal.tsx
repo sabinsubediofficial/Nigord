@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useServerSettings } from "@/hooks/useServerSettings"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useServerStore } from "@/store/useServerStore"
@@ -22,6 +22,9 @@ export default function ServerSettingsModal({
   const { servers, setServers, setCurrentServer } = useServerStore()
   const isOwner = user?.id === ownerId
 
+  const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
+
   const server = servers.find(s => s.id === serverId)
 
   const { 
@@ -42,8 +45,6 @@ export default function ServerSettingsModal({
   const [name, setName] = useState(serverName)
   const [iconUrl, setIconUrl] = useState(server?.icon || "")
   const [bannerUrl, setBannerUrl] = useState(server?.banner || "")
-  const [uploadingIcon, setUploadingIcon] = useState(false)
-  const [uploadingBanner, setUploadingBanner] = useState(false)
 
   const iconInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
@@ -53,6 +54,24 @@ export default function ServerSettingsModal({
   const [showTransferConfirm, setShowTransferConfirm] = useState(false)
   const [successMsg, setSuccessMsg] = useState("")
   const [errorMsg, setErrorMsg] = useState("")
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false)
+        } else if (showTransferConfirm) {
+          setShowTransferConfirm(false)
+        } else {
+          if (!uploadingIcon && !uploadingBanner) {
+            onClose()
+          }
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [onClose, uploadingIcon, uploadingBanner, showDeleteConfirm, showTransferConfirm])
 
   const handleCreateRole = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,6 +84,12 @@ export default function ServerSettingsModal({
     const file = e.target.files?.[0]
     if (!file) return
     
+    if (file.size > 25 * 1024 * 1024) {
+      setErrorMsg("Icon size exceeds maximum limit of 25MB")
+      if (iconInputRef.current) iconInputRef.current.value = ""
+      return
+    }
+
     const formData = new FormData()
     formData.append('file', file)
     
@@ -84,9 +109,11 @@ export default function ServerSettingsModal({
       } else {
         const data = await res.json()
         setErrorMsg(data.error || "Upload failed")
+        if (iconInputRef.current) iconInputRef.current.value = ""
       }
     } catch (err) {
       setErrorMsg("Upload failed")
+      if (iconInputRef.current) iconInputRef.current.value = ""
     } finally {
       setUploadingIcon(false)
     }
@@ -96,6 +123,12 @@ export default function ServerSettingsModal({
     const file = e.target.files?.[0]
     if (!file) return
     
+    if (file.size > 25 * 1024 * 1024) {
+      setErrorMsg("Banner size exceeds maximum limit of 25MB")
+      if (bannerInputRef.current) bannerInputRef.current.value = ""
+      return
+    }
+
     const formData = new FormData()
     formData.append('file', file)
     
@@ -115,9 +148,11 @@ export default function ServerSettingsModal({
       } else {
         const data = await res.json()
         setErrorMsg(data.error || "Upload failed")
+        if (bannerInputRef.current) bannerInputRef.current.value = ""
       }
     } catch (err) {
       setErrorMsg("Upload failed")
+      if (bannerInputRef.current) bannerInputRef.current.value = ""
     } finally {
       setUploadingBanner(false)
     }
@@ -445,8 +480,12 @@ export default function ServerSettingsModal({
                 {members.map(member => (
                   <div key={member.id} className="flex items-center justify-between p-3 rounded bg-[#1e2022] border border-[#2d2f31]">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shrink-0">
-                        {member.username[0]}
+                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shrink-0 overflow-hidden">
+                        {member.avatar ? (
+                          <img src={getFileUrl(member.avatar)} alt={member.username} className="w-full h-full object-cover" />
+                        ) : (
+                          member.username[0]
+                        )}
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="font-medium text-[#e3e1db] truncate">{member.display_name || member.username}</span>
@@ -459,7 +498,8 @@ export default function ServerSettingsModal({
                       <select 
                         value={member.role_id || ""} 
                         onChange={(e) => updateMemberRole(member.id, e.target.value || null)}
-                        className="bg-[#141517] border border-[#2d2f31] rounded text-xs text-[#e3e1db] p-1.5 focus:outline-none cursor-pointer"
+                        disabled={member.id === ownerId}
+                        className="bg-[#141517] border border-[#2d2f31] rounded text-xs text-[#e3e1db] p-1.5 focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="">No Role</option>
                         {roles.map(role => (

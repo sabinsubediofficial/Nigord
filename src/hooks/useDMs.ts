@@ -24,10 +24,12 @@ export const useDMs = (activeDmId?: string) => {
       if (res.ok) {
         const data = await res.json()
         setDms(data.dms)
+        return data.dms
       }
     } catch (e) {
       console.error(e)
     }
+    return []
   }
 
   const fetchMessages = async (initial = false) => {

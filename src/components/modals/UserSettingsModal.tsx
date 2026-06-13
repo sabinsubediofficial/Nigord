@@ -1,9 +1,9 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, LogOut, Upload, ShieldAlert, Check } from "lucide-react"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, getFileUrl } from "@/lib/api"
 
 export default function UserSettingsModal({ onClose }: { onClose: () => void }) {
   const { user, setUser } = useAuthStore()
@@ -33,6 +33,20 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
   const [accountSuccess, setAccountSuccess] = useState("")
   const [profileSuccess, setProfileSuccess] = useState("")
   const [profileError, setProfileError] = useState("")
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !loading && !uploading) {
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false)
+        } else {
+          onClose()
+        }
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [loading, uploading, onClose, showDeleteConfirm])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -178,6 +192,12 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     const file = e.target.files?.[0]
     if (!file) return
     
+    if (file.size > 25 * 1024 * 1024) {
+      setProfileError("File size exceeds maximum limit of 25MB")
+      if (fileInputRef.current) fileInputRef.current.value = ""
+      return
+    }
+
     const formData = new FormData()
     formData.append('file', file)
     
@@ -193,13 +213,15 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
       if (res.ok) {
         const data = await res.json()
         setAvatarUrl(data.url)
-        setProfileSuccess("Avatar uploaded! Save changes to apply.")
+        setProfileSuccess("Avatar uploaded! Click Save to apply.")
       } else {
         const data = await res.json()
         setProfileError(data.error || "Upload failed")
+        if (fileInputRef.current) fileInputRef.current.value = ""
       }
     } catch (err) {
       setProfileError("Upload failed")
+      if (fileInputRef.current) fileInputRef.current.value = ""
     } finally {
       setUploading(false)
     }
@@ -367,7 +389,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                 <div className="px-4 pb-4 -mt-12 flex items-end gap-4 relative">
                   <div className="w-24 h-24 rounded-full bg-[#1e2022] p-1.5 relative shrink-0 z-10">
                     {avatarUrl ? (
-                      <img src={avatarUrl} alt="Avatar" className="w-full h-full rounded-full object-cover border-4 border-[#1e2022]" />
+                      <img src={getFileUrl(avatarUrl)} alt="Avatar" className="w-full h-full rounded-full object-cover border-4 border-[#1e2022]" />
                     ) : (
                       <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-4xl font-bold uppercase text-[#e3e1db] border-4 border-[#1e2022]">
                         {user?.username[0]}

@@ -67,10 +67,14 @@ export const useFriends = () => {
         body: JSON.stringify({ target_id: targetId }),
         credentials: 'include'
       })
-      if (res.ok) await fetchFriends()
+      if (res.ok) {
+        await fetchFriends()
+        return true
+      }
     } catch (e) {
       console.error(e)
     }
+    return false
   }
 
   const removeFriend = async (targetId: string) => {

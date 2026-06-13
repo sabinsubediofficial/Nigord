@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -22,6 +22,8 @@ export default function LoginPage() {
 
   const setUser = useAuthStore((state) => state.setUser)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirectUrl = searchParams.get("redirect") || "/"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +42,7 @@ export default function LoginPage() {
 
       if (res.ok) {
         setUser(data.user)
-        navigate("/")
+        navigate(redirectUrl)
       } else {
         if (data.unverified) {
           navigate("/verify", { state: { userId: data.userId } })
@@ -60,6 +62,11 @@ export default function LoginPage() {
     setError("")
     setSuccess("")
     
+    if (newPassword.length < 6) {
+      setError("New password must be at least 6 characters in length.")
+      return
+    }
+
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match")
       return

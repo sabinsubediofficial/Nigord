@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { getFileUrl } from '@/lib/api'
 
 export interface Attachment {
   id: string
@@ -47,18 +48,18 @@ export default function MessageContent({ content, attachments }: { content: stri
             <div key={att.id} className="max-w-[400px]">
               {isImage(att.content_type) ? (
                 <img 
-                  src={att.url} 
+                  src={getFileUrl(att.url)} 
                   alt={att.filename} 
                   className="rounded-lg max-h-[300px] object-contain border border-[#1e1f22] cursor-pointer hover:opacity-90 transition-opacity" 
-                  onClick={() => window.open(att.url, '_blank')}
+                  onClick={() => window.open(getFileUrl(att.url), '_blank')}
                 />
               ) : isVideo(att.content_type) ? (
                 <video controls className="rounded-lg max-h-[300px] border border-[#1e1f22]">
-                  <source src={att.url} type={att.content_type} />
+                  <source src={getFileUrl(att.url)} type={att.content_type} />
                 </video>
               ) : (
                 <a 
-                  href={att.url} 
+                  href={getFileUrl(att.url)} 
                   target="_blank" 
                   rel="noreferrer"
                   className="flex items-center gap-3 p-3 rounded bg-[#2b2d31] border border-[#1e1f22] hover:bg-[#35373c] transition-colors w-64"
