@@ -23,7 +23,7 @@ import ChannelSettingsModal from "@/components/modals/ChannelSettingsModal"
 import MessageContent from "@/components/MessageContent"
 import { ServerList } from "@/components/navigation/ServerList"
 import { SidebarHeader } from "@/components/navigation/SidebarHeader"
-import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone } from "lucide-react"
+import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone, Pencil } from "lucide-react"
 
 export default function HomePage() {
   const { user, setUser } = useAuthStore()
@@ -146,6 +146,9 @@ export default function HomePage() {
   const [channelToEdit, setChannelToEdit] = useState<any | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
   const [hoveredChannelId, setHoveredChannelId] = useState<string | null>(null)
+  const [channelStatuses, setChannelStatuses] = useState<Record<string, string>>({})
+  const [editingStatusChannelId, setEditingStatusChannelId] = useState<string | null>(null)
+  const [newChannelStatus, setNewChannelStatus] = useState("")
   const [isTabActive, setIsTabActive] = useState(true)
 
   useEffect(() => {
@@ -1303,26 +1306,16 @@ export default function HomePage() {
                             onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); }} 
                             className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
                               isConnected
-                                ? 'bg-[#2d2f31]/40 text-[#23a55a]'
+                                ? 'bg-[#2d2f31]/40 text-[#e3e1db]'
                                 : (isActive 
                                   ? 'bg-[#2d2f31] text-[#e3e1db]' 
                                   : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]')
                             }`}
                           >
-                            {/* Left accent pill */}
-                            <div 
-                              className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
-                                isConnected
-                                  ? 'h-5 bg-[#23a55a]'
-                                  : (isActive 
-                                    ? 'h-5 bg-[#bc9f84]' 
-                                    : 'h-0 bg-[#bc9f84]/40 group-hover:h-3')
-                              }`} 
-                            />
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <div className="flex items-start gap-2 min-w-0 flex-1">
                               <Volume2 
                                 size={18} 
-                                className={`transition-colors shrink-0 ${
+                                className={`transition-colors shrink-0 mt-[2px] ${
                                   isConnected
                                     ? 'text-[#23a55a]'
                                     : (isActive 
@@ -1330,13 +1323,67 @@ export default function HomePage() {
                                       : 'text-[#767572] group-hover:text-[#dbdee1]')
                                 }`} 
                               />
-                              <span className={`text-[14px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
-                                isConnected
-                                  ? 'font-medium text-[#23a55a]'
-                                  : (isActive
+                              <div className="flex flex-col min-w-0 flex-1 select-none">
+                                <span className={`text-[14px] truncate transition-all duration-200 ${
+                                  isConnected
                                     ? 'font-medium text-[#e3e1db]'
-                                    : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]')
-                              }`}>{channel.name}</span>
+                                    : (isActive
+                                      ? 'font-medium text-[#e3e1db]'
+                                      : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]')
+                                }`}>{channel.name}</span>
+                                
+                                {/* Voice Channel Status */}
+                                {(isConnected || channelStatuses[channel.id]) && (
+                                  <div 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (isConnected) {
+                                        setEditingStatusChannelId(channel.id);
+                                        setNewChannelStatus(channelStatuses[channel.id] || "");
+                                      }
+                                    }}
+                                    className="flex items-center gap-1 group/status text-[11px] text-[#949ba4] hover:text-[#dbdee1] transition-colors mt-0.5 min-w-0 cursor-pointer"
+                                  >
+                                    {editingStatusChannelId === channel.id ? (
+                                      <input
+                                        type="text"
+                                        value={newChannelStatus}
+                                        onChange={(e) => setNewChannelStatus(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.stopPropagation();
+                                            setChannelStatuses(prev => ({ ...prev, [channel.id]: newChannelStatus }));
+                                            setEditingStatusChannelId(null);
+                                          } else if (e.key === 'Escape') {
+                                            e.stopPropagation();
+                                            setEditingStatusChannelId(null);
+                                          }
+                                        }}
+                                        onBlur={() => {
+                                          setChannelStatuses(prev => ({ ...prev, [channel.id]: newChannelStatus }));
+                                          setEditingStatusChannelId(null);
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="bg-[#1e2022] text-[#dbdee1] px-1 py-0.5 rounded outline-none border border-[#bc9f84] w-full"
+                                        placeholder="Set status..."
+                                        autoFocus
+                                      />
+                                    ) : (
+                                      <>
+                                        <span className="truncate max-w-[130px] font-normal">
+                                          {channelStatuses[channel.id] || "Set a channel status"}
+                                        </span>
+                                        {isConnected && (
+                                          <Pencil 
+                                            size={10} 
+                                            className="opacity-0 group-hover/status:opacity-100 transition-opacity shrink-0 ml-0.5 text-[#949ba4]" 
+                                          />
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             
                             <div className="flex items-center gap-1.5 transition-all duration-200 shrink-0 ml-1 opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0">
@@ -1380,24 +1427,28 @@ export default function HomePage() {
                                     className="flex items-center justify-between p-1 rounded-md hover:bg-[#2d2f31]/50 cursor-pointer group/p transition-colors"
                                   >
                                     <div className="flex items-center gap-2 min-w-0">
-                                      <div className={`w-5 h-5 rounded-full bg-[#2b2d31] flex items-center justify-center text-[9px] uppercase font-bold text-[#e3e1db] shrink-0 transition-all duration-150 ${
+                                      <div className={`w-5 h-5 rounded-full bg-[#2b2d31] flex items-center justify-center text-[9px] uppercase font-bold text-[#e3e1db] shrink-0 overflow-hidden transition-all duration-150 ${
                                         isUserSpeaking 
                                           ? 'ring-2 ring-[#23a55a] border-transparent shadow-[0_0_8px_rgba(35,165,90,0.6)] scale-105' 
                                           : 'border border-[#3f4147]'
                                       }`}>
-                                        {p.username[0]}
+                                        {p.avatar ? (
+                                          <img src={getFileUrl(p.avatar)} alt={p.username} className="w-full h-full object-cover" />
+                                        ) : (
+                                          p.username[0]
+                                        )}
                                       </div>
                                       <span className={`text-xs truncate transition-colors duration-150 font-medium ${
                                         isUserSpeaking ? 'text-[#23a55a] font-semibold' : 'text-[#949ba4] group-hover/p:text-[#dbdee1]'
                                       }`}>{p.username}</span>
                                     </div>
                                     <div className="flex items-center gap-1 pr-1 shrink-0">
-                                      {p.is_muted === 1 && <MicOff size={11} className="text-[#ed4245]" />}
+                                      {p.is_muted === 1 && <MicOff size={13} className="text-[#949ba4]" />}
                                       {p.is_deafened === 1 && (
-                                        <div className="relative flex items-center justify-center">
-                                          <Headphones size={11} className="text-[#ed4245]" />
+                                        <div className="relative flex items-center justify-center text-[#949ba4]">
+                                          <Headphones size={13} />
                                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                            <div className="w-[1px] h-[11px] bg-[#ed4245] rotate-45" />
+                                            <div className="w-[1px] h-[13px] bg-[#949ba4] rotate-45" />
                                           </div>
                                         </div>
                                       )}
