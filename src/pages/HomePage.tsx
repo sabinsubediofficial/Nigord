@@ -1772,28 +1772,38 @@ export default function HomePage() {
                     </div>
                   </div>
                 )}
-                <div className="flex-1 p-4 overflow-y-auto flex flex-col-reverse gap-4" onScroll={handleDmScroll}>
-                  {dmMessages.map((msg) => (
-                    <MessageItem
-                      key={msg.id}
-                      msg={msg}
-                      currentUser={user}
-                      onReply={(m) => setReplyToMsg(m)}
-                      onEditStart={(id, content) => {
-                        setEditingMsgId(id)
-                        setEditingContent(content)
-                      }}
-                      editingMsgId={editingMsgId}
-                      editingContent={editingContent}
-                      setEditingContent={setEditingContent}
-                      onEditSubmit={handleEditMsg}
-                      onEditCancel={() => setEditingMsgId(null)}
-                      onDelete={handleDeleteMsg}
-                      onTogglePin={togglePin}
-                      onReact={toggleReaction}
-                      onProfileClick={setSelectedUserProfileId}
-                    />
-                  ))}
+                <div className="flex-1 p-4 overflow-y-auto flex flex-col-reverse" onScroll={handleDmScroll}>
+                  {dmMessages.map((msg, index) => {
+                    const nextMsg = dmMessages[index + 1];
+                    const isGrouped = nextMsg &&
+                      nextMsg.author_id === msg.author_id &&
+                      !msg.reply_to_id &&
+                      new Date(msg.created_at).getMinutes() === new Date(nextMsg.created_at).getMinutes() &&
+                      new Date(msg.created_at).getHours() === new Date(nextMsg.created_at).getHours() &&
+                      new Date(msg.created_at).toDateString() === new Date(nextMsg.created_at).toDateString();
+                    return (
+                      <MessageItem
+                        key={msg.id}
+                        msg={msg}
+                        isGrouped={isGrouped}
+                        currentUser={user}
+                        onReply={(m) => setReplyToMsg(m)}
+                        onEditStart={(id, content) => {
+                          setEditingMsgId(id)
+                          setEditingContent(content)
+                        }}
+                        editingMsgId={editingMsgId}
+                        editingContent={editingContent}
+                        setEditingContent={setEditingContent}
+                        onEditSubmit={handleEditMsg}
+                        onEditCancel={() => setEditingMsgId(null)}
+                        onDelete={handleDeleteMsg}
+                        onTogglePin={togglePin}
+                        onReact={toggleReaction}
+                        onProfileClick={setSelectedUserProfileId}
+                      />
+                    )
+                  })}
                 </div>
                 <div className="px-4 pb-4 pt-0">
                   <div className="bg-[#1e2022] border border-[#2d2f31] rounded-[8px] overflow-hidden">
@@ -1934,10 +1944,18 @@ export default function HomePage() {
             </div>
             <div className="flex-1 flex overflow-hidden relative">
               <div className="flex-1 flex flex-col">
-                <div className="flex-1 p-4 overflow-y-auto flex flex-col-reverse gap-4" onScroll={handleChannelScroll}>
-                  {channelMessages.map((msg) => (
-                    msg.author_id === 'system' ? (
-                      <div key={msg.id} className="flex items-center gap-4 py-2 px-4 -mx-4 hover:bg-[#2e3035] group/system">
+                <div className="flex-1 p-4 overflow-y-auto flex flex-col-reverse" onScroll={handleChannelScroll}>
+                  {channelMessages.map((msg, index) => {
+                    const nextMsg = channelMessages[index + 1];
+                    const isGrouped = nextMsg &&
+                      msg.author_id !== 'system' &&
+                      nextMsg.author_id === msg.author_id &&
+                      !msg.reply_to_id &&
+                      new Date(msg.created_at).getMinutes() === new Date(nextMsg.created_at).getMinutes() &&
+                      new Date(msg.created_at).getHours() === new Date(nextMsg.created_at).getHours() &&
+                      new Date(msg.created_at).toDateString() === new Date(nextMsg.created_at).toDateString();
+                    return msg.author_id === 'system' ? (
+                      <div key={msg.id} className="flex items-center gap-4 py-2 px-4 -mx-4 hover:bg-[#2e3035] group/system mt-3">
                         <div className="w-10 flex justify-center text-[#23a559] shrink-0">
                           <Plus size={18} />
                         </div>
@@ -1947,6 +1965,7 @@ export default function HomePage() {
                       <MessageItem
                         key={msg.id}
                         msg={msg}
+                        isGrouped={isGrouped}
                         currentUser={user}
                         onReply={(m) => setReplyToMsg(m)}
                         onEditStart={(id, content) => {
@@ -1964,7 +1983,7 @@ export default function HomePage() {
                         onProfileClick={setSelectedUserProfileId}
                       />
                     )
-                  ))}
+                  })}
                 </div>
                 <div className="px-4 pb-4 pt-0">
                   <div className="bg-[#1e2022] border border-[#2d2f31] rounded-[8px] overflow-hidden">
@@ -2817,6 +2836,26 @@ function RemoteStream({ stream }: { stream: MediaStream }) {
   return <audio ref={audioRef} autoPlay />
 }
 
+function formatMessageTimestamp(dateInput: string | Date) {
+  const date = new Date(dateInput);
+  const now = new Date();
+  
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  
+  if (msgDate.getTime() === today.getTime()) {
+    return `Today at ${timeStr}`;
+  } else if (msgDate.getTime() === yesterday.getTime()) {
+    return `Yesterday at ${timeStr}`;
+  } else {
+    return `${date.toLocaleDateString()} ${timeStr}`;
+  }
+}
+
 interface MessageItemProps {
   msg: any;
   currentUser: any;
@@ -2831,6 +2870,7 @@ interface MessageItemProps {
   onTogglePin: (msgId: string, isPinned: boolean) => void;
   onReact: (msgId: string, emoji: string, hasReacted: boolean) => void;
   onProfileClick?: (userId: string) => void;
+  isGrouped?: boolean;
 }
 
 function MessageItem({
@@ -2846,7 +2886,8 @@ function MessageItem({
   onDelete,
   onTogglePin,
   onReact,
-  onProfileClick
+  onProfileClick,
+  isGrouped = false
 }: MessageItemProps) {
   const isAuthor = msg.author_id === currentUser?.id;
   const isEditing = editingMsgId === msg.id;
@@ -2870,7 +2911,7 @@ function MessageItem({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   return (
-    <div className="flex flex-col group message-group-container relative hover:bg-[#2e3035] -mx-4 px-4 py-1.5 transition-colors duration-100 ease-in-out">
+    <div className={`flex flex-col group message-group-container relative hover:bg-[#2e3035] -mx-4 px-4 transition-colors duration-100 ease-in-out ${isGrouped ? 'py-[2px] mt-[2px]' : 'py-1.5 mt-3'}`}>
       {/* Reply header */}
       {msg.reply_to_id && (
         <div className="flex items-center gap-1.5 text-xs text-[#b5bac1] ml-14 mb-1 select-none">
@@ -2881,27 +2922,36 @@ function MessageItem({
       )}
 
       <div className="flex gap-4">
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-[#5865f2] flex items-center justify-center shrink-0 mt-0.5 uppercase font-bold text-white shadow-sm cursor-pointer hover:opacity-85 overflow-hidden" onClick={() => onProfileClick?.(msg.author_id)}>
-          {msg.avatar ? (
-            <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
-          ) : (
-            msg.username?.[0] || 'U'
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2">
-            <span className="font-bold hover:underline cursor-pointer text-white" onClick={() => onProfileClick?.(msg.author_id)}>{msg.username}</span>
-            <span className="text-[10px] font-medium text-[#949ba4] uppercase">
-              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            {msg.is_pinned === 1 && (
-              <span title="Pinned">
-                <Pin size={10} className="text-[#f5a623] fill-[#f5a623] shrink-0" />
-              </span>
+        {isGrouped ? (
+          /* Gutter placeholder with hover timestamp */
+          <div className="w-10 shrink-0 select-none flex items-center justify-center text-[9px] text-[#949ba4] opacity-0 group-hover:opacity-100 pr-1 h-5 mt-0.5 font-medium">
+            {new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M$/i, '')}
+          </div>
+        ) : (
+          /* Avatar */
+          <div className="w-10 h-10 rounded-full bg-[#5865f2] flex items-center justify-center shrink-0 mt-0.5 uppercase font-bold text-white shadow-sm cursor-pointer hover:opacity-85 overflow-hidden" onClick={() => onProfileClick?.(msg.author_id)}>
+            {msg.avatar ? (
+              <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
+            ) : (
+              msg.username?.[0] || 'U'
             )}
           </div>
+        )}
+
+        <div className="flex-1 min-w-0">
+          {!isGrouped && (
+            <div className="flex items-baseline gap-2">
+              <span className="font-bold hover:underline cursor-pointer text-white" onClick={() => onProfileClick?.(msg.author_id)}>{msg.username}</span>
+              <span className="text-[10px] font-medium text-[#949ba4]">
+                {formatMessageTimestamp(msg.created_at)}
+              </span>
+              {msg.is_pinned === 1 && (
+                <span title="Pinned">
+                  <Pin size={10} className="text-[#f5a623] fill-[#f5a623] shrink-0" />
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Message Content / Editing mode */}
           {isEditing ? (
