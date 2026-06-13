@@ -290,7 +290,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                 <form onSubmit={handleUpdateAccount} className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase text-[#a3a29e]">Username</label>
-                    <Input value={username} onChange={(e) => setUsername(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84]" />
+                    <Input value={username} onChange={(e) => setUsername(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" />
                   </div>
 
                   <div className="w-full h-[1px] bg-[#2d2f31] my-4" />
@@ -299,22 +299,22 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase text-[#a3a29e]">Current Password</label>
-                      <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84]" />
+                      <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase text-[#a3a29e]">New Password</label>
-                        <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84]" />
+                        <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase text-[#a3a29e]">Confirm Password</label>
-                        <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84]" />
+                        <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" />
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-end pt-2">
-                    <Button type="submit" disabled={loading} className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold">
+                    <Button type="submit" disabled={loading} className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold rounded-[4px]">
                       Save Account Changes
                     </Button>
                   </div>
@@ -330,11 +330,11 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                   
                   {recoveryCode ? (
                     <div className="bg-[#141517] p-4 rounded-lg border border-[#2d2f31] flex flex-col items-center gap-2 select-text">
-                      <span className="text-[10px] uppercase font-bold text-[#bc9f84]">Your Recovery Code (Save this safely!)</span>
+                      <span className="text-[10px] uppercase font-bold text-[#5865f2]">Your Recovery Code (Save this safely!)</span>
                       <span className="font-mono text-xl tracking-wider text-[#e3e1db] font-bold">{recoveryCode}</span>
                     </div>
                   ) : (
-                    <Button onClick={handleGenerateRecoveryCode} disabled={loading} className="bg-[#2d2f31] text-[#e3e1db] hover:bg-[#bc9f84] hover:text-[#141517]">
+                    <Button onClick={handleGenerateRecoveryCode} disabled={loading} className="bg-[#2d2f31] text-[#e3e1db] hover:bg-[#5865f2] hover:text-white rounded-[4px]">
                       Generate Recovery Code
                     </Button>
                   )}
@@ -387,7 +387,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
               )}
 
               <div className="bg-[#1e2022] rounded-xl overflow-hidden shadow-2xl border border-[#2d2f31]">
-                <div className="h-24 bg-[#bc9f84]" />
+                <div className="h-24 bg-[#5865f2]" />
                 <div className="px-4 pb-4 -mt-12 flex items-end gap-4 relative">
                   <div className="w-24 h-24 rounded-full bg-[#1e2022] p-1.5 relative shrink-0 z-10">
                     {avatarUrl ? (
@@ -416,18 +416,18 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                   <form onSubmit={handleUpdateProfile} className="space-y-4">
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase text-[#a3a29e]">Display Name</label>
-                      <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-[#1e2022] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84]" />
+                      <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="bg-[#1e2022] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase text-[#a3a29e]">Bio</label>
-                      <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="w-full min-h-[100px] p-3 rounded-md bg-[#1e2022] border border-[#2d2f31] text-[#e3e1db] text-sm focus:outline-none resize-none focus:border-[#bc9f84]" placeholder="Tell us about yourself" />
+                      <textarea value={bio} onChange={(e) => setBio(e.target.value)} className="w-full min-h-[100px] p-3 rounded-md bg-[#1e2022] border border-[#2d2f31] text-[#e3e1db] text-sm focus:outline-none resize-none focus:border-[#5865f2]" placeholder="Tell us about yourself" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase text-[#a3a29e]">Status Message</label>
-                      <Input value={statusMessage} onChange={(e) => setStatusMessage(e.target.value)} className="bg-[#1e2022] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84]" placeholder="What's on your mind?" />
+                      <Input value={statusMessage} onChange={(e) => setStatusMessage(e.target.value)} className="bg-[#1e2022] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" placeholder="What's on your mind?" />
                     </div>
                     <div className="flex justify-end">
-                      <Button type="submit" disabled={loading || uploading} className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold">
+                      <Button type="submit" disabled={loading || uploading} className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold rounded-[4px]">
                         Save Changes
                       </Button>
                     </div>

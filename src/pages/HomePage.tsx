@@ -1125,7 +1125,7 @@ export default function HomePage() {
                             )}
                           </div>
                           {dm.active_call && dm.active_call > 0 ? (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#bc9f84] border border-[#1e2022] flex items-center justify-center text-[#141517]">
+                            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#23a55a] border border-[#1e2022] flex items-center justify-center text-white">
                               <Phone size={6} className="fill-current" />
                             </div>
                           ) : null}
@@ -1133,14 +1133,14 @@ export default function HomePage() {
                         <div className="flex flex-col min-w-0 flex-1 text-left">
                           <span className={`font-medium text-sm truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-[#e3e1db] font-bold' : ''}`}>{dm.name}</span>
                           {dm.active_call && dm.active_call > 0 ? (
-                            <span className="text-[10px] text-[#bc9f84] font-semibold flex items-center gap-1 leading-none mt-0.5">
-                              <Phone size={8} className="fill-current text-[#bc9f84]" />
+                            <span className="text-[10px] text-[#23a55a] font-semibold flex items-center gap-1 leading-none mt-0.5">
+                              <Phone size={8} className="fill-current text-[#23a55a]" />
                               In a call
                             </span>
                           ) : null}
                         </div>
                         {unreadCount > 0 && activeDmId !== dm.id && (
-                          <div className="absolute right-2 bg-[#bc9f84] text-[#141517] text-[10px] font-bold px-1.5 h-4 rounded-full flex items-center justify-center">
+                          <div className="absolute right-2 bg-[#f23f43] text-white text-[10px] font-bold px-1.5 h-4 rounded-full flex items-center justify-center">
                             {unreadCount}
                           </div>
                         )}
@@ -1189,10 +1189,10 @@ export default function HomePage() {
                               <div 
                                 className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
                                   isActive 
-                                    ? 'h-5 bg-[#bc9f84]' 
+                                    ? 'h-5 bg-[#f2f3f5]' 
                                     : isUnread 
                                       ? 'h-2.5 bg-[#949ba4] group-hover:h-3.5' 
-                                      : 'h-0 bg-[#bc9f84]/40 group-hover:h-3'
+                                      : 'h-0 bg-[#f2f3f5]/40 group-hover:h-3'
                                 }`} 
                               />
                               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1339,7 +1339,7 @@ export default function HomePage() {
                                               setEditingStatusChannelId(null);
                                             }}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="bg-[#1e2022] text-[#dbdee1] px-1 py-0.5 rounded outline-none border border-[#bc9f84] w-full"
+                                            className="bg-[#1e2022] text-[#dbdee1] px-1 py-0.5 rounded outline-none border border-[#5865f2] w-full"
                                             placeholder="Set status..."
                                             autoFocus
                                           />
@@ -1446,7 +1446,7 @@ export default function HomePage() {
             {/* Resizable Sidebar Drag Handle */}
             <div 
               onMouseDown={handleMouseDown}
-              className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-[#bc9f84]/30 active:bg-[#bc9f84]/50 z-30 transition-colors"
+              className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-white/10 active:bg-white/20 z-30 transition-colors"
             />
           </div>
         </div>
@@ -1479,10 +1479,10 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="secondary" size="icon" onClick={toggleVideo} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isVideoEnabled ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#bc9f84]/80' : ''}`} title={isVideoEnabled ? 'Stop Video' : 'Video'}>
+                  <Button variant="secondary" size="icon" onClick={toggleVideo} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isVideoEnabled ? 'bg-[#23a55a] text-white hover:bg-[#1a7f47]' : ''}`} title={isVideoEnabled ? 'Stop Video' : 'Video'}>
                     {isVideoEnabled ? <VideoOff size={16} /> : <Video size={16} />}
                   </Button>
-                  <Button variant="secondary" size="icon" onClick={toggleScreenShare} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isScreenSharing ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]' : ''}`} title={isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}>
+                  <Button variant="secondary" size="icon" onClick={toggleScreenShare} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isScreenSharing ? 'bg-[#23a55a] text-white hover:bg-[#1a7f47]' : ''}`} title={isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}>
                     <MonitorUp size={16} />
                   </Button>
                 </div>
@@ -1594,7 +1594,7 @@ export default function HomePage() {
               <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'all' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('all')}>All</Button>
               <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'pending' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('pending')}>Pending</Button>
               <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'blocked' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('blocked')}>Blocked</Button>
-              <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'add' ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold' : 'text-[#bc9f84] bg-transparent hover:bg-[#2d2f31]/50'}`} onClick={() => setFriendsFilter('add')}>Add Friend</Button>
+              <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'add' ? 'bg-[#248046] text-white hover:bg-[#1a6535] font-medium' : 'text-[#23a55a] bg-transparent hover:bg-[#23a55a]/10'}`} onClick={() => setFriendsFilter('add')}>Add Friend</Button>
             </div>
             
             <div className="flex-1 p-6 overflow-y-auto">
@@ -1604,7 +1604,7 @@ export default function HomePage() {
                   <p className="text-[#a3a29e] text-sm mb-4">You can add friends with their Nigord username.</p>
                   <form onSubmit={handleSearchUsers} className="flex gap-2 mb-6">
                     <div className="relative flex-1">
-                      <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="You can add friends with their Nigord username." className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] pl-4 pr-10 focus-visible:ring-1 focus-visible:ring-[#bc9f84] focus-visible:ring-offset-0" />
+                       <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="You can add friends with their Nigord username." className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] pl-4 pr-10 focus-visible:ring-1 focus-visible:ring-[#5865f2] focus-visible:ring-offset-0" />
                       <Button type="submit" size="icon" variant="ghost" className="absolute right-0 top-0 text-[#a3a29e] hover:text-[#e3e1db]"><Search size={18} /></Button>
                     </div>
                   </form>
@@ -1623,7 +1623,7 @@ export default function HomePage() {
                             </div>
                             <span className="font-bold text-[#e3e1db]">{u.username}</span>
                           </div>
-                          <Button size="sm" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]" onClick={async () => { const ok = await sendRequest(u.id); if (ok) showToast("Friend request sent!"); }}>Send Request</Button>
+                          <Button size="sm" className="bg-[#5865f2] text-white hover:bg-[#4752c4]" onClick={async () => { const ok = await sendRequest(u.id); if (ok) showToast("Friend request sent!"); }}>Send Request</Button>
                         </div>
                       ))}
                     </div>
@@ -1662,7 +1662,7 @@ export default function HomePage() {
                       <div className="flex gap-2">
                         {friend.status === 'pending' && friend.direction === 'incoming' && (
                           <>
-                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={async () => {
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#23a55a] hover:bg-[#23a55a]/10" onClick={async () => {
                               const success = await acceptRequest(friend.id)
                               if (success) {
                                 const latestDms = await fetchDMs()
@@ -1672,15 +1672,15 @@ export default function HomePage() {
                                 }
                               }
                             }} title="Accept"><Check size={16} /></Button>
-                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => removeFriend(friend.id)} title="Decline"><XIcon size={16} /></Button>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#f23f43] hover:bg-[#f23f43]/10" onClick={() => removeFriend(friend.id)} title="Decline"><XIcon size={16} /></Button>
                           </>
                         )}
                         {friend.status === 'pending' && friend.direction === 'outgoing' && (
-                          <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => removeFriend(friend.id)} title="Cancel Request"><XIcon size={16} /></Button>
+                          <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#f23f43] hover:bg-[#f23f43]/10" onClick={() => removeFriend(friend.id)} title="Cancel Request"><XIcon size={16} /></Button>
                         )}
                         {friend.status === 'accepted' && (
                           <>
-                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={async () => {
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#5865f2] hover:bg-[#5865f2]/10" onClick={async () => {
                               let existingDm = dms.find(d => d.target_id === friend.id)
                               if (!existingDm) {
                                 const latestDms = await fetchDMs()
@@ -1692,8 +1692,8 @@ export default function HomePage() {
                                 alert("Failed to find or create DM channel. Please try again.")
                               }
                             }} title="Message"><MessageSquare size={16} /></Button>
-                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => removeFriend(friend.id)} title="Remove Friend"><UserMinus size={16} /></Button>
-                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#bc9f84]" onClick={() => blockUser(friend.id)} title="Block User"><Ban size={16} /></Button>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#f23f43] hover:bg-[#f23f43]/10" onClick={() => removeFriend(friend.id)} title="Remove Friend"><UserMinus size={16} /></Button>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#f23f43] hover:bg-[#f23f43]/10" onClick={() => blockUser(friend.id)} title="Block User"><Ban size={16} /></Button>
                           </>
                         )}
                         {friend.status === 'blocked' && (
@@ -1717,8 +1717,8 @@ export default function HomePage() {
               <div className="flex flex-col text-left">
                 <span className="font-bold text-[#e3e1db]">@{dms.find(d => d.id === activeDmId)?.name}</span>
                 {isJoined && activeVoiceChannel?.id === activeDmId && (
-                  <span className="text-[10px] text-[#bc9f84] font-semibold flex items-center gap-1 leading-none">
-                    <Phone size={8} className="fill-current text-[#bc9f84]" />
+                  <span className="text-[10px] text-[#23a55a] font-semibold flex items-center gap-1 leading-none">
+                    <Phone size={8} className="fill-current text-[#23a55a]" />
                     In a call
                   </span>
                 )}
@@ -2153,8 +2153,8 @@ export default function HomePage() {
               {showPins && (
                 <div className="w-80 obsidian-card flex flex-col absolute right-2.5 top-2.5 bottom-2.5 z-10 shadow-2xl border-none">
                   <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shrink-0 bg-[#2b2d31]">
-                    <div className="flex items-center gap-1.5 font-bold text-[#bc9f84]">
-                      <Pin size={16} className="text-[#bc9f84] fill-[#bc9f84]" />
+                    <div className="flex items-center gap-1.5 font-bold text-[#5865f2]">
+                      <Pin size={16} className="text-[#5865f2] fill-[#5865f2]" />
                       <span className="text-[#e3e1db]">Pinned Messages</span>
                     </div>
                     <Button variant="ghost" size="icon" className="w-6 h-6 hover:text-white text-[#a3a29e]" onClick={() => setShowPins(false)}><XIcon size={14} /></Button>
@@ -2179,7 +2179,7 @@ export default function HomePage() {
                           <MessageContent content={msg.content} attachments={msg.attachments} />
                           <button
                             onClick={() => togglePin(msg.id, true)}
-                            className="absolute top-2 right-2 opacity-0 group-hover/pin-item:opacity-100 text-xs text-[#bc9f84] hover:underline transition-opacity"
+                            className="absolute top-2 right-2 opacity-0 group-hover/pin-item:opacity-100 text-xs text-[#5865f2] hover:underline transition-opacity"
                           >
                             Unpin
                           </button>
@@ -2420,7 +2420,7 @@ export default function HomePage() {
                 })
                 return (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#313338]">
-                    <Volume2 size={64} className="text-[#bc9f84] mb-4 opacity-80" />
+                    <Volume2 size={64} className="text-[#5865f2] mb-4 opacity-80" />
                     <h1 className="text-3xl font-extrabold text-[#e3e1db] mb-2">{targetChannel.name}</h1>
                     
                     {activeParticipants.length === 0 ? (
@@ -2452,7 +2452,7 @@ export default function HomePage() {
                     
                     <button 
                       onClick={() => handleJoinVoice(targetChannel)} 
-                      className="bg-[#bc9f84] hover:bg-[#a88d71] text-[#141517] font-bold px-8 py-3 rounded-full transition-all shadow-xl text-sm cursor-pointer"
+                      className="bg-[#23a55a] hover:bg-[#1a7f47] text-white font-bold px-8 py-3 rounded-full transition-all shadow-xl text-sm cursor-pointer"
                     >
                       Join Voice
                     </button>
@@ -2506,7 +2506,7 @@ export default function HomePage() {
         <div className="w-72 bg-[#1e2022] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31] select-none text-left">
           {/* Header block (non-scrollable) to prevent avatar clipping */}
           <div className="relative shrink-0">
-            <div className="h-16 bg-[#bc9f84]" />
+            <div className="h-16 bg-[#5865f2]" />
             <div className="px-4 -mt-10 mb-2">
               <div className="w-20 h-20 rounded-full bg-[#1e2022] p-1.5 relative z-10">
                 <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] shadow-lg border border-[#343638] overflow-hidden">
@@ -2588,8 +2588,8 @@ export default function HomePage() {
           <div className="bg-[#1e2022] w-full max-w-md rounded-xl overflow-hidden shadow-2xl border border-[#2d2f31] p-6 text-center">
             <h2 className="text-2xl font-bold mb-2 text-[#e3e1db]">Customize your server</h2>
             <form onSubmit={handleCreateServer} className="text-left space-y-4">
-              <Input autoFocus value={newServerName} onChange={(e) => setNewServerName(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus-visible:ring-[#bc9f84]" placeholder={`${user?.username}'s server`} />
-              <div className="flex justify-between pt-4"><Button variant="ghost" type="button" className="text-[#a3a29e] hover:text-[#e3e1db]" onClick={() => setShowCreateServerModal(false)}>Back</Button><Button type="submit" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold">Create</Button></div>
+              <Input autoFocus value={newServerName} onChange={(e) => setNewServerName(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus-visible:ring-[#5865f2]" placeholder={`${user?.username}'s server`} />
+              <div className="flex justify-between pt-4"><Button variant="ghost" type="button" className="text-[#a3a29e] hover:text-[#e3e1db]" onClick={() => setShowCreateServerModal(false)}>Back</Button><Button type="submit" className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-bold">Create</Button></div>
             </form>
           </div>
         </div>
@@ -2600,11 +2600,11 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold mb-6 text-[#e3e1db]">Create Channel</h2>
             <form onSubmit={handleCreateChannel} className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
-                <div onClick={() => setNewChannelType('text')} className={`p-3 rounded-lg bg-[#141517] cursor-pointer border-2 flex items-center gap-2 text-[#e3e1db] ${newChannelType === 'text' ? 'border-[#bc9f84]' : 'border-[#2d2f31]'}`}><Hash size={16} /> Text</div>
-                <div onClick={() => setNewChannelType('voice')} className={`p-3 rounded-lg bg-[#141517] cursor-pointer border-2 flex items-center gap-2 text-[#e3e1db] ${newChannelType === 'voice' ? 'border-[#bc9f84]' : 'border-[#2d2f31]'}`}><Volume2 size={16} /> Voice</div>
+                <div onClick={() => setNewChannelType('text')} className={`p-3 rounded-lg bg-[#141517] cursor-pointer border-2 flex items-center gap-2 text-[#e3e1db] ${newChannelType === 'text' ? 'border-[#5865f2]' : 'border-[#2d2f31]'}`}><Hash size={16} /> Text</div>
+                <div onClick={() => setNewChannelType('voice')} className={`p-3 rounded-lg bg-[#141517] cursor-pointer border-2 flex items-center gap-2 text-[#e3e1db] ${newChannelType === 'voice' ? 'border-[#5865f2]' : 'border-[#2d2f31]'}`}><Volume2 size={16} /> Voice</div>
               </div>
-              <Input autoFocus value={newChannelName} onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus-visible:ring-[#bc9f84]" placeholder="new-channel" />
-              <div className="flex justify-end pt-4 gap-4"><Button variant="ghost" type="button" className="text-[#a3a29e] hover:text-[#e3e1db]" onClick={() => setShowCreateChannelModal(false)}>Cancel</Button><Button type="submit" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold">Create Channel</Button></div>
+              <Input autoFocus value={newChannelName} onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus-visible:ring-[#5865f2]" placeholder="new-channel" />
+              <div className="flex justify-end pt-4 gap-4"><Button variant="ghost" type="button" className="text-[#a3a29e] hover:text-[#e3e1db]" onClick={() => setShowCreateChannelModal(false)}>Cancel</Button><Button type="submit" className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-bold">Create Channel</Button></div>
             </form>
           </div>
         </div>
@@ -2663,7 +2663,7 @@ export default function HomePage() {
               <>
                 {/* Header block (non-scrollable) to prevent avatar clipping */}
                 <div className="relative shrink-0">
-                  <div className="h-16 bg-[#bc9f84]" />
+                  <div className="h-16 bg-[#5865f2]" />
                   <div className="px-4 -mt-8 mb-2">
                     <div className="w-16 h-16 rounded-full bg-[#1e2022] p-1 relative z-10">
                       <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-2xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-md overflow-hidden">
@@ -2741,7 +2741,7 @@ export default function HomePage() {
                   openDm(incomingCall.channelId)
                   acceptCall()
                 }}
-                className="flex-1 py-3 bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg animate-pulse"
+                className="flex-1 py-3 bg-[#23a55a] text-white hover:bg-[#1a7f47] font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg animate-pulse"
               >
                 <Phone size={18} />
                 Accept
@@ -2771,7 +2771,7 @@ export default function HomePage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-[#bc9f84] text-[#141517] px-4 py-2.5 rounded-lg shadow-2xl font-semibold border border-[#a88d71] z-[110] animate-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-6 right-6 bg-[#232428] text-[#e3e1db] px-4 py-2.5 rounded-lg shadow-2xl font-semibold border border-[#2d2f31] z-[110] animate-in slide-in-from-bottom duration-200">
           {toast}
         </div>
       )}

@@ -39,7 +39,7 @@ export default function ServerSettingsModal({
 
   const [activeTab, setActiveTab] = useState<'overview' | 'roles' | 'members'>('overview')
   const [newRoleName, setNewRoleName] = useState("")
-  const [newRoleColor, setNewRoleColor] = useState("#bc9f84")
+  const [newRoleColor, setNewRoleColor] = useState("#99aab5")
 
   // Overview States
   const [name, setName] = useState(serverName)
@@ -268,7 +268,7 @@ export default function ServerSettingsModal({
                         <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider block">Server Icon</label>
                         <div 
                           onClick={() => iconInputRef.current?.click()}
-                          className="relative group w-24 h-24 rounded-full overflow-hidden bg-[#141517] border-2 border-[#2d2f31] flex items-center justify-center cursor-pointer hover:border-[#bc9f84] transition-all"
+                          className="relative group w-24 h-24 rounded-full overflow-hidden bg-[#141517] border-2 border-[#2d2f31] flex items-center justify-center cursor-pointer hover:border-[#5865f2] transition-all"
                         >
                           {iconUrl ? (
                             <img src={getFileUrl(iconUrl)} className="w-full h-full object-cover" alt="Server Icon" />
@@ -304,7 +304,7 @@ export default function ServerSettingsModal({
                         <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider block">Server Banner</label>
                         <div 
                           onClick={() => bannerInputRef.current?.click()} 
-                          className="relative group h-24 w-full rounded-lg bg-[#141517] border-2 border-[#2d2f31] border-dashed flex items-center justify-center cursor-pointer hover:border-[#bc9f84] overflow-hidden transition-all"
+                          className="relative group h-24 w-full rounded-lg bg-[#141517] border-2 border-[#2d2f31] border-dashed flex items-center justify-center cursor-pointer hover:border-[#5865f2] overflow-hidden transition-all"
                         >
                           {bannerUrl ? (
                             <img src={getFileUrl(bannerUrl)} className="w-full h-full object-cover" alt="Server Banner" />
@@ -346,11 +346,11 @@ export default function ServerSettingsModal({
                       <Input 
                         value={name} 
                         onChange={(e) => setName(e.target.value)} 
-                        className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84]" 
+                        className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" 
                       />
                     </div>
                     <div className="flex justify-end">
-                      <Button type="submit" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold">
+                      <Button type="submit" className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold rounded-[4px]">
                         Save Changes
                       </Button>
                     </div>
@@ -369,7 +369,7 @@ export default function ServerSettingsModal({
                         <select
                           value={transferTargetUserId}
                           onChange={(e) => setTransferTargetUserId(e.target.value)}
-                          className="w-full bg-[#141517] border border-[#2d2f31] rounded-md text-[#e3e1db] p-2 focus:outline-none focus:border-[#bc9f84]"
+                          className="w-full bg-[#141517] border border-[#2d2f31] rounded-md text-[#e3e1db] p-2 focus:outline-none focus:border-[#5865f2]"
                         >
                           <option value="">Choose a member...</option>
                           {members
@@ -384,7 +384,7 @@ export default function ServerSettingsModal({
                       <Button 
                         onClick={() => transferTargetUserId && setShowTransferConfirm(true)} 
                         disabled={!transferTargetUserId} 
-                        className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold"
+                        className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold rounded-[4px]"
                       >
                         Transfer
                       </Button>
@@ -449,13 +449,13 @@ export default function ServerSettingsModal({
                 <form onSubmit={handleCreateRole} className="flex gap-4 items-end">
                   <div className="flex-1 space-y-2">
                     <label className="text-xs font-bold uppercase text-[#a3a29e]">Role Name</label>
-                    <Input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84]" placeholder="New Role" />
+                    <Input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" placeholder="New Role" />
                   </div>
                   <div className="w-24 space-y-2">
                     <label className="text-xs font-bold uppercase text-[#a3a29e]">Color</label>
                     <Input type="color" value={newRoleColor} onChange={(e) => setNewRoleColor(e.target.value)} className="h-9 p-1 bg-[#141517] border border-[#2d2f31] cursor-pointer" />
                   </div>
-                  <Button type="submit" className="bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold">Create</Button>
+                  <Button type="submit" className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold rounded-[4px]">Create</Button>
                 </form>
               </div>
 

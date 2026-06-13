@@ -59,8 +59,8 @@ export const ServerList = React.memo(function ServerList({
           onClick={goHome}
           className={`w-12 h-12 rounded-[12px] hover:rounded-[8px] transition-all flex items-center justify-center text-[#e3e1db] cursor-pointer relative ${
             activeTab === 'home' 
-              ? 'bg-[#bc9f84] text-[#141517] rounded-[8px]' 
-              : 'bg-[#2d2f31] hover:bg-[#bc9f84] hover:text-[#141517]'
+              ? 'bg-[#5865f2] text-white rounded-[8px]' 
+              : 'bg-[#2d2f31] hover:bg-[#5865f2] hover:text-white'
           }`}
         >
           <MessageSquare size={24} />
@@ -100,8 +100,8 @@ export const ServerList = React.memo(function ServerList({
               onClick={() => { sendTypingStatus(false); onSelectServer(server); }} 
               className={`w-12 h-12 rounded-[12px] hover:rounded-[8px] transition-all flex items-center justify-center text-white cursor-pointer relative ${
                 isActive 
-                  ? 'rounded-[8px] bg-[#bc9f84] text-[#141517]' 
-                  : 'bg-[#2d2f31] hover:bg-[#bc9f84] hover:text-[#141517]'
+                  ? 'rounded-[8px] bg-[#5865f2] text-white' 
+                  : 'bg-[#2d2f31] hover:bg-[#5865f2] hover:text-white'
               }`}
             >
               {server.icon ? (
@@ -114,7 +114,7 @@ export const ServerList = React.memo(function ServerList({
                 <span className="text-sm font-medium">{server.name.substring(0, 2).toUpperCase()}</span>
               )}
               {unreadCount > 0 && (
-                <div className="absolute -bottom-1 -right-1 bg-[#bc9f84] text-[#141517] text-[10px] font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border-4 border-[#1e1f22] ring-0">
+                <div className="absolute -bottom-1 -right-1 bg-[#f23f43] text-white text-[10px] font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border-4 border-[#1e1f22] ring-0">
                   {unreadCount}
                 </div>
               )}
@@ -127,7 +127,7 @@ export const ServerList = React.memo(function ServerList({
       <div className="relative flex items-center justify-center w-full group py-0.5">
         <div 
           onClick={onAddServer} 
-          className="w-12 h-12 bg-[#2d2f31] rounded-[12px] hover:rounded-[8px] transition-all flex items-center justify-center text-[#bc9f84] hover:bg-[#bc9f84] hover:text-[#141517] cursor-pointer"
+          className="w-12 h-12 bg-[#2d2f31] rounded-[12px] hover:rounded-[8px] transition-all flex items-center justify-center text-[#23a55a] hover:bg-[#23a55a] hover:text-white cursor-pointer"
         >
           <Plus size={24} />
         </div>

@@ -95,7 +95,7 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#141517] p-4 font-sans selection:bg-[#bc9f84]/30">
+    <div className="flex min-h-screen items-center justify-center bg-[#141517] p-4 font-sans selection:bg-[#5865f2]/30">
       <div className="w-full max-w-[420px] rounded-xl bg-[#1e2022] p-8 shadow-2xl border border-[#2d2f31]/60">
         <h2 className="text-center text-2xl font-bold text-[#e3e1db]">Verify Email</h2>
         <p className="mb-6 text-center text-[#a3a29e] text-sm">
@@ -133,7 +133,7 @@ export default function VerificationPage() {
               maxLength={6}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-12 text-center text-2xl tracking-[0.5em] font-bold"
+              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-12 text-center text-2xl tracking-[0.5em] font-bold"
               required
             />
           </div>
@@ -141,7 +141,7 @@ export default function VerificationPage() {
           <Button
             type="submit"
             disabled={loading === "verify" || code.length !== 6}
-            className="w-full bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold h-10 transition-all shadow-md mt-2"
+            className="w-full bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold h-10 transition-all shadow-md mt-2 rounded-[4px]"
           >
             {loading === "verify" ? "Verifying..." : "Verify"}
           </Button>
@@ -151,7 +151,7 @@ export default function VerificationPage() {
               type="button"
               disabled={loading === "resend" || resendTimer > 0}
               onClick={handleResend}
-              className="text-xs text-[#bc9f84] hover:underline cursor-pointer disabled:text-[#767572] disabled:no-underline transition-colors flex items-center gap-1.5 justify-center w-full"
+              className="text-xs text-[#5865f2] hover:underline cursor-pointer disabled:text-[#767572] disabled:no-underline transition-colors flex items-center gap-1.5 justify-center w-full"
             >
               <RefreshCw size={12} className={loading === "resend" ? "animate-spin" : ""} />
               {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : "Resend Verification Code"}

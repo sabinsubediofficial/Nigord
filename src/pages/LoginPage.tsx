@@ -101,7 +101,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#141517] p-4 font-sans selection:bg-[#bc9f84]/30">
+    <div className="flex min-h-screen items-center justify-center bg-[#141517] p-4 font-sans selection:bg-[#5865f2]/30">
       <div className="w-full max-w-[420px] rounded-xl bg-[#1e2022] p-8 shadow-2xl border border-[#2d2f31]/60">
         {!isRecovering ? (
           <div>
@@ -126,7 +126,7 @@ export default function LoginPage() {
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+                  className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
                   required
                 />
               </div>
@@ -136,7 +136,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+                  className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
                   required
                 />
               </div>
@@ -149,7 +149,7 @@ export default function LoginPage() {
                     setError("")
                     setSuccess("")
                   }} 
-                  className="text-xs text-[#bc9f84] hover:underline cursor-pointer transition-colors"
+                  className="text-xs text-[#5865f2] hover:underline cursor-pointer transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -158,14 +158,14 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading === "login"}
-                className="w-full bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold h-10 transition-all shadow-md mt-2"
+                className="w-full bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold h-10 transition-all shadow-md mt-2 rounded-[4px]"
               >
                 {loading === "login" ? "Logging in..." : "Log In"}
               </Button>
 
               <p className="text-xs text-[#a3a29e] text-center pt-2">
                 Need an account?{" "}
-                <Link to="/register" className="text-[#bc9f84] hover:underline font-semibold ml-0.5">
+                <Link to="/register" className="text-[#5865f2] hover:underline font-semibold ml-0.5">
                   Register
                 </Link>
               </p>
@@ -189,7 +189,7 @@ export default function LoginPage() {
                   type="text"
                   value={usernameOrEmail}
                   onChange={(e) => setUsernameOrEmail(e.target.value)}
-                  className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+                  className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
                   required
                 />
               </div>
@@ -201,7 +201,7 @@ export default function LoginPage() {
                   placeholder="NIGORD-XXXX-XXXX"
                   value={recoveryCode}
                   onChange={(e) => setRecoveryCode(e.target.value)}
-                  className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10 font-mono tracking-wider"
+                  className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10 font-mono tracking-wider"
                   required
                 />
               </div>
@@ -213,7 +213,7 @@ export default function LoginPage() {
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+                    className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
                     required
                   />
                 </div>
@@ -223,7 +223,7 @@ export default function LoginPage() {
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+                    className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
                     required
                   />
                 </div>
@@ -244,7 +244,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading === "recover"}
-                  className="flex-1 bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold h-10 transition-all shadow-md"
+                  className="flex-1 bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold h-10 transition-all shadow-md rounded-[4px]"
                 >
                   {loading === "recover" ? "Recovering..." : "Recover"}
                 </Button>

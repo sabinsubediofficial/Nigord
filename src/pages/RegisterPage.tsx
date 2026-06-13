@@ -62,7 +62,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#141517] p-4 font-sans selection:bg-[#bc9f84]/30">
+    <div className="flex min-h-screen items-center justify-center bg-[#141517] p-4 font-sans selection:bg-[#5865f2]/30">
       <div className="w-full max-w-[420px] rounded-xl bg-[#1e2022] p-8 shadow-2xl border border-[#2d2f31]/60">
         <h2 className="mb-2 text-center text-2xl font-bold text-[#e3e1db]">Create an account</h2>
         <p className="mb-6 text-center text-[#a3a29e] text-sm">Join the community in a few clicks</p>
@@ -80,7 +80,7 @@ export default function RegisterPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
               required
             />
           </div>
@@ -90,7 +90,7 @@ export default function RegisterPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
               required
             />
           </div>
@@ -100,22 +100,22 @@ export default function RegisterPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#bc9f84] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
+              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
               required
             />
           </div>
 
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71] font-bold h-10 transition-all shadow-md mt-4"
-          >
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold h-10 transition-all shadow-md mt-4 rounded-[4px]"
+            >
             {loading ? "Registering..." : "Continue"}
           </Button>
 
           <p className="text-xs text-[#a3a29e] text-center pt-2">
             Already have an account?{" "}
-            <Link to="/login" className="text-[#bc9f84] hover:underline font-semibold ml-0.5">
+            <Link to="/login" className="text-[#5865f2] hover:underline font-semibold ml-0.5">
               Login
             </Link>
           </p>
