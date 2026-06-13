@@ -7,14 +7,36 @@ export const API_BASE = isProduction
   ? 'https://nigord-backend.sabinsubediofficial.workers.dev'
   : ''
 
+// --- Token helpers (localStorage fallback for Safari ITP) ---
+const TOKEN_KEY = 'nigord_auth_token'
+
+export function saveToken(token: string) {
+  try { localStorage.setItem(TOKEN_KEY, token) } catch {}
+}
+
+export function getToken(): string | null {
+  try { return localStorage.getItem(TOKEN_KEY) } catch { return null }
+}
+
+export function clearToken() {
+  try { localStorage.removeItem(TOKEN_KEY) } catch {}
+}
+
 /**
  * Wrapper around fetch that prepends the API base URL in production.
+ * Sends JWT via both cookie (credentials: include) AND Authorization header.
  * Use this instead of `fetch('/path', ...)` for all API calls.
  */
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const url = `${API_BASE}${path}`
+  const token = getToken()
+  const headers = new Headers(init?.headers)
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
   return fetch(url, {
     ...init,
+    headers,
     credentials: 'include',
   })
 }

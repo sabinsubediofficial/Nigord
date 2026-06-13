@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react"
-import { apiFetch, getFileUrl, parseUTCDate } from "@/lib/api"
+import { apiFetch, getFileUrl, parseUTCDate, clearToken, saveToken } from "@/lib/api"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useMessageStore, deletedMessageIds } from "@/store/useMessageStore"
 import { useServers } from "@/hooks/useServers"
@@ -1043,6 +1043,7 @@ export default function HomePage() {
   const handleLogout = async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST', credentials: 'include' })
+      clearToken()
       useChannelStore.getState().clearCache()
       setUser(null)
     } catch (e) {

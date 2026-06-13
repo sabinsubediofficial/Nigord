@@ -4,7 +4,7 @@ import { useChannelStore } from "@/store/useChannelStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, LogOut, Upload, ShieldAlert, Check } from "lucide-react"
-import { apiFetch, getFileUrl } from "@/lib/api"
+import { apiFetch, getFileUrl, clearToken, saveToken } from "@/lib/api"
 
 export default function UserSettingsModal({ onClose }: { onClose: () => void }) {
   const { user, setUser } = useAuthStore()
@@ -104,6 +104,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
           return
         }
         const data = await res.json()
+        if (data.token) saveToken(data.token)
         setUser(data.user)
         setAccountSuccess("Account details updated successfully!")
       }
@@ -176,6 +177,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
         credentials: 'include'
       })
       if (res.ok) {
+        clearToken()
         setUser(null)
         onClose()
       } else {
@@ -231,6 +233,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
   const handleLogout = async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST', credentials: 'include' })
+      clearToken()
       useChannelStore.getState().clearCache()
       setUser(null)
       onClose()

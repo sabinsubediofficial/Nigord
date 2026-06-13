@@ -82,9 +82,18 @@ app.use('*', cors({
   credentials: true,
 }))
 
+// Helper: extract JWT from cookie first, then Authorization header
+const getToken = (c: any): string | undefined => {
+  const cookieToken = getCookie(c, 'token')
+  if (cookieToken) return cookieToken
+  const authHeader = c.req.header('Authorization') || ''
+  if (authHeader.startsWith('Bearer ')) return authHeader.slice(7)
+  return undefined
+}
+
 // Middleware to protect routes
 const authMiddleware = async (c: any, next: any) => {
-  const token = getCookie(c, 'token')
+  const token = getToken(c)
   if (!token) return c.json({ error: 'Unauthorized' }, 401)
   try {
     const payload = await verify(token, c.env.JWT_SECRET, 'HS256')
@@ -313,7 +322,7 @@ app.post('/auth/login', async (c) => {
     maxAge: 60 * 60 * 24 * 7,
   })
 
-  return c.json({ user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, display_name: user.display_name, bio: user.bio, status_message: user.status_message, status: user.status } })
+  return c.json({ token, user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, display_name: user.display_name, bio: user.bio, status_message: user.status_message, status: user.status } })
 })
 
 app.post('/auth/verify-email', async (c) => {
@@ -355,7 +364,7 @@ app.post('/auth/verify-email', async (c) => {
       maxAge: 60 * 60 * 24 * 7,
     })
     
-    return c.json({ user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, display_name: user.display_name, bio: user.bio, status_message: user.status_message, status: user.status } })
+    return c.json({ token, user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, display_name: user.display_name, bio: user.bio, status_message: user.status_message, status: user.status } })
   } catch (e) {
     return c.json({ error: 'Verification failed' }, 500)
   }
@@ -398,7 +407,7 @@ app.post('/auth/resend-verification', async (c) => {
 })
 
 app.get('/auth/me', async (c) => {
-  const token = getCookie(c, 'token')
+  const token = getToken(c)
   if (!token) return c.json({ error: 'Unauthorized' }, 401)
   try {
     const payload = await verify(token, c.env.JWT_SECRET, 'HS256')
@@ -467,6 +476,9 @@ app.patch('/users/me', authMiddleware, async (c) => {
         path: '/',
         maxAge: 60 * 60 * 24 * 7,
       })
+      // Return new token in body so frontend can update localStorage
+      const updatedUser2: any = await c.env.DB.prepare('SELECT id, username, email, avatar, display_name, bio, status_message, status, created_at FROM users WHERE id = ?').bind(user.id).first()
+      return c.json({ token, user: updatedUser2 })
     }
 
     const updatedUser: any = await c.env.DB.prepare('SELECT id, username, email, avatar, display_name, bio, status_message, status, created_at FROM users WHERE id = ?').bind(user.id).first()

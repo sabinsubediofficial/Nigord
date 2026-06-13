@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/useAuthStore"
 import { ShieldAlert, Check } from "lucide-react"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, saveToken } from "@/lib/api"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -41,6 +41,7 @@ export default function LoginPage() {
       const data = await res.json()
 
       if (res.ok) {
+        if (data.token) saveToken(data.token)
         setUser(data.user)
         navigate(redirectUrl)
       } else {
