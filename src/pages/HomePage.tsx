@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react"
-import { apiFetch, getFileUrl } from "@/lib/api"
+import { apiFetch, getFileUrl, parseUTCDate } from "@/lib/api"
 import { useAuthStore } from "@/store/useAuthStore"
-import { useMessageStore } from "@/store/useMessageStore"
+import { useMessageStore, deletedMessageIds } from "@/store/useMessageStore"
 import { useServers } from "@/hooks/useServers"
 import { useServerStore } from "@/store/useServerStore"
 import { useChannels } from "@/hooks/useChannels"
@@ -399,6 +399,7 @@ export default function HomePage() {
 
     let previousMsgs: any[] = []
     if (isDm) {
+      deletedMessageIds.add(msgId)
       setDmMessages(prev => {
         previousMsgs = prev
         return prev.filter(m => m.id !== msgId)
@@ -1778,9 +1779,9 @@ export default function HomePage() {
                     const isGrouped = nextMsg &&
                       nextMsg.author_id === msg.author_id &&
                       !msg.reply_to_id &&
-                      new Date(msg.created_at).getMinutes() === new Date(nextMsg.created_at).getMinutes() &&
-                      new Date(msg.created_at).getHours() === new Date(nextMsg.created_at).getHours() &&
-                      new Date(msg.created_at).toDateString() === new Date(nextMsg.created_at).toDateString();
+                      parseUTCDate(msg.created_at).getMinutes() === parseUTCDate(nextMsg.created_at).getMinutes() &&
+                      parseUTCDate(msg.created_at).getHours() === parseUTCDate(nextMsg.created_at).getHours() &&
+                      parseUTCDate(msg.created_at).toDateString() === parseUTCDate(nextMsg.created_at).toDateString();
                     return (
                       <MessageItem
                         key={msg.id}
@@ -1901,7 +1902,7 @@ export default function HomePage() {
                               )}
                             </div>
                             <span className="font-bold text-xs truncate">{msg.username}</span>
-                            <span className="text-[10px] text-[#949ba4] whitespace-nowrap ml-auto">{new Date(msg.created_at).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-[#949ba4] whitespace-nowrap ml-auto">{parseUTCDate(msg.created_at).toLocaleDateString()}</span>
                           </div>
                           <MessageContent content={msg.content} attachments={msg.attachments} />
                           <button
@@ -1951,9 +1952,9 @@ export default function HomePage() {
                       msg.author_id !== 'system' &&
                       nextMsg.author_id === msg.author_id &&
                       !msg.reply_to_id &&
-                      new Date(msg.created_at).getMinutes() === new Date(nextMsg.created_at).getMinutes() &&
-                      new Date(msg.created_at).getHours() === new Date(nextMsg.created_at).getHours() &&
-                      new Date(msg.created_at).toDateString() === new Date(nextMsg.created_at).toDateString();
+                      parseUTCDate(msg.created_at).getMinutes() === parseUTCDate(nextMsg.created_at).getMinutes() &&
+                      parseUTCDate(msg.created_at).getHours() === parseUTCDate(nextMsg.created_at).getHours() &&
+                      parseUTCDate(msg.created_at).toDateString() === parseUTCDate(nextMsg.created_at).toDateString();
                     return msg.author_id === 'system' ? (
                       <div key={msg.id} className="flex items-center gap-4 py-2 px-4 -mx-4 hover:bg-[#2e3035] group/system mt-3">
                         <div className="w-10 flex justify-center text-[#23a559] shrink-0">
@@ -2081,7 +2082,7 @@ export default function HomePage() {
                               )}
                             </div>
                             <span className="font-bold text-xs truncate text-[#e3e1db]">{msg.username}</span>
-                            <span className="text-[10px] text-[#a3a29e] whitespace-nowrap ml-auto">{new Date(msg.created_at).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-[#a3a29e] whitespace-nowrap ml-auto">{parseUTCDate(msg.created_at).toLocaleDateString()}</span>
                           </div>
                           <MessageContent content={msg.content} attachments={msg.attachments} />
                           <button
@@ -2458,7 +2459,7 @@ export default function HomePage() {
                 <div className="border-t border-[#2d2f31] pt-3">
                   <p className="text-[#a3a29e] text-[9px] font-bold uppercase tracking-wider mb-1">Member Since</p>
                   <p className="text-xs text-[#a3a29e]">
-                    {new Date(dmUserProfile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    {parseUTCDate(dmUserProfile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </p>
                 </div>
               )}
@@ -2837,7 +2838,7 @@ function RemoteStream({ stream }: { stream: MediaStream }) {
 }
 
 function formatMessageTimestamp(dateInput: string | Date) {
-  const date = new Date(dateInput);
+  const date = parseUTCDate(dateInput);
   const now = new Date();
   
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -2925,7 +2926,7 @@ function MessageItem({
         {isGrouped ? (
           /* Gutter placeholder with hover timestamp */
           <div className="w-10 shrink-0 select-none flex items-center justify-center text-[9px] text-[#949ba4] opacity-0 group-hover:opacity-100 pr-1 font-medium h-4 mt-0.5">
-            {new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M$/i, '')}
+            {parseUTCDate(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M$/i, '')}
           </div>
         ) : (
           /* Avatar */

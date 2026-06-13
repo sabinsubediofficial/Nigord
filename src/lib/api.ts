@@ -29,3 +29,26 @@ export function getFileUrl(url?: string): string {
   }
   return `${API_BASE}${url}`
 }
+
+/**
+ * Safely parses naive UTC date strings returned by SQLite/D1 into JavaScript Date objects.
+ */
+export function parseUTCDate(dateInput: string | Date | null | undefined): Date {
+  if (!dateInput) return new Date();
+  if (dateInput instanceof Date) return dateInput;
+  
+  let dateStr = String(dateInput).trim();
+  // SQLite CURRENT_TIMESTAMP returns strings like "YYYY-MM-DD HH:MM:SS"
+  // We need to convert it to ISO-8601 "YYYY-MM-DDTHH:MM:SSZ" format so that
+  // the browser parses it as UTC instead of naive local time.
+  if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-')) {
+    if (dateStr.includes(' ')) {
+      dateStr = dateStr.replace(' ', 'T') + 'Z';
+    } else if (dateStr.includes('T')) {
+      dateStr = dateStr + 'Z';
+    } else {
+      dateStr = dateStr + 'T00:00:00Z';
+    }
+  }
+  return new Date(dateStr);
+}

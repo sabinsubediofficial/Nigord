@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
-import { Message } from "@/store/useMessageStore"
-import { apiFetch } from "@/lib/api"
+import { Message, deletedMessageIds } from "@/store/useMessageStore"
+import { apiFetch, parseUTCDate } from "@/lib/api"
 
 export interface DMChannel {
   id: string
@@ -38,7 +38,7 @@ export const useDMs = (activeDmId?: string) => {
       const res = await apiFetch(`/dms/${activeDmId}/messages?limit=50`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json()
-        const fetchedMsgs: Message[] = data.messages
+        const fetchedMsgs: Message[] = (data.messages || []).filter((m: any) => !deletedMessageIds.has(m.id))
         
         if (initial) {
           setMessages(fetchedMsgs)
@@ -50,15 +50,15 @@ export const useDMs = (activeDmId?: string) => {
             let oldestFetchedTime = 0
             let newestFetchedTime = 0
             if (fetchedMsgs.length > 0) {
-              oldestFetchedTime = new Date(fetchedMsgs[fetchedMsgs.length - 1].created_at).getTime()
-              newestFetchedTime = new Date(fetchedMsgs[0].created_at).getTime()
+              oldestFetchedTime = parseUTCDate(fetchedMsgs[fetchedMsgs.length - 1].created_at).getTime()
+              newestFetchedTime = parseUTCDate(fetchedMsgs[0].created_at).getTime()
             }
             
             const updatedCurrent = prev.map(m => {
               const fetched = fetchedMsgs.find(f => f.id === m.id)
               if (fetched) {
-                const localEditTime = m.edited_at ? new Date(m.edited_at).getTime() : 0
-                const fetchedEditTime = fetched.edited_at ? new Date(fetched.edited_at).getTime() : 0
+                const localEditTime = m.edited_at ? parseUTCDate(m.edited_at).getTime() : 0
+                const fetchedEditTime = fetched.edited_at ? parseUTCDate(fetched.edited_at).getTime() : 0
                 if (localEditTime > fetchedEditTime) {
                   return {
                     ...fetched,
@@ -70,7 +70,7 @@ export const useDMs = (activeDmId?: string) => {
               }
               return m
             }).filter(m => {
-              const mTime = new Date(m.created_at).getTime()
+              const mTime = parseUTCDate(m.created_at).getTime()
               if (fetchedIds.has(m.id)) return true
               if (mTime < oldestFetchedTime) return true
               if (mTime > newestFetchedTime) return true // Safeguard for newly sent local messages

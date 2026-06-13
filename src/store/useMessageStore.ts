@@ -26,6 +26,8 @@ interface MessageState {
   deleteMessage: (channelId: string, messageId: string) => void
 }
 
+export const deletedMessageIds = new Set<string>()
+
 export const useMessageStore = create<MessageState>((set) => ({
   messages: {},
   setMessages: (channelId, messages) => 
@@ -62,6 +64,7 @@ export const useMessageStore = create<MessageState>((set) => ({
     }),
   deleteMessage: (channelId, messageId) =>
     set((state) => {
+      deletedMessageIds.add(messageId)
       const current = state.messages[channelId] || []
       const filtered = current.filter(m => m.id !== messageId)
       return {
