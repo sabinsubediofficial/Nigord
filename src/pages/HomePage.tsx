@@ -1125,7 +1125,7 @@ export default function HomePage() {
                     className={`flex items-center gap-3 p-2 rounded cursor-pointer ${activeHomeView === 'friends' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
                   >
                     <User size={20} />
-                    <span className="font-medium">Friends</span>
+                    <span className="font-medium text-[15px]">Friends</span>
                   </div>
                   <div className="pt-4">
                     <span className="text-xs font-bold uppercase text-[#767572] px-2 mb-2 block hover:text-[#e3e1db] cursor-pointer">Direct Messages</span>
@@ -1152,7 +1152,7 @@ export default function HomePage() {
                           ) : null}
                         </div>
                         <div className="flex flex-col min-w-0 flex-1 text-left">
-                          <span className={`font-medium text-sm truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-[#e3e1db] font-bold' : ''}`}>{dm.name}</span>
+                          <span className={`font-medium text-[15px] truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-[#e3e1db] font-bold' : ''}`}>{dm.name}</span>
                           {dm.active_call && dm.active_call > 0 ? (
                             <span className="text-[10px] text-[#23a55a] font-semibold flex items-center gap-1 leading-none mt-0.5">
                               <Phone size={8} className="fill-current text-[#23a55a]" />
@@ -1225,7 +1225,7 @@ export default function HomePage() {
                                       : (isUnread ? 'text-[#f2f3f5]' : 'text-[#767572] group-hover:text-[#dbdee1]')
                                   }`} 
                                 />
-                                <span className={`text-[14px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
+                                <span className={`text-[15px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
                                   isActive
                                     ? 'font-medium text-[#e3e1db]'
                                     : isUnread 
@@ -1320,7 +1320,7 @@ export default function HomePage() {
                                     }`} 
                                   />
                                   <div className="flex flex-col min-w-0 flex-1 select-none">
-                                    <span className={`text-[14px] truncate transition-all duration-200 ${
+                                    <span className={`text-[15px] truncate transition-all duration-200 ${
                                       isConnected
                                         ? 'font-medium text-[#e3e1db]'
                                         : (isActive
@@ -1862,7 +1862,7 @@ export default function HomePage() {
                               }
                             }
                           }} 
-                          className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white p-0" 
+                          className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white text-[15px] p-0" 
                           placeholder={uploading ? "Uploading..." : `Message @${dms.find(d => d.id === activeDmId)?.name || 'user'}`} 
                         />
                       </form>
@@ -2042,7 +2042,7 @@ export default function HomePage() {
                               }
                             }
                           }} 
-                          className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white p-0" 
+                          className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white text-[15px] p-0" 
                           placeholder={uploading ? "Uploading..." : `Message #${currentChannel.name}`} 
                         />
                       </form>
@@ -2397,7 +2397,7 @@ export default function HomePage() {
                       <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-[#1e2022] ${getStatusColor(member.status)}`} />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-medium text-[#a3a29e] group-hover:text-[#e3e1db] truncate">{member.display_name || member.username}</span>
+                      <span className="text-[15px] font-medium text-[#a3a29e] group-hover:text-[#e3e1db] truncate">{member.display_name || member.username}</span>
                       {member.status_message && <span className="text-[10px] text-[#767572] truncate">{member.status_message}</span>}
                     </div>
                   </div>
@@ -2577,14 +2577,14 @@ export default function HomePage() {
             </div>
             
             <div className="flex flex-col min-w-0 cursor-pointer text-left" onClick={() => setShowUserSettingsModal(true)}>
-              <span className="text-xs font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
+              <span className="text-sm font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
               {isJoined ? (
-                <span className="text-[10px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
+                <span className="text-[11px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
                   <Volume2 size={10} className="text-[#23a55a] shrink-0" />
                   In voice
                 </span>
               ) : (
-                <span className="text-[10px] text-[#949ba4] truncate leading-tight font-normal">{user?.status_message || user?.status || 'Online'}</span>
+                <span className="text-[11px] text-[#949ba4] truncate leading-tight font-normal">{user?.status_message || user?.status || 'Online'}</span>
               )}
             </div>
           </div>
@@ -2941,8 +2941,8 @@ function MessageItem({
         <div className="flex-1 min-w-0">
           {!isGrouped && (
             <div className="flex items-baseline gap-2">
-              <span className="font-bold hover:underline cursor-pointer text-white" onClick={() => onProfileClick?.(msg.author_id)}>{msg.username}</span>
-              <span className="text-[10px] font-medium text-[#949ba4]">
+              <span className="font-bold hover:underline cursor-pointer text-white text-[15px]" onClick={() => onProfileClick?.(msg.author_id)}>{msg.username}</span>
+              <span className="text-[12px] font-medium text-[#949ba4]">
                 {formatMessageTimestamp(msg.created_at)}
               </span>
               {msg.is_pinned === 1 && (
@@ -2975,7 +2975,7 @@ function MessageItem({
               </span>
             </div>
           ) : (
-            <div className="text-sm text-[#dbdee1] flex flex-col gap-1">
+            <div className="text-[15px] text-[#dbdee1] flex flex-col gap-1">
               <div className="flex items-baseline gap-1.5 flex-wrap">
                 <MessageContent content={msg.content} attachments={msg.attachments} />
                 {msg.edited_at && (

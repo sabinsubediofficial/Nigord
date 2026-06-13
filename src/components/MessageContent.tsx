@@ -17,7 +17,7 @@ export default function MessageContent({ content, attachments }: { content: stri
   return (
     <div className="flex flex-col gap-2">
       {content && (
-        <div className="text-[#dbdee1] text-[15px] leading-relaxed break-words prose prose-invert prose-sm max-w-none">
+        <div className="text-[#dbdee1] text-[15px] leading-relaxed break-words prose prose-invert prose-sm max-w-none !text-[15px]">
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             components={{
