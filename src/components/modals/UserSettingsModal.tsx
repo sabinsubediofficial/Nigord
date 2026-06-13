@@ -3,20 +3,122 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { useChannelStore } from "@/store/useChannelStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { X, LogOut, Upload, ShieldAlert, Check } from "lucide-react"
+import { X, LogOut, Upload, ShieldAlert, Check, Volume2, Mic } from "lucide-react"
 import { apiFetch, getFileUrl, clearToken, saveToken } from "@/lib/api"
+import { useAudioStore } from "@/store/useAudioStore"
 
 export default function UserSettingsModal({ onClose }: { onClose: () => void }) {
   const { user, setUser } = useAuthStore()
   
   // Tab control
-  const [activeSubTab, setActiveSubTab] = useState<'account' | 'profile'>('account')
+  const [activeSubTab, setActiveSubTab] = useState<'account' | 'profile' | 'voice'>('account')
 
   // Profile fields state
   const [displayName, setDisplayName] = useState(user?.display_name || "")
   const [bio, setBio] = useState(user?.bio || "")
   const [statusMessage, setStatusMessage] = useState(user?.status_message || "")
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar || "")
+
+  const { 
+    micVolume, 
+    outputVolume, 
+    inputDeviceId, 
+    outputDeviceId, 
+    setMicVolume, 
+    setOutputVolume, 
+    setInputDeviceId, 
+    setOutputDeviceId 
+  } = useAudioStore()
+
+  // Voice & Video state
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
+  const [isTestingMic, setIsTestingMic] = useState(false)
+  const [micLevel, setMicLevel] = useState(0)
+  
+  const testStreamRef = useRef<MediaStream | null>(null)
+  const testAudioContextRef = useRef<AudioContext | null>(null)
+  const testAnimationRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const getDevices = async () => {
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => {})
+        const devList = await navigator.mediaDevices.enumerateDevices()
+        setDevices(devList)
+      } catch (err) {
+        console.error("Failed to get audio devices:", err)
+      }
+    }
+    getDevices()
+  }, [])
+
+  const startMicTest = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: inputDeviceId && inputDeviceId !== 'default' ? { deviceId: { exact: inputDeviceId } } : true
+      })
+      testStreamRef.current = stream
+
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      const ctx = new AudioContextClass()
+      testAudioContextRef.current = ctx
+
+      const source = ctx.createMediaStreamSource(stream)
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 256
+      source.connect(analyser)
+
+      const bufferLength = analyser.frequencyBinCount
+      const dataArray = new Uint8Array(bufferLength)
+
+      const updateLevel = () => {
+        analyser.getByteFrequencyData(dataArray)
+        let sum = 0
+        for (let i = 0; i < bufferLength; i++) {
+          sum += dataArray[i]
+        }
+        const average = sum / bufferLength
+        const level = Math.min(100, Math.round((average / 128) * 100))
+        setMicLevel(level)
+        testAnimationRef.current = requestAnimationFrame(updateLevel)
+      }
+      testAnimationRef.current = requestAnimationFrame(updateLevel)
+      setIsTestingMic(true)
+    } catch (err) {
+      console.error("Failed to start mic test:", err)
+    }
+  }
+
+  const stopMicTest = () => {
+    if (testAnimationRef.current) {
+      cancelAnimationFrame(testAnimationRef.current)
+      testAnimationRef.current = null
+    }
+    if (testAudioContextRef.current) {
+      testAudioContextRef.current.close().catch(() => {})
+      testAudioContextRef.current = null
+    }
+    if (testStreamRef.current) {
+      testStreamRef.current.getTracks().forEach(t => t.stop())
+      testStreamRef.current = null
+    }
+    setIsTestingMic(false)
+    setMicLevel(0)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (testAnimationRef.current) cancelAnimationFrame(testAnimationRef.current)
+      if (testAudioContextRef.current) testAudioContextRef.current.close().catch(() => {})
+      if (testStreamRef.current) testStreamRef.current.getTracks().forEach(t => t.stop())
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeSubTab !== 'voice') {
+      stopMicTest()
+    }
+  }, [activeSubTab])
   
   // Account settings state
   const [username, setUsername] = useState(user?.username || "")
@@ -263,6 +365,12 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
           >
             Profiles
           </div>
+          <div 
+            onClick={() => setActiveSubTab('voice')}
+            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeSubTab === 'voice' ? 'bg-[#2d2f31] text-[#e3e1db]' : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'}`}
+          >
+            Voice & Video
+          </div>
 
           <div className="hidden md:block w-full h-[1px] bg-[#2d2f31] my-2" />
           <div onClick={handleLogout} className="px-3 py-1.5 md:px-2 rounded text-red-400 hover:bg-red-500/20 cursor-pointer flex items-center justify-center md:justify-between gap-1 md:gap-0 transition-all shrink-0">
@@ -374,7 +482,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                 </div>
               </div>
             </div>
-          ) : (
+          ) : activeSubTab === 'profile' ? (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold mb-6 text-[#e3e1db]">Profiles</h2>
 
@@ -435,6 +543,120 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                       </Button>
                     </div>
                   </form>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold mb-6 text-[#e3e1db]">Voice & Video Settings</h2>
+              
+              <div className="bg-[#1e2022] rounded-xl p-6 border border-[#2d2f31] space-y-6">
+                {/* Audio Devices configuration */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase text-[#a3a29e]">Input Device</label>
+                    <select
+                      value={inputDeviceId}
+                      onChange={(e) => setInputDeviceId(e.target.value)}
+                      className="w-full h-10 px-3 rounded-md bg-[#141517] border border-[#2d2f31] text-[#e3e1db] text-sm focus:outline-none focus:border-[#5865f2] cursor-pointer"
+                    >
+                      <option value="default">Default Input Device</option>
+                      {devices.filter(d => d.kind === 'audioinput').map(dev => (
+                        <option key={dev.deviceId} value={dev.deviceId}>
+                          {dev.label || `Microphone (${dev.deviceId.slice(0, 5)})`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase text-[#a3a29e]">Output Device</label>
+                    <select
+                      value={outputDeviceId}
+                      onChange={(e) => setOutputDeviceId(e.target.value)}
+                      className="w-full h-10 px-3 rounded-md bg-[#141517] border border-[#2d2f31] text-[#e3e1db] text-sm focus:outline-none focus:border-[#5865f2] cursor-pointer"
+                    >
+                      <option value="default">Default Output Device</option>
+                      {devices.filter(d => d.kind === 'audiooutput').map(dev => (
+                        <option key={dev.deviceId} value={dev.deviceId}>
+                          {dev.label || `Speaker/Headphones (${dev.deviceId.slice(0, 5)})`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="w-full h-[1px] bg-[#2d2f31] my-4" />
+
+                {/* Audio Volume Controls */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase text-[#a3a29e]">Input Volume (Mic)</label>
+                      <span className="text-xs text-[#a3a29e] font-semibold">{Math.round(micVolume * 100)}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mic size={18} className="text-[#a3a29e]" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={micVolume}
+                        onChange={(e) => setMicVolume(parseFloat(e.target.value))}
+                        className="w-full accent-[#5865f2] bg-[#141517] h-1.5 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase text-[#a3a29e]">Output Volume (Master)</label>
+                      <span className="text-xs text-[#a3a29e] font-semibold">{Math.round(outputVolume * 100)}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Volume2 size={18} className="text-[#a3a29e]" />
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={outputVolume}
+                        onChange={(e) => setOutputVolume(parseFloat(e.target.value))}
+                        className="w-full accent-[#5865f2] bg-[#141517] h-1.5 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full h-[1px] bg-[#2d2f31] my-4" />
+
+                {/* Mic Level Test Meter */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-[#e3e1db] uppercase">Mic Test</h3>
+                  <p className="text-xs text-[#a3a29e]">
+                    Having trouble? Let's check your mic level. Click the button below to start monitoring.
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <Button
+                      onClick={isTestingMic ? stopMicTest : startMicTest}
+                      className={`w-full sm:w-auto font-semibold rounded-[4px] min-w-[120px] transition-colors ${
+                        isTestingMic 
+                          ? "bg-[#ed4245] text-white hover:bg-[#c93b3e]" 
+                          : "bg-[#5865f2] text-white hover:bg-[#4752c4]"
+                      }`}
+                    >
+                      {isTestingMic ? "Stop Test" : "Test Mic"}
+                    </Button>
+
+                    <div className="flex-1 w-full bg-[#141517] h-3 rounded-full overflow-hidden relative border border-[#2d2f31]">
+                      <div
+                        className="h-full bg-[#23a55a] transition-all duration-75"
+                        style={{ width: `${micLevel}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

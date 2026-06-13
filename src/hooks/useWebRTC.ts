@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { apiFetch, API_BASE } from "@/lib/api"
+import { useAudioStore } from "@/store/useAudioStore"
 
 const playSound = (src: string) => {
   new Audio(src).play().catch(() => {})
@@ -8,6 +9,7 @@ const playSound = (src: string) => {
 
 export const useWebRTC = (channelId?: string) => {
   const { user } = useAuthStore()
+  const { micVolume, inputDeviceId } = useAudioStore()
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({})
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [localScreenStream, setLocalScreenStream] = useState<MediaStream | null>(null)
@@ -41,6 +43,7 @@ export const useWebRTC = (channelId?: string) => {
   const audioContextRef = useRef<AudioContext | null>(null)
   const callTimeoutRef = useRef<any>(null)
   const rawStreamRef = useRef<MediaStream | null>(null)
+  const localGainNodeRef = useRef<GainNode | null>(null)
   
   const activeChannelIdRef = useRef<string | null>(null)
   const incomingCallRef = useRef<any>(null)
@@ -91,6 +94,12 @@ export const useWebRTC = (channelId?: string) => {
   useEffect(() => {
     outgoingCallRef.current = outgoingCall
   }, [outgoingCall])
+
+  useEffect(() => {
+    if (localGainNodeRef.current) {
+      localGainNodeRef.current.gain.value = micVolume
+    }
+  }, [micVolume])
 
   const startRingtone = (src: string) => {
     stopRingtone()
@@ -336,15 +345,40 @@ export const useWebRTC = (channelId?: string) => {
     
     try {
       // Request audio with native echo cancellation, noise suppression, and auto gain control for instant 0ms latency
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }, 
+      const audioConstraints: any = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+      if (inputDeviceId && inputDeviceId !== 'default') {
+        audioConstraints.deviceId = { exact: inputDeviceId }
+      }
+      
+      const rawStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: audioConstraints, 
         video: withVideo 
       })
-      rawStreamRef.current = stream
+      rawStreamRef.current = rawStream
+
+      // Set up Web Audio API for gain/volume adjustment
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      const audioCtx = new AudioContextClass()
+      audioContextRef.current = audioCtx
+
+      const source = audioCtx.createMediaStreamSource(rawStream)
+      const gainNode = audioCtx.createGain()
+      gainNode.gain.value = micVolume
+      localGainNodeRef.current = gainNode
+
+      const destination = audioCtx.createMediaStreamDestination()
+      source.connect(gainNode)
+      gainNode.connect(destination)
+
+      // Combined stream containing processed audio track and raw video track
+      const stream = new MediaStream()
+      destination.stream.getAudioTracks().forEach(track => stream.addTrack(track))
+      rawStream.getVideoTracks().forEach(track => stream.addTrack(track))
+
       streamRef.current = stream
       setLocalStream(stream)
       monitorStream(user.id, stream)
@@ -396,6 +430,7 @@ export const useWebRTC = (channelId?: string) => {
       audioContextRef.current.close().catch(() => {})
       audioContextRef.current = null
     }
+    localGainNodeRef.current = null
     setLocalStream(null)
     setIsJoined(false)
     playSound('/sounds/deconnected.mp3')

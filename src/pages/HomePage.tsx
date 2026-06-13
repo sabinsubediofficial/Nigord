@@ -14,6 +14,7 @@ import { useServerSettings } from "@/hooks/useServerSettings"
 import { useNotifications } from "@/hooks/useNotifications"
 import { useSearch } from "@/hooks/useSearch"
 import { useGlobalNotifications } from "@/hooks/useGlobalNotifications"
+import { useAudioStore } from "@/store/useAudioStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import InviteModal from "@/components/modals/InviteModal"
@@ -28,6 +29,7 @@ import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff
 
 export default function HomePage() {
   const { user, setUser } = useAuthStore()
+  const { userVolumes, setUserVolume } = useAudioStore()
   const { servers, fetchServers, createServer } = useServers()
   const { currentServer, setCurrentServer } = useServerStore()
   const { channels, fetchChannels, createChannel } = useChannels()
@@ -1080,7 +1082,7 @@ export default function HomePage() {
   return (
     <div className="flex h-screen bg-[#111214] text-[#e3e1db] overflow-hidden p-0 gap-0 relative">
       {Object.entries(remoteStreams).map(([peerId, stream]) => (
-        <RemoteStream key={peerId} stream={stream} />
+        <RemoteStream key={peerId} stream={stream} peerId={peerId} />
       ))}
 
       {/* Mobile Backdrop Overlay */}
@@ -2895,6 +2897,25 @@ export default function HomePage() {
                         </p>
                       </div>
                     </div>
+
+                    {selectedUserProfileId !== user?.id && remoteStreams[selectedUserProfileId] && (
+                      <div className="bg-[#141517] p-3 rounded border border-[#2d2f31] space-y-2">
+                        <p className="text-[#a3a29e] text-[10px] font-bold uppercase tracking-wider">Voice Settings</p>
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs text-[#e3e1db]">User Volume</label>
+                          <span className="text-xs text-[#a3a29e] font-semibold">{Math.round((userVolumes[selectedUserProfileId] ?? 1.0) * 100)}%</span>
+                        </div>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="2" 
+                          step="0.05"
+                          value={userVolumes[selectedUserProfileId] ?? 1.0}
+                          onChange={(e) => setUserVolume(selectedUserProfileId, parseFloat(e.target.value))}
+                          className="w-full accent-[#5865f2] bg-[#2d2f31] h-1.5 rounded-lg appearance-none cursor-pointer"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
@@ -2970,11 +2991,31 @@ export default function HomePage() {
   )
 }
 
-function RemoteStream({ stream }: { stream: MediaStream }) {
+function RemoteStream({ stream, peerId }: { stream: MediaStream; peerId: string }) {
   const audioRef = useRef<HTMLAudioElement>(null)
+  const { outputVolume, userVolumes, outputDeviceId } = useAudioStore()
+
   useEffect(() => {
     if (audioRef.current) audioRef.current.srcObject = stream
   }, [stream])
+
+  useEffect(() => {
+    if (audioRef.current) {
+      const actualUserId = peerId.replace('-screen', '')
+      const userVol = userVolumes[actualUserId] ?? 1.0
+      audioRef.current.volume = Math.max(0, Math.min(1.0, outputVolume * userVol))
+    }
+  }, [outputVolume, userVolumes, peerId])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (audio && (audio as any).setSinkId && outputDeviceId && outputDeviceId !== 'default') {
+      (audio as any).setSinkId(outputDeviceId).catch((err: any) => {
+        console.error("Failed to set audio sink ID:", err)
+      })
+    }
+  }, [outputDeviceId])
+
   return <audio ref={audioRef} autoPlay />
 }
 
