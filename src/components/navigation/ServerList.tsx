@@ -24,6 +24,7 @@ interface ServerListProps {
   onSelectServer: (server: Server) => void
   onAddServer: () => void
   sendTypingStatus: (isTyping: boolean) => void
+  isVoiceConnected?: boolean
 }
 
 export const ServerList = React.memo(function ServerList({
@@ -34,12 +35,13 @@ export const ServerList = React.memo(function ServerList({
   goHome,
   onSelectServer,
   onAddServer,
-  sendTypingStatus
+  sendTypingStatus,
+  isVoiceConnected
 }: ServerListProps) {
   const dmsUnread = notifications.dms.reduce((acc, curr) => acc + curr.unread_count, 0)
 
   return (
-    <div className="w-[72px] bg-[#111214] flex flex-col items-center py-3 gap-1 overflow-y-auto no-scrollbar shrink-0 border-none">
+    <div className={`w-[72px] bg-[#1e1f22] flex flex-col items-center py-3 gap-1 overflow-y-auto no-scrollbar shrink-0 border-none ${isVoiceConnected ? 'pb-[160px]' : 'pb-[68px]'}`}>
       {/* Home / DMs Item */}
       <div className="relative flex items-center justify-center w-full group py-0.5">
         {/* Left accent pill */}
@@ -112,7 +114,7 @@ export const ServerList = React.memo(function ServerList({
                 <span className="text-sm font-medium">{server.name.substring(0, 2).toUpperCase()}</span>
               )}
               {unreadCount > 0 && (
-                <div className="absolute -bottom-1 -right-1 bg-[#bc9f84] text-[#141517] text-[10px] font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border-4 border-[#1e2022] ring-0">
+                <div className="absolute -bottom-1 -right-1 bg-[#bc9f84] text-[#141517] text-[10px] font-bold px-1 min-w-[16px] h-4 rounded-full flex items-center justify-center border-4 border-[#1e1f22] ring-0">
                   {unreadCount}
                 </div>
               )}

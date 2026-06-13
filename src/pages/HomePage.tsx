@@ -1058,406 +1058,424 @@ export default function HomePage() {
         <RemoteStream key={peerId} stream={stream} />
       ))}
 
-      {/* Server Sidebar (Far Left, full height) */}
-      <ServerList
-        servers={servers}
-        currentServer={currentServer}
-        activeTab={activeTab}
-        notifications={notifications}
-        goHome={goHome}
-        onSelectServer={(server) => {
-          setCurrentServer(server);
-          setActiveTab('server');
-        }}
-        onAddServer={() => setShowCreateServerModal(true)}
-        sendTypingStatus={sendTypingStatus}
-      />
+      {/* Combined Left Column Group (Servers Sidebar & Channels Sidebar & Floating Bottom Panels) */}
+      <div className="h-full flex flex-col shrink-0 select-none bg-[#1e1f22] relative" style={{ width: `${72 + sidebarWidth}px` }}>
+        
+        {/* Top Area: Servers & Channels side-by-side */}
+        <div className="h-full w-full flex overflow-hidden">
+          {/* Server Sidebar (Far Left) */}
+          <ServerList
+            servers={servers}
+            currentServer={currentServer}
+            activeTab={activeTab}
+            notifications={notifications}
+            goHome={goHome}
+            onSelectServer={(server) => {
+              setCurrentServer(server);
+              setActiveTab('server');
+            }}
+            onAddServer={() => setShowCreateServerModal(true)}
+            sendTypingStatus={sendTypingStatus}
+            isVoiceConnected={!!activeVoiceChannel}
+          />
 
-      {/* Main Bordered Dashboard Layout Container */}
-      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-r-[12px] rounded-l-none border border-[#2d2f31] bg-[#141517] overflow-hidden relative">
-        
-        {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
-        <div 
-          style={{ width: `${sidebarWidth}px` }}
-          className="relative flex flex-col h-full bg-[#1e2022] border-r border-[#2d2f31] shrink-0 overflow-hidden"
-        >
-        <SidebarHeader
-          activeTab={activeTab}
-          currentServer={currentServer}
-          showServerMenu={showServerMenu}
-          setShowServerMenu={setShowServerMenu}
-          setShowInviteModal={setShowInviteModal}
-          setShowServerSettingsModal={setShowServerSettingsModal}
-          onLeaveServer={handleLeaveServer}
-          isOwner={currentServer?.owner_id === user?.id}
-          isAdmin={!!(currentServer as any)?.permissions?.includes('ADMINISTRATOR')}
-        />
-        
-        <div className="flex-1 overflow-y-auto p-2 no-scrollbar">
-          {activeTab === 'home' ? (
-            <div className="space-y-2">
-              <div 
-                onClick={() => setActiveHomeView('friends')}
-                className={`flex items-center gap-3 p-2 rounded cursor-pointer ${activeHomeView === 'friends' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
-              >
-                <User size={20} />
-                <span className="font-medium">Friends</span>
-              </div>
-              <div className="pt-4">
-                <span className="text-xs font-bold uppercase text-[#767572] px-2 mb-2 block hover:text-[#e3e1db] cursor-pointer">Direct Messages</span>
-                {dms.map(dm => {
-                  const unreadCount = notifications.dms.find(d => d.channel_id === dm.id)?.unread_count || 0;
-                  return (
+          {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
+          <div 
+            style={{ width: `${sidebarWidth}px` }}
+            className="relative flex flex-col h-full bg-[#2b2d31] shrink-0 overflow-hidden"
+          >
+            <SidebarHeader
+              activeTab={activeTab}
+              currentServer={currentServer}
+              showServerMenu={showServerMenu}
+              setShowServerMenu={setShowServerMenu}
+              setShowInviteModal={setShowInviteModal}
+              setShowServerSettingsModal={setShowServerSettingsModal}
+              onLeaveServer={handleLeaveServer}
+              isOwner={currentServer?.owner_id === user?.id}
+              isAdmin={!!(currentServer as any)?.permissions?.includes('ADMINISTRATOR')}
+            />
+            
+            <div className={`flex-1 overflow-y-auto p-2 no-scrollbar ${activeVoiceChannel ? 'pb-[160px]' : 'pb-[68px]'}`}>
+              {activeTab === 'home' ? (
+                <div className="space-y-2">
                   <div 
-                    key={dm.id} 
-                    onClick={() => openDm(dm.id)}
-                    className={`flex items-center gap-3 p-2 rounded cursor-pointer group relative ${activeHomeView === 'dm' && activeDmId === dm.id ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
+                    onClick={() => setActiveHomeView('friends')}
+                    className={`flex items-center gap-3 p-2 rounded cursor-pointer ${activeHomeView === 'friends' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
                   >
-                    <div className="relative shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
-                        {dm.avatar ? (
-                          <img src={getFileUrl(dm.avatar)} alt={dm.name} className="w-full h-full object-cover" />
-                        ) : (
-                          dm.name[0]
-                        )}
-                      </div>
-                      {dm.active_call && dm.active_call > 0 ? (
-                        <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#bc9f84] border border-[#1e2022] flex items-center justify-center text-[#141517]">
-                          <Phone size={6} className="fill-current" />
-                        </div>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-col min-w-0 flex-1 text-left">
-                      <span className={`font-medium text-sm truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-[#e3e1db] font-bold' : ''}`}>{dm.name}</span>
-                      {dm.active_call && dm.active_call > 0 ? (
-                        <span className="text-[10px] text-[#bc9f84] font-semibold flex items-center gap-1 leading-none mt-0.5">
-                          <Phone size={8} className="fill-current text-[#bc9f84]" />
-                          In a call
-                        </span>
-                      ) : null}
-                    </div>
-                    {unreadCount > 0 && activeDmId !== dm.id && (
-                      <div className="absolute right-2 bg-[#bc9f84] text-[#141517] text-[10px] font-bold px-1.5 h-4 rounded-full flex items-center justify-center">
-                        {unreadCount}
-                      </div>
-                    )}
+                    <User size={20} />
+                    <span className="font-medium">Friends</span>
                   </div>
-                )})}
-              </div>
-            </div>
-          ) : currentServer ? (
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between px-1.5 mb-1 group/header select-none">
-                  <button 
-                    onClick={() => setTextChannelsCollapsed(!textChannelsCollapsed)}
-                    className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#767572] hover:text-[#dbdee1] transition-colors"
-                  >
-                    <ChevronDown 
-                      size={12} 
-                      className={`transition-transform duration-200 ${textChannelsCollapsed ? '-rotate-90' : ''}`} 
-                    />
-                    <span>Text Channels</span>
-                  </button>
-                  {(currentServer.owner_id === user?.id || (currentServer as any).permissions?.includes('ADMINISTRATOR') || (currentServer as any).permissions?.includes('MANAGE_CHANNELS')) && (
-                    <Plus 
-                      size={14} 
-                      className="text-[#a3a29e] cursor-pointer hover:text-[#dbdee1] hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
-                      onClick={(e) => { e.stopPropagation(); setNewChannelType('text'); setShowCreateChannelModal(true); }} 
-                    />
-                  )}
-                </div>
-                {!textChannelsCollapsed && (
-                  <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                    {textChannels.map(channel => {
-                      const isUnread = unreads[channel.id] > 0;
-                      const isActive = currentChannel?.id === channel.id;
+                  <div className="pt-4">
+                    <span className="text-xs font-bold uppercase text-[#767572] px-2 mb-2 block hover:text-[#e3e1db] cursor-pointer">Direct Messages</span>
+                    {dms.map(dm => {
+                      const unreadCount = notifications.dms.find(d => d.channel_id === dm.id)?.unread_count || 0;
                       return (
-                        <div 
-                          key={channel.id} 
-                          onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); }} 
-                          className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
-                            isActive 
-                              ? 'bg-[#2d2f31] text-[#e3e1db]' 
-                              : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'
-                          }`}
-                        >
-                          {/* Left accent pill */}
-                          <div 
-                            className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
-                              isActive 
-                                ? 'h-5 bg-[#bc9f84]' 
-                                : isUnread 
-                                  ? 'h-2.5 bg-[#949ba4] group-hover:h-3.5' 
-                                  : 'h-0 bg-[#bc9f84]/40 group-hover:h-3'
-                            }`} 
-                          />
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <Hash 
-                              size={18} 
-                              className={`transition-colors shrink-0 ${
-                                isActive 
-                                  ? 'text-[#e3e1db]' 
-                                  : (isUnread ? 'text-[#f2f3f5]' : 'text-[#767572] group-hover:text-[#dbdee1]')
-                              }`} 
-                            />
-                            <span className={`text-[14px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
-                              isActive
-                                ? 'font-medium text-[#e3e1db]'
-                                : isUnread 
-                                  ? 'font-bold text-[#f2f3f5]' 
-                                  : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]'
-                            }`}>{channel.name}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-1.5 transition-all duration-200 shrink-0 ml-1 opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0">
-                            <span title="Create Invite" className="flex items-center">
-                              <UserPlus
-                                size={14}
-                                className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowInviteModal(true);
-                                }}
-                              />
-                            </span>
-                            {(currentServer?.owner_id === user?.id || permissions.includes('ADMINISTRATOR') || permissions.includes('MANAGE_CHANNELS')) && (
-                              <span title="Edit Channel" className="flex items-center">
-                                <Settings
-                                  size={14}
-                                  className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setChannelToEdit(channel);
-                                    setShowChannelSettingsModal(true);
-                                  }}
-                                />
-                              </span>
+                      <div 
+                        key={dm.id} 
+                        onClick={() => openDm(dm.id)}
+                        className={`flex items-center gap-3 p-2 rounded cursor-pointer group relative ${activeHomeView === 'dm' && activeDmId === dm.id ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
+                      >
+                        <div className="relative shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
+                            {dm.avatar ? (
+                              <img src={getFileUrl(dm.avatar)} alt={dm.name} className="w-full h-full object-cover" />
+                            ) : (
+                              dm.name[0]
                             )}
                           </div>
+                          {dm.active_call && dm.active_call > 0 ? (
+                            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#bc9f84] border border-[#1e2022] flex items-center justify-center text-[#141517]">
+                              <Phone size={6} className="fill-current" />
+                            </div>
+                          ) : null}
                         </div>
-                      )
-                    })}
+                        <div className="flex flex-col min-w-0 flex-1 text-left">
+                          <span className={`font-medium text-sm truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-[#e3e1db] font-bold' : ''}`}>{dm.name}</span>
+                          {dm.active_call && dm.active_call > 0 ? (
+                            <span className="text-[10px] text-[#bc9f84] font-semibold flex items-center gap-1 leading-none mt-0.5">
+                              <Phone size={8} className="fill-current text-[#bc9f84]" />
+                              In a call
+                            </span>
+                          ) : null}
+                        </div>
+                        {unreadCount > 0 && activeDmId !== dm.id && (
+                          <div className="absolute right-2 bg-[#bc9f84] text-[#141517] text-[10px] font-bold px-1.5 h-4 rounded-full flex items-center justify-center">
+                            {unreadCount}
+                          </div>
+                        )}
+                      </div>
+                    )})}
                   </div>
-                )}
-              </div>
-              
-              <div>
-                <div className="flex items-center justify-between px-1.5 mb-1 group/header select-none">
-                  <button 
-                    onClick={() => setVoiceChannelsCollapsed(!voiceChannelsCollapsed)}
-                    className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#767572] hover:text-[#dbdee1] transition-colors"
-                  >
-                    <ChevronDown 
-                      size={12} 
-                      className={`transition-transform duration-200 ${voiceChannelsCollapsed ? '-rotate-90' : ''}`} 
-                    />
-                    <span>Voice Channels</span>
-                  </button>
-                  {(currentServer.owner_id === user?.id || (currentServer as any).permissions?.includes('ADMINISTRATOR') || (currentServer as any).permissions?.includes('MANAGE_CHANNELS')) && (
-                    <Plus 
-                      size={14} 
-                      className="text-[#a3a29e] cursor-pointer hover:text-[#dbdee1] hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
-                      onClick={(e) => { e.stopPropagation(); setNewChannelType('voice'); setShowCreateChannelModal(true); }} 
-                    />
-                  )}
                 </div>
-                {!voiceChannelsCollapsed && (
-                  <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                    {voiceChannels.map(channel => {
-                      const participants = voiceParticipants.filter(p => {
-                        if (p.channel_id !== channel.id) return false
-                        if (p.user_id === user?.id) return isJoined
-                        return true
-                      });
-                      const isActive = currentChannel?.id === channel.id;
-                      const isConnected = activeVoiceChannel?.id === channel.id;
-                      return (
-                        <div key={channel.id} className="flex flex-col">
-                          <div 
-                            onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); }} 
-                            className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
-                              isConnected
-                                ? 'bg-[#2d2f31]/40 text-[#e3e1db]'
-                                : (isActive 
+              ) : currentServer ? (
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between px-1.5 mb-1 group/header select-none">
+                      <button 
+                        onClick={() => setTextChannelsCollapsed(!textChannelsCollapsed)}
+                        className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#767572] hover:text-[#dbdee1] transition-colors"
+                      >
+                        <ChevronDown 
+                          size={12} 
+                          className={`transition-transform duration-200 ${textChannelsCollapsed ? '-rotate-90' : ''}`} 
+                        />
+                        <span>Text Channels</span>
+                      </button>
+                      {(currentServer.owner_id === user?.id || (currentServer as any).permissions?.includes('ADMINISTRATOR') || (currentServer as any).permissions?.includes('MANAGE_CHANNELS')) && (
+                        <Plus 
+                          size={14} 
+                          className="text-[#a3a29e] cursor-pointer hover:text-[#dbdee1] hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
+                          onClick={(e) => { e.stopPropagation(); setNewChannelType('text'); setShowCreateChannelModal(true); }} 
+                        />
+                      )}
+                    </div>
+                    {!textChannelsCollapsed && (
+                      <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                        {textChannels.map(channel => {
+                          const isUnread = unreads[channel.id] > 0;
+                          const isActive = currentChannel?.id === channel.id;
+                          return (
+                            <div 
+                              key={channel.id} 
+                              onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); }} 
+                              className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
+                                isActive 
                                   ? 'bg-[#2d2f31] text-[#e3e1db]' 
-                                  : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]')
-                            }`}
-                          >
-                            <div className="flex items-start gap-2 min-w-0 flex-1">
-                              <Volume2 
-                                size={18} 
-                                className={`transition-colors shrink-0 mt-[2px] ${
-                                  isConnected
-                                    ? 'text-[#23a55a]'
-                                    : (isActive 
-                                      ? 'text-[#e3e1db]' 
-                                      : 'text-[#767572] group-hover:text-[#dbdee1]')
+                                  : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'
+                              }`}
+                            >
+                              {/* Left accent pill */}
+                              <div 
+                                className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
+                                  isActive 
+                                    ? 'h-5 bg-[#bc9f84]' 
+                                    : isUnread 
+                                      ? 'h-2.5 bg-[#949ba4] group-hover:h-3.5' 
+                                      : 'h-0 bg-[#bc9f84]/40 group-hover:h-3'
                                 }`} 
                               />
-                              <div className="flex flex-col min-w-0 flex-1 select-none">
-                                <span className={`text-[14px] truncate transition-all duration-200 ${
-                                  isConnected
-                                    ? 'font-medium text-[#e3e1db]'
-                                    : (isActive
-                                      ? 'font-medium text-[#e3e1db]'
-                                      : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]')
-                                }`}>{channel.name}</span>
-                                
-                                {/* Voice Channel Status */}
-                                {(isConnected || channelStatuses[channel.id]) && (
-                                  <div 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (isConnected) {
-                                        setEditingStatusChannelId(channel.id);
-                                        setNewChannelStatus(channelStatuses[channel.id] || "");
-                                      }
-                                    }}
-                                    className="flex items-center gap-1 group/status text-[11px] text-[#949ba4] hover:text-[#dbdee1] transition-colors mt-0.5 min-w-0 cursor-pointer"
-                                  >
-                                    {editingStatusChannelId === channel.id ? (
-                                      <input
-                                        type="text"
-                                        value={newChannelStatus}
-                                        onChange={(e) => setNewChannelStatus(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.stopPropagation();
-                                            setChannelStatuses(prev => ({ ...prev, [channel.id]: newChannelStatus }));
-                                            setEditingStatusChannelId(null);
-                                          } else if (e.key === 'Escape') {
-                                            e.stopPropagation();
-                                            setEditingStatusChannelId(null);
-                                          }
-                                        }}
-                                        onBlur={() => {
-                                          setChannelStatuses(prev => ({ ...prev, [channel.id]: newChannelStatus }));
-                                          setEditingStatusChannelId(null);
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="bg-[#1e2022] text-[#dbdee1] px-1 py-0.5 rounded outline-none border border-[#bc9f84] w-full"
-                                        placeholder="Set status..."
-                                        autoFocus
-                                      />
-                                    ) : (
-                                      <>
-                                        <span className="truncate max-w-[130px] font-normal">
-                                          {channelStatuses[channel.id] || "Set a channel status"}
-                                        </span>
-                                        {isConnected && (
-                                          <Pencil 
-                                            size={10} 
-                                            className="opacity-0 group-hover/status:opacity-100 transition-opacity shrink-0 ml-0.5 text-[#949ba4]" 
-                                          />
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-1.5 transition-all duration-200 shrink-0 ml-1 opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0">
-                              <span title="Create Invite" className="flex items-center">
-                                <UserPlus
-                                  size={14}
-                                  className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowInviteModal(true);
-                                  }}
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <Hash 
+                                  size={18} 
+                                  className={`transition-colors shrink-0 ${
+                                    isActive 
+                                      ? 'text-[#e3e1db]' 
+                                      : (isUnread ? 'text-[#f2f3f5]' : 'text-[#767572] group-hover:text-[#dbdee1]')
+                                  }`} 
                                 />
-                              </span>
-                              {(currentServer?.owner_id === user?.id || permissions.includes('ADMINISTRATOR') || permissions.includes('MANAGE_CHANNELS')) && (
-                                <span title="Edit Channel" className="flex items-center">
-                                  <Settings
+                                <span className={`text-[14px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
+                                  isActive
+                                    ? 'font-medium text-[#e3e1db]'
+                                    : isUnread 
+                                      ? 'font-bold text-[#f2f3f5]' 
+                                      : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]'
+                                }`}>{channel.name}</span>
+                              </div>
+                              
+                              <div className="flex items-center gap-1.5 transition-all duration-200 shrink-0 ml-1 opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0">
+                                <span title="Create Invite" className="flex items-center">
+                                  <UserPlus
                                     size={14}
                                     className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setChannelToEdit(channel);
-                                      setShowChannelSettingsModal(true);
+                                      setShowInviteModal(true);
                                     }}
                                   />
                                 </span>
-                              )}
+                                {(currentServer?.owner_id === user?.id || permissions.includes('ADMINISTRATOR') || permissions.includes('MANAGE_CHANNELS')) && (
+                                  <span title="Edit Channel" className="flex items-center">
+                                    <Settings
+                                      size={14}
+                                      className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setChannelToEdit(channel);
+                                        setShowChannelSettingsModal(true);
+                                      }}
+                                    />
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          
-                          {/* Participant List */}
-                          {participants.length > 0 && (
-                            <div className="ml-6 pl-2.5 space-y-1 my-1 animate-in slide-in-from-top-1 duration-150">
-                              {participants.map(p => {
-                                const isUserSpeaking = p.user_id === user?.id 
-                                  ? (speakingUsers[user?.id || 'local'] || speakingUsers['local'])
-                                  : speakingUsers[p.user_id] === true;
-                                return (
-                                  <div 
-                                    key={p.user_id} 
-                                    onClick={() => setSelectedUserProfileId(p.user_id)}
-                                    className="flex items-center justify-between p-1 rounded-md hover:bg-[#2d2f31]/50 cursor-pointer group/p transition-colors"
-                                  >
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <div className={`w-5 h-5 rounded-full bg-[#2b2d31] flex items-center justify-center text-[9px] uppercase font-bold text-[#e3e1db] shrink-0 overflow-hidden transition-all duration-150 ${
-                                        isUserSpeaking 
-                                          ? 'ring-2 ring-[#23a55a] border-transparent shadow-[0_0_8px_rgba(35,165,90,0.6)] scale-105' 
-                                          : 'border border-[#3f4147]'
-                                      }`}>
-                                        {p.avatar ? (
-                                          <img src={getFileUrl(p.avatar)} alt={p.username} className="w-full h-full object-cover" />
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center justify-between px-1.5 mb-1 group/header select-none">
+                      <button 
+                        onClick={() => setVoiceChannelsCollapsed(!voiceChannelsCollapsed)}
+                        className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#767572] hover:text-[#dbdee1] transition-colors"
+                      >
+                        <ChevronDown 
+                          size={12} 
+                          className={`transition-transform duration-200 ${voiceChannelsCollapsed ? '-rotate-90' : ''}`} 
+                        />
+                        <span>Voice Channels</span>
+                      </button>
+                      {(currentServer.owner_id === user?.id || (currentServer as any).permissions?.includes('ADMINISTRATOR') || (currentServer as any).permissions?.includes('MANAGE_CHANNELS')) && (
+                        <Plus 
+                          size={14} 
+                          className="text-[#a3a29e] cursor-pointer hover:text-[#dbdee1] hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
+                          onClick={(e) => { e.stopPropagation(); setNewChannelType('voice'); setShowCreateChannelModal(true); }} 
+                        />
+                      )}
+                    </div>
+                    {!voiceChannelsCollapsed && (
+                      <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                        {voiceChannels.map(channel => {
+                          const participants = voiceParticipants.filter(p => {
+                            if (p.channel_id !== channel.id) return false
+                            if (p.user_id === user?.id) return isJoined
+                            return true
+                          });
+                          const isActive = currentChannel?.id === channel.id;
+                          const isConnected = activeVoiceChannel?.id === channel.id;
+                          return (
+                            <div key={channel.id} className="flex flex-col">
+                              <div 
+                                onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); }} 
+                                className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
+                                  isConnected
+                                    ? 'bg-[#2d2f31]/40 text-[#e3e1db]'
+                                    : (isActive 
+                                      ? 'bg-[#2d2f31] text-[#e3e1db]' 
+                                      : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]')
+                                }`}
+                              >
+                                <div className="flex items-start gap-2 min-w-0 flex-1">
+                                  <Volume2 
+                                    size={18} 
+                                    className={`transition-colors shrink-0 mt-[2px] ${
+                                      isConnected
+                                        ? 'text-[#23a55a]'
+                                        : (isActive 
+                                          ? 'text-[#e3e1db]' 
+                                          : 'text-[#767572] group-hover:text-[#dbdee1]')
+                                    }`} 
+                                  />
+                                  <div className="flex flex-col min-w-0 flex-1 select-none">
+                                    <span className={`text-[14px] truncate transition-all duration-200 ${
+                                      isConnected
+                                        ? 'font-medium text-[#e3e1db]'
+                                        : (isActive
+                                          ? 'font-medium text-[#e3e1db]'
+                                          : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]')
+                                    }`}>{channel.name}</span>
+                                    
+                                    {/* Voice Channel Status */}
+                                    {(isConnected || channelStatuses[channel.id]) && (
+                                      <div 
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (isConnected) {
+                                            setEditingStatusChannelId(channel.id);
+                                            setNewChannelStatus(channelStatuses[channel.id] || "");
+                                          }
+                                        }}
+                                        className="flex items-center gap-1 group/status text-[11px] text-[#949ba4] hover:text-[#dbdee1] transition-colors mt-0.5 min-w-0 cursor-pointer"
+                                      >
+                                        {editingStatusChannelId === channel.id ? (
+                                          <input
+                                            type="text"
+                                            value={newChannelStatus}
+                                            onChange={(e) => setNewChannelStatus(e.target.value)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') {
+                                                e.stopPropagation();
+                                                setChannelStatuses(prev => ({ ...prev, [channel.id]: newChannelStatus }));
+                                                setEditingStatusChannelId(null);
+                                              } else if (e.key === 'Escape') {
+                                                e.stopPropagation();
+                                                setEditingStatusChannelId(null);
+                                              }
+                                            }}
+                                            onBlur={() => {
+                                              setChannelStatuses(prev => ({ ...prev, [channel.id]: newChannelStatus }));
+                                              setEditingStatusChannelId(null);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="bg-[#1e2022] text-[#dbdee1] px-1 py-0.5 rounded outline-none border border-[#bc9f84] w-full"
+                                            placeholder="Set status..."
+                                            autoFocus
+                                          />
                                         ) : (
-                                          p.username[0]
+                                          <>
+                                            <span className="truncate max-w-[130px] font-normal">
+                                              {channelStatuses[channel.id] || "Set a channel status"}
+                                            </span>
+                                            {isConnected && (
+                                              <Pencil 
+                                                size={10} 
+                                                className="opacity-0 group-hover/status:opacity-100 transition-opacity shrink-0 ml-0.5 text-[#949ba4]" 
+                                              />
+                                            )}
+                                          </>
                                         )}
                                       </div>
-                                      <span className={`text-xs truncate transition-colors duration-150 font-medium ${
-                                        isUserSpeaking ? 'text-[#23a55a] font-semibold' : 'text-[#949ba4] group-hover/p:text-[#dbdee1]'
-                                      }`}>{p.username}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 pr-1 shrink-0">
-                                      {p.is_muted === 1 && <MicOff size={13} className="text-[#949ba4]" />}
-                                      {p.is_deafened === 1 && (
-                                        <div className="relative flex items-center justify-center text-[#949ba4]">
-                                          <Headphones size={13} />
-                                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                            <div className="w-[1px] h-[13px] bg-[#949ba4] rotate-45" />
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
+                                    )}
                                   </div>
-                                )
-                              })}
+                                </div>
+                                
+                                <div className="flex items-center gap-1.5 transition-all duration-200 shrink-0 ml-1 opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0">
+                                  <span title="Create Invite" className="flex items-center">
+                                    <UserPlus
+                                      size={14}
+                                      className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowInviteModal(true);
+                                      }}
+                                    />
+                                  </span>
+                                  {(currentServer?.owner_id === user?.id || permissions.includes('ADMINISTRATOR') || permissions.includes('MANAGE_CHANNELS')) && (
+                                    <span title="Edit Channel" className="flex items-center">
+                                      <Settings
+                                        size={14}
+                                        className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setChannelToEdit(channel);
+                                          setShowChannelSettingsModal(true);
+                                        }}
+                                      />
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Participant List */}
+                              {participants.length > 0 && (
+                                <div className="ml-6 pl-2.5 space-y-1 my-1 animate-in slide-in-from-top-1 duration-150">
+                                  {participants.map(p => {
+                                    const isUserSpeaking = p.user_id === user?.id 
+                                      ? (speakingUsers[user?.id || 'local'] || speakingUsers['local'])
+                                      : speakingUsers[p.user_id] === true;
+                                    return (
+                                      <div 
+                                        key={p.user_id} 
+                                        onClick={() => setSelectedUserProfileId(p.user_id)}
+                                        className="flex items-center justify-between p-1 rounded-md hover:bg-[#2d2f31]/50 cursor-pointer group/p transition-colors"
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div className={`w-5 h-5 rounded-full bg-[#2b2d31] flex items-center justify-center text-[9px] uppercase font-bold text-[#e3e1db] shrink-0 overflow-hidden transition-all duration-150 ${
+                                            isUserSpeaking 
+                                              ? 'ring-2 ring-[#23a55a] border-transparent shadow-[0_0_8px_rgba(35,165,90,0.6)] scale-105' 
+                                              : 'border border-[#3f4147]'
+                                          }`}>
+                                            {p.avatar ? (
+                                              <img src={getFileUrl(p.avatar)} alt={p.username} className="w-full h-full object-cover" />
+                                            ) : (
+                                              p.username[0]
+                                            )}
+                                          </div>
+                                          <span className={`text-xs truncate transition-colors duration-150 font-medium ${
+                                            isUserSpeaking ? 'text-[#23a55a] font-semibold' : 'text-[#949ba4] group-hover/p:text-[#dbdee1]'
+                                          }`}>{p.username}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 pr-1 shrink-0">
+                                          {p.is_muted === 1 && <MicOff size={13} className="text-[#949ba4]" />}
+                                          {p.is_deafened === 1 && (
+                                            <div className="relative flex items-center justify-center text-[#949ba4]">
+                                              <Headphones size={13} />
+                                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <div className="w-[1px] h-[13px] bg-[#949ba4] rotate-45" />
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )
-                    })}
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+            
+            {/* Resizable Sidebar Drag Handle */}
+            <div 
+              onMouseDown={handleMouseDown}
+              className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-[#bc9f84]/30 active:bg-[#bc9f84]/50 z-30 transition-colors"
+            />
+          </div>
         </div>
 
-        {/* Bottom Panels (Voice Connected Status & User Card) */}
-        <div className="flex flex-col shrink-0 mt-auto bg-[#1e2022] w-full">
+        {/* Floating Bottom Card: Unified Voice Connected status and User Panel card spanning both Column 1 and Column 2 */}
+        <div className="absolute bottom-2 left-2 right-2 bg-[#232428] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 shadow-lg overflow-hidden select-none z-20">
           {/* Voice Connection Status */}
           {activeVoiceChannel && (() => {
             const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
             const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
             return (
-              <div className="mx-2 mb-2 p-2 bg-[#111214] border border-[#2d2f31] rounded-[8px] flex flex-col gap-2 shrink-0 shadow-sm text-left">
+              <div className="w-full p-2.5 flex flex-col gap-2 border-b border-[#2d2f31] text-left">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-[#23a55a]">
-                    <Volume2 size={20} className="text-[#23a55a]" />
+                    <Volume2 size={20} className="text-[#23a55a] shrink-0" />
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs font-bold leading-tight text-[#23a55a]">Voice Connected</span>
                       <span className="text-[10px] leading-tight text-[#949ba4] truncate">{voiceSubtitle}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-8 w-8 text-[#b5bac1] hover:text-[#ed4245]"><PhoneOff size={18} /></Button>
+                  <div className="flex items-center gap-2">
+                    {/* Animated Soundwave Visualizer matching Discord style */}
+                    <div className="flex items-end gap-[2px] h-3.5 px-1 shrink-0">
+                      <div className="w-[2px] h-2 bg-[#23a55a] rounded-full animate-pulse" />
+                      <div className="w-[2px] h-3.5 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                      <div className="w-[2px] h-2.5 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                      <div className="w-[2px] h-3 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-8 w-8 text-[#b5bac1] hover:text-[#ed4245] hover:bg-white/5 rounded"><PhoneOff size={18} /></Button>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1467,19 +1485,13 @@ export default function HomePage() {
                   <Button variant="secondary" size="icon" onClick={toggleScreenShare} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isScreenSharing ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]' : ''}`} title={isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}>
                     <MonitorUp size={16} />
                   </Button>
-                  <div className="flex-1 h-8 bg-[#2b2d31] text-[#767572] flex items-center justify-center rounded-[6px] cursor-not-allowed opacity-50" title="Activities (Not Available)">
-                    <Compass size={16} />
-                  </div>
-                  <div className="flex-1 h-8 bg-[#2b2d31] text-[#767572] flex items-center justify-center rounded-[6px] cursor-not-allowed opacity-50" title="Soundboard (Not Available)">
-                    <Megaphone size={16} />
-                  </div>
                 </div>
               </div>
             );
           })()}
 
-          {/* User Panel (Flat full-width bar) */}
-          <div className="h-[54px] bg-[#111214] border-t border-[#2d2f31] px-2 flex items-center justify-between shrink-0 relative select-none">
+          {/* User Panel */}
+          <div className="h-[52px] px-2 flex items-center justify-between shrink-0 relative">
             <div className="flex items-center gap-2 min-w-0">
               <div className="relative group cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
                 <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
@@ -1489,10 +1501,10 @@ export default function HomePage() {
                     user?.username[0]
                   )}
                 </div>
-                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111214] ${getStatusColor(user?.status)}`} />
+                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#232428] ${getStatusColor(user?.status)}`} />
                 
                 {showStatusMenu && (
-                  <div className="absolute bottom-12 left-0 w-48 bg-[#1e2022] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
+                  <div className="absolute bottom-12 left-0 w-48 bg-[#232428] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
                     <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
                       <div className="w-2.5 h-2.5 rounded-full bg-[#23a559]" />
                       <span className="text-xs font-medium text-[#e3e1db]">Online</span>
@@ -1513,7 +1525,7 @@ export default function HomePage() {
                 )}
               </div>
               
-              <div className="flex flex-col min-w-0 cursor-pointer" onClick={() => setShowUserSettingsModal(true)}>
+              <div className="flex flex-col min-w-0 cursor-pointer text-left" onClick={() => setShowUserSettingsModal(true)}>
                 <span className="text-xs font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
                 {isJoined ? (
                   <span className="text-[10px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
@@ -1526,35 +1538,54 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex items-center shrink-0">
-              <Button variant="ghost" size="icon" onClick={toggleAudio} className={`h-8 w-8 rounded hover:bg-[#2d2f31]/60 ${!isAudioEnabled ? 'text-[#ed4245]' : 'text-[#b5bac1]'}`}>
-                {isAudioEnabled ? <Mic size={18} /> : <MicOff size={18} />}
-              </Button>
-              <Button variant="ghost" size="icon" onClick={toggleDeafen} className={`h-8 w-8 rounded relative hover:bg-[#2d2f31]/60 ${isDeafened ? 'text-[#ed4245]' : 'text-[#b5bac1]'}`}>
-                <Headphones size={18} />
-                {isDeafened && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-[2px] h-[18px] bg-[#ed4245] rotate-45" />
-                  </div>
-                )}
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded text-[#b5bac1] hover:bg-[#2d2f31]/60" onClick={() => setShowUserSettingsModal(true)}>
-                <Settings size={18} />
-              </Button>
+            <div className="flex items-center gap-0.5 shrink-0">
+              {/* Mic Controls */}
+              <div className="flex items-center hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors">
+                <button 
+                  onClick={toggleAudio} 
+                  className={`p-1 rounded transition-colors ${!isAudioEnabled ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
+                  title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
+                >
+                  {isAudioEnabled ? <Mic size={16} /> : <MicOff size={16} />}
+                </button>
+                <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
+              </div>
+
+              {/* Deafen Controls */}
+              <div className="flex items-center hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors">
+                <button 
+                  onClick={toggleDeafen} 
+                  className={`p-1 rounded relative transition-colors ${isDeafened ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
+                  title={isDeafened ? "Undeafen" : "Deafen"}
+                >
+                  <Headphones size={16} />
+                  {isDeafened && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-[1.5px] h-[14px] bg-[#f23f43] rotate-45" />
+                    </div>
+                  )}
+                </button>
+                <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
+              </div>
+
+              {/* Settings Control */}
+              <button 
+                onClick={() => setShowUserSettingsModal(true)} 
+                className="p-1.5 hover:bg-white/5 text-[#dbdee1] hover:text-white rounded transition-colors"
+                title="User Settings"
+              >
+                <Settings size={16} />
+              </button>
             </div>
           </div>
         </div>
-
-        {/* Resizable Sidebar Drag Handle */}
-        <div 
-          onMouseDown={handleMouseDown}
-          className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-[#bc9f84]/30 active:bg-[#bc9f84]/50 z-30 transition-colors"
-        />
       </div>
 
-      {/* Column 3: Main Chat Content */}
-      <div className="flex-1 flex flex-col bg-[#141517] overflow-hidden">
-        {activeTab === 'home' && activeHomeView === 'friends' ? (
+      {/* Main Bordered Dashboard Layout Container */}
+      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-[12px] border border-[#2d2f31] bg-[#313338] overflow-hidden relative">
+        {/* Column 3: Main Chat Content wrapper */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {activeTab === 'home' && activeHomeView === 'friends' ? (
           <div className="flex-1 flex flex-col">
             <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0 gap-4 overflow-x-auto">
               <div className="flex items-center gap-2 font-bold text-[#e3e1db] border-r border-[#2d2f31] pr-4 shrink-0">
@@ -2120,8 +2151,8 @@ export default function HomePage() {
               
               {/* Pinned Messages Sidebar */}
               {showPins && (
-                <div className="w-80 obsidian-card flex flex-col absolute right-2.5 top-2.5 bottom-2.5 z-20 shadow-2xl animate-in slide-in-from-right duration-200 border-none">
-                  <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shrink-0 bg-[#1e2022]">
+                <div className="w-80 obsidian-card flex flex-col absolute right-2.5 top-2.5 bottom-2.5 z-10 shadow-2xl border-none">
+                  <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shrink-0 bg-[#2b2d31]">
                     <div className="flex items-center gap-1.5 font-bold text-[#bc9f84]">
                       <Pin size={16} className="text-[#bc9f84] fill-[#bc9f84]" />
                       <span className="text-[#e3e1db]">Pinned Messages</span>
@@ -2162,7 +2193,7 @@ export default function HomePage() {
               {/* Search Results Sidebar */}
               {showMsgSearchResults && (
                 <div className="w-80 obsidian-card flex flex-col absolute right-2.5 top-2.5 bottom-2.5 z-10 shadow-2xl border-none">
-                  <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shrink-0 bg-[#1e2022]">
+                  <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shrink-0 bg-[#2b2d31]">
                     <span className="font-bold text-[#e3e1db]">Search Results</span>
                     <Button variant="ghost" size="icon" className="w-6 h-6 hover:text-white text-[#a3a29e]" onClick={() => { setMsgSearchResults([]); setMessageSearchQuery(''); setShowMsgSearchResults(false); }}><XIcon size={14} /></Button>
                   </div>
@@ -2235,7 +2266,7 @@ export default function HomePage() {
 
             return (
               <div 
-                className="flex-1 flex flex-col bg-[#141517] relative group/voice"
+                className="flex-1 flex flex-col bg-[#313338] relative group/voice"
                 onMouseMove={handleMouseMoveVoice}
                 onMouseLeave={() => setShowControls(false)}
               >
@@ -2388,7 +2419,7 @@ export default function HomePage() {
                   return true
                 })
                 return (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#141517]">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#313338]">
                     <Volume2 size={64} className="text-[#bc9f84] mb-4 opacity-80" />
                     <h1 className="text-3xl font-extrabold text-[#e3e1db] mb-2">{targetChannel.name}</h1>
                     
@@ -2400,7 +2431,7 @@ export default function HomePage() {
                           {activeParticipants.map(p => (
                             <div 
                               key={p.user_id} 
-                              className="w-10 h-10 rounded-full bg-[#2d2f31] border-2 border-[#141517] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shadow overflow-hidden"
+                              className="w-10 h-10 rounded-full bg-[#2d2f31] border-2 border-[#313338] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shadow overflow-hidden"
                               title={p.username}
                             >
                               {p.avatar ? (
