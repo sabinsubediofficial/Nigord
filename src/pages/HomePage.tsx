@@ -1093,7 +1093,7 @@ export default function HomePage() {
 
       {/* Column 1: Server Sidebar (Far Left, floating directly on base background) */}
       <div 
-        className={`fixed md:relative top-0 bottom-0 left-0 z-40 w-[72px] h-full flex flex-col shrink-0 select-none bg-[#1e1f22] md:bg-transparent transition-transform duration-300 md:translate-x-0 ${
+        className={`fixed md:relative top-0 bottom-0 left-0 z-50 w-[72px] h-full flex flex-col shrink-0 select-none bg-[#1e1f22] md:bg-transparent transition-transform duration-300 md:translate-x-0 ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -1114,11 +1114,11 @@ export default function HomePage() {
       </div>
 
       {/* Main Bordered Dashboard Layout Container (The Big Rounded Box wrapping Column 2, 3 & 4) */}
-      <div className="flex-1 flex my-0 mr-0 ml-0 rounded-none border-0 md:my-2 md:mr-2 md:ml-0 md:rounded-[12px] md:border md:border-[#2d2f31] bg-[#111214] overflow-hidden relative z-10">
+      <div className="flex-1 flex my-0 mr-0 ml-0 rounded-none border-0 md:my-2 md:mr-2 md:ml-0 md:rounded-[12px] md:border md:border-[#2d2f31] bg-[#111214] overflow-hidden relative md:z-10">
         {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
         <div 
           style={{ width: `${sidebarWidth}px` }}
-          className={`fixed md:relative top-0 bottom-0 left-[72px] md:left-0 z-40 h-full bg-[#111214] border-r border-[#2d2f31] shrink-0 overflow-hidden flex flex-col transition-transform duration-300 md:translate-x-0 ${
+          className={`fixed md:relative top-0 bottom-0 left-[72px] md:left-0 z-50 h-full bg-[#111214] border-r border-[#2d2f31] shrink-0 overflow-hidden flex flex-col transition-transform duration-300 md:translate-x-0 ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-[calc(100%+72px)] md:translate-x-0'
           }`}
         >
