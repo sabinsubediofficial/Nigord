@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  font-size: 130% !important;
-}
-
 @layer base {
   :root {
     --background: 220 7% 9%; /* #141517 */
