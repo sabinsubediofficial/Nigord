@@ -264,4 +264,8 @@ Work like a principal engineer reviewing code for production deployment.
 
 Quality is more important than speed.
 
+# Communication Rules
+
+- Always create clickable links for all files and code symbols (classes, types, functions, structs) in your responses using github style markdown links with the file:// scheme (e.g. [filename](file:///path/to/file)). Do not surround the link text with backticks.
+
 #exclude in github
