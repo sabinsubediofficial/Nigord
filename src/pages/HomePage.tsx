@@ -1442,108 +1442,105 @@ export default function HomePage() {
 
         {/* Bottom Panels (Voice Connected Status & User Card) */}
         <div className="flex flex-col shrink-0 mt-auto bg-[#1e2022] w-full">
-          {/* Combined Bottom Panel Card (Voice Connected Status & User Panel) */}
-          <div className="mx-2 mb-2 bg-[#111214] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 relative select-none shadow-sm overflow-hidden text-left">
-            {/* Voice Connection Status */}
-            {activeVoiceChannel && (() => {
-              const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
-              const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
-              return (
-                <div className="p-2 pb-0 flex flex-col gap-2 border-b border-[#2d2f31]/50 bg-[#111214] shrink-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-[#23a55a]">
-                      <Volume2 size={20} className="text-[#23a55a]" />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold leading-tight text-[#23a55a]">Voice Connected</span>
-                        <span className="text-[10px] leading-tight text-[#949ba4] truncate">{voiceSubtitle}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-8 w-8 text-[#b5bac1] hover:text-[#ed4245]"><PhoneOff size={18} /></Button>
+          {/* Voice Connection Status */}
+          {activeVoiceChannel && (() => {
+            const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
+            const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
+            return (
+              <div className="mx-2 mb-2 p-2 bg-[#111214] border border-[#2d2f31] rounded-[8px] flex flex-col gap-2 shrink-0 shadow-sm text-left">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[#23a55a]">
+                    <Volume2 size={20} className="text-[#23a55a]" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-bold leading-tight text-[#23a55a]">Voice Connected</span>
+                      <span className="text-[10px] leading-tight text-[#949ba4] truncate">{voiceSubtitle}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Button variant="secondary" size="icon" onClick={toggleVideo} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isVideoEnabled ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#bc9f84]/80' : ''}`} title={isVideoEnabled ? 'Stop Video' : 'Video'}>
-                      {isVideoEnabled ? <VideoOff size={16} /> : <Video size={16} />}
-                    </Button>
-                    <Button variant="secondary" size="icon" onClick={toggleScreenShare} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isScreenSharing ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]' : ''}`} title={isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}>
-                      <MonitorUp size={16} />
-                    </Button>
-                    <div className="flex-1 h-8 bg-[#2b2d31] text-[#767572] flex items-center justify-center rounded-[6px] cursor-not-allowed opacity-50" title="Activities (Not Available)">
-                      <Compass size={16} />
-                    </div>
-                    <div className="flex-1 h-8 bg-[#2b2d31] text-[#767572] flex items-center justify-center rounded-[6px] cursor-not-allowed opacity-50" title="Soundboard (Not Available)">
-                      <Megaphone size={16} />
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-8 w-8 text-[#b5bac1] hover:text-[#ed4245]"><PhoneOff size={18} /></Button>
                   </div>
                 </div>
-              );
-            })()}
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" size="icon" onClick={toggleVideo} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isVideoEnabled ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#bc9f84]/80' : ''}`} title={isVideoEnabled ? 'Stop Video' : 'Video'}>
+                    {isVideoEnabled ? <VideoOff size={16} /> : <Video size={16} />}
+                  </Button>
+                  <Button variant="secondary" size="icon" onClick={toggleScreenShare} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isScreenSharing ? 'bg-[#bc9f84] text-[#141517] hover:bg-[#a88d71]' : ''}`} title={isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}>
+                    <MonitorUp size={16} />
+                  </Button>
+                  <div className="flex-1 h-8 bg-[#2b2d31] text-[#767572] flex items-center justify-center rounded-[6px] cursor-not-allowed opacity-50" title="Activities (Not Available)">
+                    <Compass size={16} />
+                  </div>
+                  <div className="flex-1 h-8 bg-[#2b2d31] text-[#767572] flex items-center justify-center rounded-[6px] cursor-not-allowed opacity-50" title="Soundboard (Not Available)">
+                    <Megaphone size={16} />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
-            {/* User Panel */}
-            <div className="p-2 flex items-center justify-between shrink-0 relative bg-[#111214]">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="relative group cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
-                  <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
-                    {user?.avatar ? (
-                      <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
-                    ) : (
-                      user?.username[0]
-                    )}
-                  </div>
-                  <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111214] ${getStatusColor(user?.status)}`} />
-                  
-                  {showStatusMenu && (
-                    <div className="absolute bottom-12 left-0 w-48 bg-[#1e2022] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
-                      <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#23a559]" />
-                        <span className="text-xs font-medium text-[#e3e1db]">Online</span>
-                      </div>
-                      <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#f0b232]" />
-                        <span className="text-xs font-medium text-[#e3e1db]">Idle</span>
-                      </div>
-                      <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#f23f43]" />
-                        <span className="text-xs font-medium text-[#e3e1db]">Do Not Disturb</span>
-                      </div>
-                      <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#80848e]" />
-                        <span className="text-xs font-medium text-[#e3e1db]">Invisible</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex flex-col min-w-0 cursor-pointer" onClick={() => setShowUserSettingsModal(true)}>
-                  <span className="text-xs font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
-                  {isJoined ? (
-                    <span className="text-[10px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
-                      <Volume2 size={10} className="text-[#23a55a] shrink-0" />
-                      In voice
-                    </span>
+          {/* User Panel (Flat full-width bar) */}
+          <div className="h-[54px] bg-[#111214] border-t border-[#2d2f31] px-2 flex items-center justify-between shrink-0 relative select-none">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="relative group cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
+                <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
+                  {user?.avatar ? (
+                    <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-[10px] text-[#949ba4] truncate leading-tight font-normal">{user?.status_message || user?.status || 'Online'}</span>
+                    user?.username[0]
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center shrink-0">
-                <Button variant="ghost" size="icon" onClick={toggleAudio} className={`h-8 w-8 rounded hover:bg-[#2d2f31]/60 ${!isAudioEnabled ? 'text-[#ed4245]' : 'text-[#b5bac1]'}`}>
-                  {isAudioEnabled ? <Mic size={18} /> : <MicOff size={18} />}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={toggleDeafen} className={`h-8 w-8 rounded relative hover:bg-[#2d2f31]/60 ${isDeafened ? 'text-[#ed4245]' : 'text-[#b5bac1]'}`}>
-                  <Headphones size={18} />
-                  {isDeafened && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-[2px] h-[18px] bg-[#ed4245] rotate-45" />
+                <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111214] ${getStatusColor(user?.status)}`} />
+                
+                {showStatusMenu && (
+                  <div className="absolute bottom-12 left-0 w-48 bg-[#1e2022] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
+                    <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#23a559]" />
+                      <span className="text-xs font-medium text-[#e3e1db]">Online</span>
                     </div>
-                  )}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded text-[#b5bac1] hover:bg-[#2d2f31]/60" onClick={() => setShowUserSettingsModal(true)}>
-                  <Settings size={18} />
-                </Button>
+                    <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#f0b232]" />
+                      <span className="text-xs font-medium text-[#e3e1db]">Idle</span>
+                    </div>
+                    <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#f23f43]" />
+                      <span className="text-xs font-medium text-[#e3e1db]">Do Not Disturb</span>
+                    </div>
+                    <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#80848e]" />
+                      <span className="text-xs font-medium text-[#e3e1db]">Invisible</span>
+                    </div>
+                  </div>
+                )}
               </div>
+              
+              <div className="flex flex-col min-w-0 cursor-pointer" onClick={() => setShowUserSettingsModal(true)}>
+                <span className="text-xs font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
+                {isJoined ? (
+                  <span className="text-[10px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
+                    <Volume2 size={10} className="text-[#23a55a] shrink-0" />
+                    In voice
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-[#949ba4] truncate leading-tight font-normal">{user?.status_message || user?.status || 'Online'}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center shrink-0">
+              <Button variant="ghost" size="icon" onClick={toggleAudio} className={`h-8 w-8 rounded hover:bg-[#2d2f31]/60 ${!isAudioEnabled ? 'text-[#ed4245]' : 'text-[#b5bac1]'}`}>
+                {isAudioEnabled ? <Mic size={18} /> : <MicOff size={18} />}
+              </Button>
+              <Button variant="ghost" size="icon" onClick={toggleDeafen} className={`h-8 w-8 rounded relative hover:bg-[#2d2f31]/60 ${isDeafened ? 'text-[#ed4245]' : 'text-[#b5bac1]'}`}>
+                <Headphones size={18} />
+                {isDeafened && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[2px] h-[18px] bg-[#ed4245] rotate-45" />
+                  </div>
+                )}
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded text-[#b5bac1] hover:bg-[#2d2f31]/60" onClick={() => setShowUserSettingsModal(true)}>
+                <Settings size={18} />
+              </Button>
             </div>
           </div>
         </div>
