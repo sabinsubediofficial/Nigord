@@ -1074,7 +1074,7 @@ export default function HomePage() {
       />
 
       {/* Main Bordered Dashboard Layout Container */}
-      <div className="flex-1 flex mt-2 mb-0 mr-2 ml-0 rounded-t-[12px] rounded-b-none border-t border-r border-l border-[#2d2f31] border-b-0 bg-[#141517] overflow-hidden relative">
+      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-r-[12px] rounded-l-none border border-[#2d2f31] bg-[#141517] overflow-hidden relative">
         
         {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
         <div 
@@ -1478,11 +1478,11 @@ export default function HomePage() {
             );
           })()}
 
-          {/* User Panel (Flat full-width bar with Nitro-inspired mesh gradient background) */}
-          <div className="h-[54px] bg-[radial-gradient(circle_at_90%_120%,#4a2270_0%,#150f28_50%,#0f081c_100%)] border-t border-white/10 px-2 flex items-center justify-between shrink-0 relative select-none">
+          {/* User Panel (Flat full-width bar) */}
+          <div className="h-[54px] bg-[#111214] border-t border-[#2d2f31] px-2 flex items-center justify-between shrink-0 relative select-none">
             <div className="flex items-center gap-2 min-w-0">
               <div className="relative group cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
-                <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-white/10 overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
                   {user?.avatar ? (
                     <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
                   ) : (
@@ -1513,7 +1513,7 @@ export default function HomePage() {
                 )}
               </div>
               
-              <div className="flex flex-col min-w-0 cursor-pointer text-left" onClick={() => setShowUserSettingsModal(true)}>
+              <div className="flex flex-col min-w-0 cursor-pointer" onClick={() => setShowUserSettingsModal(true)}>
                 <span className="text-xs font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
                 {isJoined ? (
                   <span className="text-[10px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
@@ -1526,44 +1526,21 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-0.5 shrink-0">
-              {/* Mic Controls */}
-              <div className="flex items-center hover:bg-white/10 rounded px-1 py-0.5 transition-colors">
-                <button 
-                  onClick={toggleAudio} 
-                  className={`p-1 rounded transition-colors ${!isAudioEnabled ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
-                  title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
-                >
-                  {isAudioEnabled ? <Mic size={16} /> : <MicOff size={16} />}
-                </button>
-                <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
-              </div>
-
-              {/* Deafen Controls */}
-              <div className="flex items-center hover:bg-white/10 rounded px-1 py-0.5 transition-colors">
-                <button 
-                  onClick={toggleDeafen} 
-                  className={`p-1 rounded relative transition-colors ${isDeafened ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
-                  title={isDeafened ? "Undeafen" : "Deafen"}
-                >
-                  <Headphones size={16} />
-                  {isDeafened && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-[1.5px] h-[14px] bg-[#f23f43] rotate-45" />
-                    </div>
-                  )}
-                </button>
-                <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
-              </div>
-
-              {/* Settings Control */}
-              <button 
-                onClick={() => setShowUserSettingsModal(true)} 
-                className="p-1.5 hover:bg-white/10 text-[#dbdee1] hover:text-white rounded transition-colors"
-                title="User Settings"
-              >
-                <Settings size={16} />
-              </button>
+            <div className="flex items-center shrink-0">
+              <Button variant="ghost" size="icon" onClick={toggleAudio} className={`h-8 w-8 rounded hover:bg-[#2d2f31]/60 ${!isAudioEnabled ? 'text-[#ed4245]' : 'text-[#b5bac1]'}`}>
+                {isAudioEnabled ? <Mic size={18} /> : <MicOff size={18} />}
+              </Button>
+              <Button variant="ghost" size="icon" onClick={toggleDeafen} className={`h-8 w-8 rounded relative hover:bg-[#2d2f31]/60 ${isDeafened ? 'text-[#ed4245]' : 'text-[#b5bac1]'}`}>
+                <Headphones size={18} />
+                {isDeafened && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-[2px] h-[18px] bg-[#ed4245] rotate-45" />
+                  </div>
+                )}
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded text-[#b5bac1] hover:bg-[#2d2f31]/60" onClick={() => setShowUserSettingsModal(true)}>
+                <Settings size={18} />
+              </Button>
             </div>
           </div>
         </div>
