@@ -1271,7 +1271,7 @@ export default function HomePage() {
                         {voiceChannels.map(channel => {
                           const participants = voiceParticipants.filter(p => {
                             if (p.channel_id !== channel.id) return false
-                            if (p.user_id === user?.id) return isJoined
+                            if (p.user_id === user?.id) return !!activeVoiceChannel
                             return true
                           });
                           const isActive = currentChannel?.id === channel.id;
@@ -2283,7 +2283,7 @@ export default function HomePage() {
                 if (!targetChannel) return null
                 const activeParticipants = voiceParticipants.filter(p => {
                   if (p.channel_id !== targetChannel.id) return false
-                  if (p.user_id === user?.id) return isJoined
+                  if (p.user_id === user?.id) return !!activeVoiceChannel
                   return true
                 })
                 return (
