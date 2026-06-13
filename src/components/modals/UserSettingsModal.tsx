@@ -243,36 +243,36 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
   }
 
   return (
-    <div className="fixed inset-0 bg-[#141517] z-50 flex overflow-hidden">
+    <div className="fixed inset-0 bg-[#141517] z-50 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
       {/* Sidebar */}
-      <div className="w-[280px] bg-[#1e2022] flex flex-col items-end py-14 pr-4 border-r border-[#2d2f31]">
-        <div className="w-full max-w-[200px] space-y-1">
-          <div className="px-2 mb-2">
+      <div className="w-full md:w-[280px] bg-[#1e2022] flex flex-col items-center md:items-end py-4 md:py-14 px-4 md:pr-4 border-b md:border-b-0 md:border-r border-[#2d2f31] shrink-0">
+        <div className="w-full max-w-[200px] flex md:flex-col gap-2 md:gap-1 items-center md:items-stretch overflow-x-auto no-scrollbar py-2 md:py-0">
+          <div className="hidden md:block px-2 mb-2">
             <h3 className="text-xs font-bold uppercase text-[#a3a29e]">User Settings</h3>
           </div>
           
           <div 
             onClick={() => setActiveSubTab('account')}
-            className={`px-2 py-1.5 rounded cursor-pointer transition-colors ${activeSubTab === 'account' ? 'bg-[#2d2f31] text-[#e3e1db]' : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'}`}
+            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeSubTab === 'account' ? 'bg-[#2d2f31] text-[#e3e1db]' : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'}`}
           >
             My Account
           </div>
           <div 
             onClick={() => setActiveSubTab('profile')}
-            className={`px-2 py-1.5 rounded cursor-pointer transition-colors ${activeSubTab === 'profile' ? 'bg-[#2d2f31] text-[#e3e1db]' : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'}`}
+            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeSubTab === 'profile' ? 'bg-[#2d2f31] text-[#e3e1db]' : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'}`}
           >
             Profiles
           </div>
 
-          <div className="w-full h-[1px] bg-[#2d2f31] my-2" />
-          <div onClick={handleLogout} className="px-2 py-1.5 rounded text-red-400 hover:bg-red-500/20 cursor-pointer flex items-center justify-between transition-all">
+          <div className="hidden md:block w-full h-[1px] bg-[#2d2f31] my-2" />
+          <div onClick={handleLogout} className="px-3 py-1.5 md:px-2 rounded text-red-400 hover:bg-red-500/20 cursor-pointer flex items-center justify-center md:justify-between gap-1 md:gap-0 transition-all shrink-0">
             Logout <LogOut size={16} />
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-[#141517] p-10 py-14 overflow-y-auto relative">
+      <div className="flex-1 bg-[#141517] p-4 py-8 md:p-10 md:py-14 overflow-y-auto relative">
         <div className="max-w-[740px]">
           {activeSubTab === 'account' ? (
             <div className="space-y-6">
@@ -442,11 +442,11 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
         </div>
 
         {/* Close Button */}
-        <div className="absolute top-14 right-10 flex flex-col items-center gap-2">
+        <div className="absolute top-4 right-4 md:top-14 md:right-10 flex flex-col items-center gap-2 z-50">
           <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full border-2 border-[#a3a29e] text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]" onClick={onClose}>
             <X size={18} />
           </Button>
-          <span className="text-[10px] font-bold text-[#a3a29e]">ESC</span>
+          <span className="hidden md:block text-[10px] font-bold text-[#a3a29e]">ESC</span>
         </div>
       </div>
     </div>

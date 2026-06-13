@@ -112,3 +112,20 @@
   opacity: 1 !important;
 }
 
+/* Mobile responsive enhancements */
+@media (max-width: 767px) {
+  /* Prevent iOS Safari auto-zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  
+  /* Safe Area Insets for iOS devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+

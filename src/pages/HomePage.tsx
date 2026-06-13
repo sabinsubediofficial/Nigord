@@ -23,7 +23,8 @@ import ChannelSettingsModal from "@/components/modals/ChannelSettingsModal"
 import MessageContent from "@/components/MessageContent"
 import { ServerList } from "@/components/navigation/ServerList"
 import { SidebarHeader } from "@/components/navigation/SidebarHeader"
-import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone, Pencil } from "lucide-react"
+import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone, Pencil, Menu } from "lucide-react"
+
 
 export default function HomePage() {
   const { user, setUser } = useAuthStore()
@@ -166,7 +167,9 @@ export default function HomePage() {
   const [focusedParticipantId, setFocusedParticipantId] = useState<string | null>(null)
 
   // Friends & DMs State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'home' | 'server'>('home')
+
   const [activeHomeView, setActiveHomeView] = useState<'friends' | 'dm'>('friends')
   const [friendsFilter, setFriendsFilter] = useState<'all' | 'pending' | 'add' | 'blocked'>('all')
   const [activeDmId, setActiveDmId] = useState<string | null>(null)
@@ -1080,8 +1083,20 @@ export default function HomePage() {
         <RemoteStream key={peerId} stream={stream} />
       ))}
 
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/60 z-30 transition-opacity animate-in fade-in duration-200"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Column 1: Server Sidebar (Far Left, floating directly on base background) */}
-      <div className="w-[72px] h-full flex flex-col shrink-0 select-none bg-transparent relative z-10">
+      <div 
+        className={`fixed md:relative top-0 bottom-0 left-0 z-40 w-[72px] h-full flex flex-col shrink-0 select-none bg-[#1e1f22] md:bg-transparent transition-transform duration-300 md:translate-x-0 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
         <ServerList
           servers={servers}
           currentServer={currentServer}
@@ -1099,11 +1114,13 @@ export default function HomePage() {
       </div>
 
       {/* Main Bordered Dashboard Layout Container (The Big Rounded Box wrapping Column 2, 3 & 4) */}
-      <div className="flex-1 flex my-2 mr-2 ml-0 rounded-[12px] border border-[#2d2f31] bg-[#111214] overflow-hidden relative z-10">
+      <div className="flex-1 flex my-0 mr-0 ml-0 rounded-none border-0 md:my-2 md:mr-2 md:ml-0 md:rounded-[12px] md:border md:border-[#2d2f31] bg-[#111214] overflow-hidden relative z-10">
         {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
         <div 
           style={{ width: `${sidebarWidth}px` }}
-          className="relative flex flex-col h-full bg-[#111214] border-r border-[#2d2f31] shrink-0 overflow-hidden"
+          className={`fixed md:relative top-0 bottom-0 left-[72px] md:left-0 z-40 h-full bg-[#111214] border-r border-[#2d2f31] shrink-0 overflow-hidden flex flex-col transition-transform duration-300 md:translate-x-0 ${
+            mobileMenuOpen ? 'translate-x-0' : '-translate-x-[calc(100%+72px)] md:translate-x-0'
+          }`}
         >
             <SidebarHeader
               activeTab={activeTab}
@@ -1123,7 +1140,7 @@ export default function HomePage() {
               {activeTab === 'home' ? (
                 <div className="space-y-2">
                   <div 
-                    onClick={() => setActiveHomeView('friends')}
+                    onClick={() => { setActiveHomeView('friends'); setMobileMenuOpen(false); }}
                     className={`flex items-center gap-3 p-2 rounded cursor-pointer ${activeHomeView === 'friends' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
                   >
                     <User size={20} />
@@ -1136,7 +1153,7 @@ export default function HomePage() {
                       return (
                       <div 
                         key={dm.id} 
-                        onClick={() => openDm(dm.id)}
+                        onClick={() => { openDm(dm.id); setMobileMenuOpen(false); }}
                         className={`flex items-center gap-3 p-2 rounded cursor-pointer group relative ${activeHomeView === 'dm' && activeDmId === dm.id ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
                       >
                         <div className="relative shrink-0">
@@ -1201,7 +1218,7 @@ export default function HomePage() {
                           return (
                             <div 
                               key={channel.id} 
-                              onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); }} 
+                              onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); setMobileMenuOpen(false); }} 
                               className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
                                 isActive 
                                   ? 'bg-[#2d2f31] text-[#e3e1db]' 
@@ -1301,7 +1318,7 @@ export default function HomePage() {
                           return (
                             <div key={channel.id} className="flex flex-col">
                               <div 
-                                onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); }} 
+                                onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); setMobileMenuOpen(false); }} 
                                 className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
                                   isConnected
                                     ? 'bg-[#2d2f31]/40 text-[#e3e1db]'
@@ -1469,8 +1486,86 @@ export default function HomePage() {
             {/* Resizable Sidebar Drag Handle */}
             <div 
               onMouseDown={handleMouseDown}
-              className="absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-white/10 active:bg-white/20 z-30 transition-colors"
+              className="hidden md:block absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-white/10 active:bg-white/20 z-30 transition-colors"
             />
+
+            {/* Mobile Bottom User/Voice Panel */}
+            <div className="md:hidden absolute bottom-0 left-0 right-0 bg-[#111214] border-t border-[#2d2f31] flex flex-col shrink-0 z-20">
+              {/* Voice Connected status if active */}
+              {activeVoiceChannel && (() => {
+                const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
+                const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
+                return (
+                  <div className="w-full p-2 flex items-center justify-between border-b border-[#2d2f31] text-left">
+                    <div className="flex items-center gap-2 text-[#23a55a] min-w-0">
+                      <Volume2 size={16} className="text-[#23a55a] shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] font-bold leading-tight text-[#23a55a]">Voice Connected</span>
+                        <span className="text-[8px] leading-tight text-[#949ba4] truncate">{voiceSubtitle}</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-6 w-6 text-[#b5bac1] hover:text-[#ed4245] rounded"><PhoneOff size={14} /></Button>
+                  </div>
+                );
+              })()}
+
+              {/* User Panel */}
+              <div className="h-[48px] px-2 flex items-center justify-between bg-[#111214] relative">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="relative cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
+                    <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
+                      {user?.avatar ? (
+                        <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
+                      ) : (
+                        user?.username?.[0] || '?'
+                      )}
+                    </div>
+                    <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#111214] ${getStatusColor(user?.status)}`} />
+                    
+                    {showStatusMenu && (
+                      <div className="absolute bottom-12 left-0 w-48 bg-[#232428] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#23a559]" />
+                          <span className="text-xs font-medium text-[#e3e1db]">Online</span>
+                        </div>
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#f0b232]" />
+                          <span className="text-xs font-medium text-[#e3e1db]">Idle</span>
+                        </div>
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#f23f43]" />
+                          <span className="text-xs font-medium text-[#e3e1db]">Do Not Disturb</span>
+                        </div>
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
+                          <div className="w-2.5 h-2.5 rounded-full bg-[#80848e]" />
+                          <span className="text-xs font-medium text-[#e3e1db]">Invisible</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col min-w-0 text-left cursor-pointer" onClick={() => { setShowUserSettingsModal(true); setMobileMenuOpen(false); }}>
+                    <span className="text-xs font-bold text-[#e3e1db] truncate leading-tight">{user?.display_name || user?.username}</span>
+                    <span className="text-[9px] text-[#a3a29e] truncate leading-none">@{user?.username}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button onClick={toggleAudio} className={`p-1.5 rounded hover:bg-white/5 text-[#b5bac1] hover:text-white transition-colors cursor-pointer ${!isAudioEnabled ? 'text-[#f23f43]' : ''}`}>
+                    {!isAudioEnabled ? <MicOff size={16} /> : <Mic size={16} />}
+                  </button>
+                  <button onClick={toggleDeafen} className={`p-1.5 rounded hover:bg-white/5 text-[#b5bac1] hover:text-white relative transition-colors cursor-pointer ${isDeafened ? 'text-[#f23f43]' : ''}`}>
+                    <Headphones size={16} />
+                    {isDeafened && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-[1.5px] h-[14px] bg-[#f23f43] rotate-45" />
+                      </div>
+                    )}
+                  </button>
+                  <button onClick={() => { setShowUserSettingsModal(true); setMobileMenuOpen(false); }} className="p-1.5 rounded hover:bg-white/5 text-[#b5bac1] hover:text-white transition-colors cursor-pointer">
+                    <Settings size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
         {/* Column 3: Main Chat Content wrapper */}
@@ -1478,6 +1573,12 @@ export default function HomePage() {
           {activeTab === 'home' && activeHomeView === 'friends' ? (
           <div className="flex-1 flex flex-col">
             <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0 gap-4 overflow-x-auto">
+              <button 
+                onClick={() => setMobileMenuOpen(true)}
+                className="md:hidden p-1 mr-1 text-[#a3a29e] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+              >
+                <Menu size={24} />
+              </button>
               <div className="flex items-center gap-2 font-bold text-[#e3e1db] border-r border-[#2d2f31] pr-4 shrink-0">
                 <User size={20} className="text-[#a3a29e]" /> Friends
               </div>
@@ -1604,14 +1705,22 @@ export default function HomePage() {
         ) : activeTab === 'home' && activeHomeView === 'dm' && activeDmId ? (
           <>
             <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shadow-sm shrink-0">
-              <div className="flex flex-col text-left">
-                <span className="font-bold text-[#e3e1db]">@{dms.find(d => d.id === activeDmId)?.name}</span>
-                {isJoined && activeVoiceChannel?.id === activeDmId && (
-                  <span className="text-[10px] text-[#23a55a] font-semibold flex items-center gap-1 leading-none">
-                    <Phone size={8} className="fill-current text-[#23a55a]" />
-                    In a call
-                  </span>
-                )}
+              <div className="flex items-center gap-2 min-w-0">
+                <button 
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden p-1 text-[#a3a29e] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+                >
+                  <Menu size={24} />
+                </button>
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="font-bold text-[#e3e1db] truncate">@{dms.find(d => d.id === activeDmId)?.name}</span>
+                  {isJoined && activeVoiceChannel?.id === activeDmId && (
+                    <span className="text-[10px] text-[#23a55a] font-semibold flex items-center gap-1 leading-none">
+                      <Phone size={8} className="fill-current text-[#23a55a]" />
+                      In a call
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-4 text-[#a3a29e]">
                 <button 
@@ -1923,9 +2032,15 @@ export default function HomePage() {
         ) : activeTab === 'server' && currentChannel && currentChannel.type === 'text' ? (
           <>
             <div className="h-12 border-b border-[#1e1f22] flex items-center justify-between px-4 shadow-sm shrink-0">
-              <div className="flex items-center">
-                <Hash size={24} className="text-[#949ba4] mr-2" />
-                <span className="font-bold">{currentChannel.name}</span>
+              <div className="flex items-center min-w-0">
+                <button 
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden p-1 mr-2 text-[#949ba4] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+                >
+                  <Menu size={24} />
+                </button>
+                <Hash size={24} className="text-[#949ba4] mr-1 shrink-0" />
+                <span className="font-bold truncate">{currentChannel.name}</span>
               </div>
               <div className="flex items-center gap-4">
                 <button 
@@ -2136,6 +2251,18 @@ export default function HomePage() {
           </>
         ) : (activeTab === 'server' && currentChannel && currentChannel.type === 'voice') ? (
           <>
+            <div className="h-12 border-b border-[#1e1f22] flex items-center justify-between px-4 shadow-sm shrink-0 bg-[#111214]">
+              <div className="flex items-center min-w-0">
+                <button 
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden p-1 mr-2 text-[#949ba4] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+                >
+                  <Menu size={24} />
+                </button>
+                <Volume2 size={24} className="text-[#949ba4] mr-1 shrink-0" />
+                <span className="font-bold truncate">{currentChannel.name}</span>
+              </div>
+            </div>
             {isJoined ? (
               (() => {
             const focusedParticipant = allParticipants.find(p => p.id === focusedParticipantId);
@@ -2371,13 +2498,26 @@ export default function HomePage() {
             )}
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-[#949ba4]">Select a channel to start talking</div>
+          <div className="flex-1 flex flex-col h-full bg-[#111214]">
+            <div className="md:hidden h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0 bg-[#111214]">
+              <button 
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-1 text-[#a3a29e] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+              >
+                <Menu size={24} />
+              </button>
+              <span className="ml-2 font-bold text-[#e3e1db]">Nigord</span>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-[#949ba4] p-4 text-center">
+              Select a channel to start talking
+            </div>
+          </div>
         )}
       </div>
 
       {/* Members Sidebar */}
       {activeTab === 'server' && currentServer && currentChannel?.type === 'text' && (
-        <div className="w-60 bg-[#111214] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31]">
+        <div className="hidden md:flex w-60 bg-[#111214] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31]">
           <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0">
             <Users size={20} className="text-[#a3a29e] mr-2" />
             <span className="font-bold text-[#e3e1db]">Members</span>
@@ -2493,7 +2633,7 @@ export default function HomePage() {
 
       {/* Mask to hide the bottom border line and curved corner of the Big Rounded Box under the floating card */}
       <div 
-        className="absolute bottom-0 left-0 bg-[#111214] z-[15] pointer-events-none"
+        className="hidden md:block absolute bottom-0 left-0 bg-[#111214] z-[15] pointer-events-none"
         style={{ 
           width: `${72 + sidebarWidth}px`, 
           height: '24px' 
@@ -2502,7 +2642,7 @@ export default function HomePage() {
 
       {/* Floating Bottom Card: Unified Voice Connected status and User Panel card spanning both Column 1 and Column 2 */}
       <div 
-        className="absolute bottom-4 left-2 bg-[#111214] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 shadow-lg overflow-hidden select-none z-20"
+        className="hidden md:flex absolute bottom-4 left-2 bg-[#111214] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 shadow-lg overflow-hidden select-none z-20"
         style={{ width: `${72 + sidebarWidth - 16}px` }}
       >
         
