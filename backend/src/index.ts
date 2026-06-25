@@ -9,9 +9,6 @@ type Bindings = {
   DB: D1Database
   FILES: R2Bucket
   JWT_SECRET: string
-  GMAIL_CLIENT_ID?: string
-  GMAIL_CLIENT_SECRET?: string
-  GMAIL_REFRESH_TOKEN?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -176,78 +173,7 @@ app.get('/files/get/:key', async (c) => {
   return c.body(file.body, 200, Object.fromEntries(headers))
 })
 
-// Gmail Verification Mailer Helper
-const sendVerificationEmail = async (email: string, username: string, code: string, env: any) => {
-  const { GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN } = env
-  
-  if (!GMAIL_CLIENT_ID || !GMAIL_CLIENT_SECRET || !GMAIL_REFRESH_TOKEN) {
-    console.log(`[DEVELOPMENT VERIFICATION] Email verification code for ${username} (${email}): ${code}`)
-    return
-  }
 
-  try {
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: GMAIL_CLIENT_ID,
-        client_secret: GMAIL_CLIENT_SECRET,
-        refresh_token: GMAIL_REFRESH_TOKEN,
-        grant_type: 'refresh_token'
-      }).toString()
-    })
-
-    if (!tokenRes.ok) {
-      const errText = await tokenRes.text()
-      console.error('Failed to get Gmail access token:', errText)
-      return
-    }
-
-    const tokenData = await tokenRes.json() as any
-    const access_token = tokenData.access_token
-
-    const subject = `Nigord - Verify your email`
-    const body = `Hello ${username},\n\nYour 6-digit email verification code is: ${code}\n\nPlease enter this code to verify your email.\n\nThanks,\nThe Nigord Team`
-    
-    const message = [
-      `To: ${email}`,
-      `Subject: ${subject}`,
-      `Content-Type: text/plain; charset=utf-8`,
-      `MIME-Version: 1.0`,
-      ``,
-      body
-    ].join('\r\n')
-
-    const base64UrlSafe = (str: string) => {
-      const encoder = new TextEncoder()
-      const data = encoder.encode(str)
-      let binString = ""
-      for (let i = 0; i < data.length; i++) {
-        binString += String.fromCharCode(data[i])
-      }
-      const b64 = btoa(binString)
-      return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    }
-
-    const raw = base64UrlSafe(message)
-
-    const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${access_token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ raw })
-    })
-
-    if (!sendRes.ok) {
-      const errText = await sendRes.text()
-      console.error('Gmail send API failed:', errText)
-    }
-  } catch (err) {
-    console.error('Error sending verification email:', err)
-  }
-}
 
 // Authentication Routes
 app.post('/auth/register', async (c) => {
@@ -281,12 +207,11 @@ app.post('/auth/register', async (c) => {
       'INSERT INTO users (id, username, email, password_hash, is_verified, verification_code) VALUES (?, ?, ?, ?, 0, ?)'
     ).bind(id, usernameTrim, normalizedEmail, passwordHash, verificationCodeField).run()
 
-    await sendVerificationEmail(normalizedEmail, usernameTrim, codeVal, c.env)
+    console.log(`[DEVELOPMENT VERIFICATION] Email verification code for ${usernameTrim} (${normalizedEmail}): ${codeVal}`)
 
-    const hasGmailConfig = !!(c.env.GMAIL_CLIENT_ID && c.env.GMAIL_CLIENT_SECRET && c.env.GMAIL_REFRESH_TOKEN)
     return c.json({ 
       user: { id, username: usernameTrim, email: normalizedEmail, is_verified: 0 },
-      debugCode: hasGmailConfig ? undefined : codeVal
+      debugCode: codeVal
     })
   } catch (e: any) {
     if (e.message.includes('UNIQUE constraint failed')) return c.json({ error: 'Username or email already exists' }, 400)
@@ -394,12 +319,11 @@ app.post('/auth/resend-verification', async (c) => {
     const codeVal = Math.floor(100000 + Math.random() * 900000).toString()
     const verificationCodeField = `${codeVal}:${Date.now()}`
     await c.env.DB.prepare('UPDATE users SET verification_code = ? WHERE id = ?').bind(verificationCodeField, userId).run()
-    await sendVerificationEmail(user.email, user.username, codeVal, c.env)
+    console.log(`[DEVELOPMENT VERIFICATION] Email verification code for ${user.username} (${user.email}): ${codeVal}`)
     
-    const hasGmailConfig = !!(c.env.GMAIL_CLIENT_ID && c.env.GMAIL_CLIENT_SECRET && c.env.GMAIL_REFRESH_TOKEN)
     return c.json({ 
       success: true,
-      debugCode: hasGmailConfig ? undefined : codeVal
+      debugCode: codeVal
     })
   } catch (e) {
     return c.json({ error: 'Failed to resend code' }, 500)
