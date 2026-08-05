@@ -4,7 +4,7 @@
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
 
 export const API_BASE = isProduction
-  ? 'https://nigord-backend.sabinsubediofficial.workers.dev'
+  ? 'https://suhhp-backend.sabinsubediofficial.workers.dev'
   : ''
 
 // --- Token helpers (localStorage fallback for Safari ITP) ---
