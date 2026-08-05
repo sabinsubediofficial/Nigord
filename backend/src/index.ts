@@ -64,14 +64,13 @@ const normalizeUserPresence = (user: any) => {
 app.use('*', logger())
 app.use('*', cors({
   origin: (origin) => {
-    const allowed = [
-      'http://localhost:5173',
-      'https://suhhp.pages.dev',
-      'https://nigord.pages.dev',
-    ]
-    // Allow any *.suhhp.pages.dev or *.nigord.pages.dev preview deploys too
     if (!origin) return 'http://localhost:5173'
-    if (allowed.includes(origin) || origin.endsWith('.suhhp.pages.dev') || origin.endsWith('.nigord.pages.dev')) return origin
+    if (
+      origin === 'http://localhost:5173' || 
+      origin.includes('pages.dev')
+    ) {
+      return origin
+    }
     return 'http://localhost:5173'
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
