@@ -1594,10 +1594,10 @@ export default function HomePage() {
               {friendsFilter === 'add' ? (
                 <div className="max-w-[600px]">
                   <h2 className="text-[#e3e1db] font-bold mb-2">ADD FRIEND</h2>
-                  <p className="text-[#a3a29e] text-sm mb-4">You can add friends with their Nigord username.</p>
+                  <p className="text-[#a3a29e] text-sm mb-4">You can add friends with their Suhhp username.</p>
                   <form onSubmit={handleSearchUsers} className="flex gap-2 mb-6">
                     <div className="relative flex-1">
-                       <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="You can add friends with their Nigord username." className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] pl-4 pr-10 focus-visible:ring-1 focus-visible:ring-[#5865f2] focus-visible:ring-offset-0" />
+                       <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="You can add friends with their Suhhp username." className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] pl-4 pr-10 focus-visible:ring-1 focus-visible:ring-[#5865f2] focus-visible:ring-offset-0" />
                       <Button type="submit" size="icon" variant="ghost" className="absolute right-0 top-0 text-[#a3a29e] hover:text-[#e3e1db]"><Search size={18} /></Button>
                     </div>
                   </form>
@@ -2508,7 +2508,7 @@ export default function HomePage() {
               >
                 <Menu size={24} />
               </button>
-              <span className="ml-2 font-bold text-[#e3e1db]">Nigord</span>
+              <span className="ml-2 font-extrabold text-[#f1f3f5] font-['Plus_Jakarta_Sans',sans-serif] tracking-tight">Suhhp</span>
             </div>
             <div className="flex-1 flex items-center justify-center text-[#949ba4] p-4 text-center">
               Select a channel to start talking

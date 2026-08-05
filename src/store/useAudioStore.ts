@@ -32,7 +32,7 @@ export const useAudioStore = create<AudioState>()(
       setOutputDeviceId: (outputDeviceId) => set({ outputDeviceId }),
     }),
     {
-      name: 'nigord_audio_settings',
+      name: 'suhhp_audio_settings',
     }
   )
 )

@@ -10,7 +10,7 @@ export interface Channel {
 
 const loadCache = (): Record<string, Channel[]> => {
   try {
-    const data = localStorage.getItem('nigord_channels_cache')
+    const data = localStorage.getItem('suhhp_channels_cache') || localStorage.getItem('nigord_channels_cache')
     return data ? JSON.parse(data) : {}
   } catch (e) {
     return {}
@@ -19,7 +19,7 @@ const loadCache = (): Record<string, Channel[]> => {
 
 const saveCache = (cache: Record<string, Channel[]>) => {
   try {
-    localStorage.setItem('nigord_channels_cache', JSON.stringify(cache))
+    localStorage.setItem('suhhp_channels_cache', JSON.stringify(cache))
   } catch (e) {}
 }
 
@@ -65,6 +65,7 @@ export const useChannelStore = create<ChannelState>((set) => ({
   }),
   clearCache: () => set(() => {
     try {
+      localStorage.removeItem('suhhp_channels_cache')
       localStorage.removeItem('nigord_channels_cache')
     } catch (e) {}
     return { channelsCache: {} };

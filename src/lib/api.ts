@@ -4,22 +4,29 @@
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
 
 export const API_BASE = isProduction
-  ? 'https://nigord-backend.sabinsubediofficial.workers.dev'
+  ? 'https://suhhp-backend.sabinsubediofficial.workers.dev'
   : ''
 
 // --- Token helpers (localStorage fallback for Safari ITP) ---
-const TOKEN_KEY = 'nigord_auth_token'
+const TOKEN_KEY = 'suhhp_auth_token'
 
 export function saveToken(token: string) {
   try { localStorage.setItem(TOKEN_KEY, token) } catch {}
 }
 
 export function getToken(): string | null {
-  try { return localStorage.getItem(TOKEN_KEY) } catch { return null }
+  try { 
+    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('nigord_auth_token') 
+  } catch { 
+    return null 
+  }
 }
 
 export function clearToken() {
-  try { localStorage.removeItem(TOKEN_KEY) } catch {}
+  try { 
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem('nigord_auth_token')
+  } catch {}
 }
 
 /**

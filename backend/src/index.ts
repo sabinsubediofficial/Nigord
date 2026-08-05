@@ -66,11 +66,12 @@ app.use('*', cors({
   origin: (origin) => {
     const allowed = [
       'http://localhost:5173',
+      'https://suhhp.pages.dev',
       'https://nigord.pages.dev',
     ]
-    // Allow any *.nigord.pages.dev preview deploys too
+    // Allow any *.suhhp.pages.dev or *.nigord.pages.dev preview deploys too
     if (!origin) return 'http://localhost:5173'
-    if (allowed.includes(origin) || origin.endsWith('.nigord.pages.dev')) return origin
+    if (allowed.includes(origin) || origin.endsWith('.suhhp.pages.dev') || origin.endsWith('.nigord.pages.dev')) return origin
     return 'http://localhost:5173'
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -126,7 +127,7 @@ const getUserPermissions = async (env: any, serverId: string, userId: string) =>
 }
 
 app.get('/', (c) => {
-  return c.text('Nigord API')
+  return c.text('Suhhp API')
 })
 
 // File Routes
@@ -442,7 +443,7 @@ app.post('/users/me/recovery-code', authMiddleware, async (c) => {
   const generateCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     const r = (len: number) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-    return `NIGORD-${r(4)}-${r(4)}`
+    return `SUHHP-${r(4)}-${r(4)}`
   }
   const plainCode = generateCode()
   const hashed = await bcrypt.hash(plainCode, 10)

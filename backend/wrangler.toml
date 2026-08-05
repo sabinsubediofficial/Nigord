@@ -1,14 +1,14 @@
-name = "nigord-backend"
+name = "suhhp-backend"
 main = "src/index.ts"
 compatibility_date = "2024-03-01"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "nigord-db"
+database_name = "suhhp-db"
 database_id = "cf4d7bee-6d00-492b-9a6e-cd2dcab0e01b"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding = "FILES"
-bucket_name = "nigord-files"
+bucket_name = "suhhp-files"
 

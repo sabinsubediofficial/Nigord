@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/useAuthStore"
-import { ShieldAlert, Check, RefreshCw } from "lucide-react"
+import { ShieldAlert, Check, RefreshCw, MessageSquare, Sparkles } from "lucide-react"
 import { apiFetch, saveToken } from "@/lib/api"
 
 export default function VerificationPage() {
@@ -83,8 +83,8 @@ export default function VerificationPage() {
         if (data.debugCode) {
           setDebugCode(data.debugCode)
         }
-        setSuccess("A new verification code has been sent to your inbox.")
-        setResendTimer(60) // 60 seconds cooldown
+        setSuccess("A new verification code has been generated.")
+        setResendTimer(60)
       } else {
         setError(data.error || "Failed to resend code")
       }
@@ -96,45 +96,63 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#141517] p-4 font-sans selection:bg-[#5865f2]/30">
-      <div className="w-full max-w-[420px] rounded-xl bg-[#1e2022] p-8 shadow-2xl border border-[#2d2f31]/60">
-        <h2 className="text-center text-2xl font-bold text-[#e3e1db]">Verify Email</h2>
-        <p className="mb-6 text-center text-[#a3a29e] text-sm">
-          Please enter the 6-digit verification code sent to your email address.
+    <div className="flex min-h-screen items-center justify-center bg-[#0b0c0e] p-4 font-sans selection:bg-[#6366f1]/30">
+      {/* Background Decorative Glow */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-[20%] -left-[10%] w-[500px] h-[500px] rounded-full bg-[#6366f1]/10 blur-[120px]" />
+        <div className="absolute -bottom-[20%] -right-[10%] w-[500px] h-[500px] rounded-full bg-[#818cf8]/10 blur-[120px]" />
+      </div>
+
+      <div className="relative w-full max-w-[420px] rounded-2xl bg-[#141518]/90 backdrop-blur-xl p-8 shadow-2xl border border-[#27292d]">
+        {/* Brand Header */}
+        <div className="flex flex-col items-center mb-6 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#6366f1] to-[#818cf8] p-0.5 shadow-lg shadow-[#6366f1]/20 mb-3 flex items-center justify-center">
+            <div className="w-full h-full bg-[#141518] rounded-[14px] flex items-center justify-center text-[#6366f1]">
+              <MessageSquare className="w-7 h-7 fill-current" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-[#f1f3f5] font-['Plus_Jakarta_Sans',sans-serif] tracking-tight flex items-center gap-1.5">
+            Suhhp <Sparkles className="w-4 h-4 text-[#818cf8]" />
+          </h1>
+          <p className="text-xs text-[#8f96a3] mt-1">Verify your account</p>
+        </div>
+
+        <p className="mb-6 text-center text-[#8f96a3] text-xs">
+          Please enter the 6-digit verification code below to complete registration.
         </p>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs flex items-center gap-2">
-            <ShieldAlert size={14} /> {error}
+          <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs flex items-center gap-2">
+            <ShieldAlert size={14} className="shrink-0" /> {error}
           </div>
         )}
         {success && (
-          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs flex items-center gap-2">
-            <Check size={14} /> {success}
+          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-2">
+            <Check size={14} className="shrink-0" /> {success}
           </div>
         )}
         {debugCode && (
-          <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg text-xs flex flex-col gap-1.5">
+          <div className="mb-4 p-3.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-xs flex flex-col gap-1.5">
             <div className="flex items-center gap-2 font-bold">
-              <ShieldAlert size={14} /> Fallback Verification Code
+              <Sparkles size={14} /> Verification Code
             </div>
-            <p className="text-amber-400/80">Gmail credentials are not configured in your Cloudflare Worker environment variables. Your code is:</p>
-            <div className="text-2xl font-black text-center mt-1 text-[#e3e1db] select-all tracking-[0.25em] bg-[#141517] py-2 rounded border border-[#2d2f31]/60">
+            <p className="text-amber-400/80">Use the verification code below to activate your account:</p>
+            <div className="text-2xl font-black text-center mt-1 text-[#f1f3f5] select-all tracking-[0.25em] bg-[#0b0c0e] py-2.5 rounded-lg border border-[#27292d]">
               {debugCode}
             </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider">Verification Code</label>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase text-[#8f96a3] tracking-wider">6-Digit Code</label>
             <Input
               type="text"
               placeholder="123456"
               maxLength={6}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2] focus-visible:ring-0 focus-visible:ring-offset-0 h-12 text-center text-2xl tracking-[0.5em] font-bold"
+              className="bg-[#0b0c0e] border border-[#27292d] text-[#f1f3f5] focus:border-[#6366f1] focus-visible:ring-1 focus-visible:ring-[#6366f1] focus-visible:ring-offset-0 h-12 text-center text-2xl tracking-[0.5em] font-bold rounded-xl"
               required
             />
           </div>
@@ -142,9 +160,9 @@ export default function VerificationPage() {
           <Button
             type="submit"
             disabled={loading === "verify" || code.length !== 6}
-            className="w-full bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold h-10 transition-all shadow-md mt-2 rounded-[4px]"
+            className="w-full bg-[#6366f1] hover:bg-[#4f46e5] text-white font-semibold h-10 transition-all shadow-lg shadow-[#6366f1]/25 mt-2 rounded-xl"
           >
-            {loading === "verify" ? "Verifying..." : "Verify"}
+            {loading === "verify" ? "Verifying..." : "Verify & Continue"}
           </Button>
 
           <div className="text-center pt-2">
@@ -152,7 +170,7 @@ export default function VerificationPage() {
               type="button"
               disabled={loading === "resend" || resendTimer > 0}
               onClick={handleResend}
-              className="text-xs text-[#5865f2] hover:underline cursor-pointer disabled:text-[#767572] disabled:no-underline transition-colors flex items-center gap-1.5 justify-center w-full"
+              className="text-xs text-[#818cf8] hover:underline cursor-pointer disabled:text-[#4e5461] disabled:no-underline transition-colors flex items-center gap-1.5 justify-center w-full"
             >
               <RefreshCw size={12} className={loading === "resend" ? "animate-spin" : ""} />
               {resendTimer > 0 ? `Resend Code in ${resendTimer}s` : "Resend Verification Code"}
