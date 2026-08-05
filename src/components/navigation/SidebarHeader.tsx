@@ -1,7 +1,13 @@
 import React from "react"
 import { ChevronDown, Settings, UserPlus, LogOut, Plus } from "lucide-react"
 import { getFileUrl } from "@/lib/api"
-import { Server } from "./ServerList"
+export interface Server {
+  id: string
+  name: string
+  icon?: string
+  banner?: string
+  owner_id: string
+}
 
 interface SidebarHeaderProps {
   activeTab: 'home' | 'server'

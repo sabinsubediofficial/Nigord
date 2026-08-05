@@ -22,8 +22,8 @@ import ServerSettingsModal from "@/components/modals/ServerSettingsModal"
 import UserSettingsModal from "@/components/modals/UserSettingsModal"
 import ChannelSettingsModal from "@/components/modals/ChannelSettingsModal"
 import MessageContent from "@/components/MessageContent"
-import { ServerList } from "@/components/navigation/ServerList"
 import { SidebarHeader } from "@/components/navigation/SidebarHeader"
+import { WorkspaceSwitcher } from "@/components/navigation/WorkspaceSwitcher"
 import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone, Pencil, Menu } from "lucide-react"
 
 
@@ -1080,7 +1080,7 @@ export default function HomePage() {
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
   return (
-    <div className="flex h-screen bg-[#111214] text-[#e3e1db] overflow-hidden p-0 gap-0 relative">
+    <div className="flex h-screen bg-[#09090b] text-white overflow-hidden p-0 gap-0 relative">
       {Object.entries(remoteStreams).map(([peerId, stream]) => (
         <RemoteStream key={peerId} stream={stream} peerId={peerId} />
       ))}
@@ -1093,73 +1093,59 @@ export default function HomePage() {
         />
       )}
 
-      {/* Column 1: Server Sidebar (Far Left, floating directly on base background) */}
-      <div 
-        className={`fixed md:relative top-0 bottom-0 left-0 z-50 w-[72px] h-full flex flex-col shrink-0 select-none bg-[#1e1f22] md:bg-transparent transition-transform duration-300 md:translate-x-0 ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
-      >
-        <ServerList
-          servers={servers}
-          currentServer={currentServer}
-          activeTab={activeTab}
-          notifications={notifications}
-          goHome={goHome}
-          onSelectServer={(server) => {
-            setCurrentServer(server);
-            setActiveTab('server');
-          }}
-          onAddServer={() => setShowCreateServerModal(true)}
-          sendTypingStatus={sendTypingStatus}
-          isVoiceConnected={!!activeVoiceChannel}
-        />
-      </div>
-
-      {/* Main Bordered Dashboard Layout Container (The Big Rounded Box wrapping Column 2, 3 & 4) */}
-      <div className="flex-1 flex my-0 mr-0 ml-0 rounded-none border-0 md:my-2 md:mr-2 md:ml-0 md:rounded-[12px] md:border md:border-[#2d2f31] bg-[#111214] overflow-hidden relative md:z-10">
-        {/* Column 2: Resizable Secondary Sidebar (Channels/DMs List) */}
+      {/* Main Layout Container */}
+      <div className="flex-1 flex w-full h-full">
+        
+        {/* Unified Sidebar (260px wide) */}
         <div 
-          style={{ width: `${sidebarWidth}px` }}
-          className={`fixed md:relative top-0 bottom-0 left-[72px] md:left-0 z-50 h-full bg-[#111214] border-r border-[#2d2f31] shrink-0 overflow-hidden flex flex-col transition-transform duration-300 md:translate-x-0 ${
-            mobileMenuOpen ? 'translate-x-0' : '-translate-x-[calc(100%+72px)] md:translate-x-0'
+          style={{ width: `${sidebarWidth}px`, maxWidth: '400px', minWidth: '220px' }}
+          className={`fixed md:relative top-0 bottom-0 left-0 z-40 h-full bg-[#0b0c0e] border-r border-[#27292d] shrink-0 overflow-hidden flex flex-col transition-transform duration-300 md:translate-x-0 ${
+            mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-[calc(100%+72px)] md:translate-x-0'
           }`}
         >
-            <SidebarHeader
-              activeTab={activeTab}
-              currentServer={currentServer}
-              showServerMenu={showServerMenu}
-              setShowServerMenu={setShowServerMenu}
-              setShowInviteModal={setShowInviteModal}
-              setShowServerSettingsModal={setShowServerSettingsModal}
-              onLeaveServer={handleLeaveServer}
-              isOwner={currentServer?.owner_id === user?.id}
-              isAdmin={!!(currentServer as any)?.permissions?.includes('ADMINISTRATOR')}
-              isManageChannels={!!(currentServer as any)?.permissions?.includes('MANAGE_CHANNELS')}
-              onCreateChannel={() => { setNewChannelType('text'); setShowCreateChannelModal(true); }}
-            />
+          <WorkspaceSwitcher
+            servers={servers}
+            currentServer={currentServer}
+            activeTab={activeTab}
+            goHome={goHome}
+            onSelectServer={(server) => {
+              setCurrentServer(server);
+              setActiveTab('server');
+            }}
+            onAddServer={() => setShowCreateServerModal(true)}
+            onLogout={handleLogout}
+            onInvite={() => setShowInviteModal(true)}
+            onSettings={() => setShowServerSettingsModal(true)}
+            onCreateChannel={() => { setNewChannelType('text'); setShowCreateChannelModal(true); }}
+            onLeave={handleLeaveServer}
+            isOwner={currentServer?.owner_id === user?.id}
+            isAdmin={!!(currentServer as any)?.permissions?.includes('ADMINISTRATOR')}
+            isManageChannels={!!(currentServer as any)?.permissions?.includes('MANAGE_CHANNELS')}
+          />
             
-            <div className={`flex-1 overflow-y-auto p-2 no-scrollbar ${activeVoiceChannel ? 'pb-[160px]' : 'pb-[68px]'}`}>
+            <div className={`flex-1 overflow-y-auto p-3 no-scrollbar ${activeVoiceChannel ? 'pb-[160px]' : 'pb-[68px]'}`}>
               {activeTab === 'home' ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div 
                     onClick={() => { setActiveHomeView('friends'); setMobileMenuOpen(false); }}
-                    className={`flex items-center gap-3 p-2 rounded cursor-pointer ${activeHomeView === 'friends' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${activeHomeView === 'friends' ? 'bg-primary/10 text-primary font-semibold' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`}
                   >
-                    <User size={20} />
-                    <span className="font-medium text-[15px]">Friends</span>
+                    <User size={18} />
+                    <span className="text-[14px]">Friends</span>
                   </div>
-                  <div className="pt-4">
-                    <span className="text-xs font-bold uppercase text-[#767572] px-2 mb-2 block hover:text-[#e3e1db] cursor-pointer">Direct Messages</span>
+                  <div className="pt-6">
+                    <span className="text-[10px] font-bold uppercase text-[#a1a1aa] tracking-widest px-3 mb-3 block">Direct Messages</span>
+                    <div className="space-y-1">
                     {dms.map(dm => {
                       const unreadCount = notifications.dms.find(d => d.channel_id === dm.id)?.unread_count || 0;
                       return (
                       <div 
                         key={dm.id} 
                         onClick={() => { openDm(dm.id); setMobileMenuOpen(false); }}
-                        className={`flex items-center gap-3 p-2 rounded cursor-pointer group relative ${activeHomeView === 'dm' && activeDmId === dm.id ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer group relative transition-all duration-200 ${activeHomeView === 'dm' && activeDmId === dm.id ? 'bg-white/10 text-white font-medium shadow-inner' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`}
                       >
                         <div className="relative shrink-0">
-                          <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
+                          <div className="w-8 h-8 rounded-[10px] bg-black/40 flex items-center justify-center text-xs font-bold uppercase text-white border border-white/5 overflow-hidden shadow-sm">
                             {dm.avatar ? (
                               <img src={getFileUrl(dm.avatar)} alt={dm.name} className="w-full h-full object-cover" />
                             ) : (
@@ -1167,36 +1153,36 @@ export default function HomePage() {
                             )}
                           </div>
                           {dm.active_call && dm.active_call > 0 ? (
-                            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#23a55a] border border-[#1e2022] flex items-center justify-center text-white">
-                              <Phone size={6} className="fill-current" />
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#0b0c0e] flex items-center justify-center text-white shadow-sm">
+                              <Phone size={8} className="fill-current" />
                             </div>
                           ) : null}
                         </div>
                         <div className="flex flex-col min-w-0 flex-1 text-left">
-                          <span className={`font-medium text-[15px] truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-[#e3e1db] font-bold' : ''}`}>{dm.name}</span>
+                          <span className={`text-[14px] truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-white font-bold' : ''}`}>{dm.name}</span>
                           {dm.active_call && dm.active_call > 0 ? (
-                            <span className="text-[10px] text-[#23a55a] font-semibold flex items-center gap-1 leading-none mt-0.5">
-                              <Phone size={8} className="fill-current text-[#23a55a]" />
+                            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 leading-none mt-0.5">
                               In a call
                             </span>
                           ) : null}
                         </div>
                         {unreadCount > 0 && activeDmId !== dm.id && (
-                          <div className="absolute right-2 bg-[#f23f43] text-white text-[10px] font-bold px-1.5 h-4 rounded-full flex items-center justify-center">
+                          <div className="absolute right-3 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center justify-center shadow-sm">
                             {unreadCount}
                           </div>
                         )}
                       </div>
                     )})}
+                    </div>
                   </div>
                 </div>
               ) : currentServer ? (
-                <div className="space-y-4">
+                <div className="space-y-4 pt-2">
                   <div>
-                    <div className="flex items-center justify-between px-1.5 mb-1 group/header select-none">
+                    <div className="flex items-center justify-between px-3 mb-2 group/header select-none">
                       <button 
                         onClick={() => setTextChannelsCollapsed(!textChannelsCollapsed)}
-                        className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#767572] hover:text-[#dbdee1] transition-colors"
+                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-[#a1a1aa] tracking-widest hover:text-white transition-colors"
                       >
                         <ChevronDown 
                           size={12} 
@@ -1207,13 +1193,13 @@ export default function HomePage() {
                       {(currentServer.owner_id === user?.id || (currentServer as any).permissions?.includes('ADMINISTRATOR') || (currentServer as any).permissions?.includes('MANAGE_CHANNELS')) && (
                         <Plus 
                           size={14} 
-                          className="text-[#a3a29e] cursor-pointer hover:text-[#dbdee1] hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
+                          className="text-[#a1a1aa] cursor-pointer hover:text-white hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
                           onClick={(e) => { e.stopPropagation(); setNewChannelType('text'); setShowCreateChannelModal(true); }} 
                         />
                       )}
                     </div>
                     {!textChannelsCollapsed && (
-                      <div className="space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="space-y-1 px-1 animate-in fade-in slide-in-from-top-1 duration-150">
                         {textChannels.map(channel => {
                           const isUnread = unreads[channel.id] > 0;
                           const isActive = currentChannel?.id === channel.id;
@@ -1221,20 +1207,20 @@ export default function HomePage() {
                             <div 
                               key={channel.id} 
                               onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); setMobileMenuOpen(false); }} 
-                              className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
+                              className={`relative flex items-center justify-between pl-4 pr-2 py-2 rounded-xl cursor-pointer group transition-all duration-200 ${
                                 isActive 
-                                  ? 'bg-[#2d2f31] text-[#e3e1db]' 
-                                  : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'
+                                  ? 'bg-white/10 text-white shadow-inner font-medium' 
+                                  : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'
                               }`}
                             >
                               {/* Left accent pill */}
                               <div 
                                 className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full transition-all duration-200 ${
                                   isActive 
-                                    ? 'h-5 bg-[#f2f3f5]' 
+                                    ? 'h-5 bg-primary' 
                                     : isUnread 
-                                      ? 'h-2.5 bg-[#949ba4] group-hover:h-3.5' 
-                                      : 'h-0 bg-[#f2f3f5]/40 group-hover:h-3'
+                                      ? 'h-3.5 bg-white group-hover:h-4' 
+                                      : 'h-0 bg-white/20 group-hover:h-3'
                                 }`} 
                               />
                               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1242,16 +1228,16 @@ export default function HomePage() {
                                   size={18} 
                                   className={`transition-colors shrink-0 ${
                                     isActive 
-                                      ? 'text-[#e3e1db]' 
-                                      : (isUnread ? 'text-[#f2f3f5]' : 'text-[#767572] group-hover:text-[#dbdee1]')
+                                      ? 'text-white' 
+                                      : (isUnread ? 'text-white' : 'text-[#a1a1aa] group-hover:text-white')
                                   }`} 
                                 />
-                                <span className={`text-[15px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
+                                <span className={`text-[14px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
                                   isActive
-                                    ? 'font-medium text-[#e3e1db]'
+                                    ? 'font-medium text-white'
                                     : isUnread 
-                                      ? 'font-bold text-[#f2f3f5]' 
-                                      : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]'
+                                      ? 'font-bold text-white' 
+                                      : 'font-medium text-[#a1a1aa] group-hover:text-white'
                                 }`}>{channel.name}</span>
                               </div>
                               
@@ -1259,7 +1245,7 @@ export default function HomePage() {
                                 <span title="Create Invite" className="flex items-center">
                                   <UserPlus
                                     size={14}
-                                    className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                    className="text-[#a1a1aa] hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setShowInviteModal(true);
@@ -1270,7 +1256,7 @@ export default function HomePage() {
                                   <span title="Edit Channel" className="flex items-center">
                                     <Settings
                                       size={14}
-                                      className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                      className="text-[#a1a1aa] hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setChannelToEdit(channel);
@@ -1321,12 +1307,12 @@ export default function HomePage() {
                             <div key={channel.id} className="flex flex-col">
                               <div 
                                 onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); setMobileMenuOpen(false); }} 
-                                className={`relative flex items-center justify-between pl-5 pr-2 py-1.5 rounded-md cursor-pointer group transition-all duration-200 ${
+                                className={`relative flex items-center justify-between pl-4 pr-2 py-2 rounded-xl cursor-pointer group transition-all duration-200 ${
                                   isConnected
-                                    ? 'bg-[#2d2f31]/40 text-[#e3e1db]'
+                                    ? 'bg-emerald-500/10 text-emerald-400 font-medium border border-emerald-500/20'
                                     : (isActive 
-                                      ? 'bg-[#2d2f31] text-[#e3e1db]' 
-                                      : 'text-[#949ba4] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]')
+                                      ? 'bg-white/10 text-white shadow-inner font-medium' 
+                                      : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white')
                                 }`}
                               >
                                 <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -1334,19 +1320,19 @@ export default function HomePage() {
                                     size={18} 
                                     className={`transition-colors shrink-0 mt-[2px] ${
                                       isConnected
-                                        ? 'text-[#23a55a]'
+                                        ? 'text-emerald-400'
                                         : (isActive 
-                                          ? 'text-[#e3e1db]' 
-                                          : 'text-[#767572] group-hover:text-[#dbdee1]')
+                                          ? 'text-white' 
+                                          : 'text-[#a1a1aa] group-hover:text-white')
                                     }`} 
                                   />
                                   <div className="flex flex-col min-w-0 flex-1 select-none">
-                                    <span className={`text-[15px] truncate transition-all duration-200 ${
+                                    <span className={`text-[14px] truncate transition-all duration-200 ${
                                       isConnected
-                                        ? 'font-medium text-[#e3e1db]'
+                                        ? 'font-medium text-emerald-400'
                                         : (isActive
-                                          ? 'font-medium text-[#e3e1db]'
-                                          : 'font-medium text-[#949ba4] group-hover:text-[#dbdee1]')
+                                          ? 'font-medium text-white'
+                                          : 'font-medium text-[#a1a1aa] group-hover:text-white')
                                     }`}>{channel.name}</span>
                                     
                                     {/* Voice Channel Status */}
@@ -1359,7 +1345,7 @@ export default function HomePage() {
                                             setNewChannelStatus(channelStatuses[channel.id] || "");
                                           }
                                         }}
-                                        className="flex items-center gap-1 group/status text-[11px] text-[#949ba4] hover:text-[#dbdee1] transition-colors mt-0.5 min-w-0 cursor-pointer"
+                                        className="flex items-center gap-1 group/status text-[11px] text-[#a1a1aa] hover:text-white transition-colors mt-0.5 min-w-0 cursor-pointer"
                                       >
                                         {editingStatusChannelId === channel.id ? (
                                           <input
@@ -1381,7 +1367,7 @@ export default function HomePage() {
                                               setEditingStatusChannelId(null);
                                             }}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="bg-[#1e2022] text-[#dbdee1] px-1 py-0.5 rounded outline-none border border-[#5865f2] w-full"
+                                            className="bg-black/50 text-white px-2 py-1 rounded outline-none border border-primary w-full shadow-inner"
                                             placeholder="Set status..."
                                             autoFocus
                                           />
@@ -1393,7 +1379,7 @@ export default function HomePage() {
                                             {isConnected && (
                                               <Pencil 
                                                 size={10} 
-                                                className="opacity-0 group-hover/status:opacity-100 transition-opacity shrink-0 ml-0.5 text-[#949ba4]" 
+                                                className="opacity-0 group-hover/status:opacity-100 transition-opacity shrink-0 ml-0.5 text-[#a1a1aa]" 
                                               />
                                             )}
                                           </>
@@ -1407,7 +1393,7 @@ export default function HomePage() {
                                   <span title="Create Invite" className="flex items-center">
                                     <UserPlus
                                       size={14}
-                                      className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                      className="text-[#a1a1aa] hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setShowInviteModal(true);
@@ -1418,7 +1404,7 @@ export default function HomePage() {
                                     <span title="Edit Channel" className="flex items-center">
                                       <Settings
                                         size={14}
-                                        className="text-[#a3a29e] hover:text-[#e3e1db] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                        className="text-[#a1a1aa] hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setChannelToEdit(channel);
@@ -1512,82 +1498,84 @@ export default function HomePage() {
               })()}
 
               {/* User Panel */}
-              <div className="h-[48px] px-2 flex items-center justify-between bg-[#111214] relative">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="relative cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
-                    <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
-                      {user?.avatar ? (
-                        <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
-                      ) : (
-                        user?.username?.[0] || '?'
+              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#09090b] via-[#09090b]/95 to-transparent z-10 pointer-events-none pb-[20px] md:pb-[30px]">
+                <div className="pointer-events-auto flex items-center justify-between p-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl relative">
+                  <div className="flex items-center gap-2 min-w-0 group cursor-pointer w-full p-1" onClick={() => { setShowUserSettingsModal(true); setMobileMenuOpen(false); }}>
+                    <div className="relative shrink-0" onClick={(e) => { e.stopPropagation(); setShowStatusMenu(!showStatusMenu); }}>
+                      <div className="w-9 h-9 rounded-[10px] bg-black/40 flex items-center justify-center text-xs font-bold uppercase text-white border border-white/10 overflow-hidden shadow-sm">
+                        {user?.avatar ? (
+                          <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        ) : (
+                          user?.username?.[0] || '?'
+                        )}
+                      </div>
+                      <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-[#09090b] ${getStatusColor(user?.status)} shadow-sm transition-colors duration-300`} />
+                      
+                      {showStatusMenu && (
+                        <div className="absolute bottom-14 left-0 w-48 bg-[#09090b]/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 p-2 z-50 flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                          <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-[#a1a1aa]">
+                            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm" />
+                            <span className="text-sm font-medium">Online</span>
+                          </div>
+                          <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-[#a1a1aa]">
+                            <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm" />
+                            <span className="text-sm font-medium">Idle</span>
+                          </div>
+                          <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-[#a1a1aa]">
+                            <div className="w-3 h-3 rounded-full bg-rose-500 shadow-sm" />
+                            <span className="text-sm font-medium">Do Not Disturb</span>
+                          </div>
+                          <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-[#a1a1aa]">
+                            <div className="w-3 h-3 rounded-full bg-zinc-500 shadow-sm" />
+                            <span className="text-sm font-medium">Invisible</span>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#111214] ${getStatusColor(user?.status)}`} />
-                    
-                    {showStatusMenu && (
-                      <div className="absolute bottom-12 left-0 w-48 bg-[#232428] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                          <div className="w-2.5 h-2.5 rounded-full bg-[#23a559]" />
-                          <span className="text-xs font-medium text-[#e3e1db]">Online</span>
-                        </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                          <div className="w-2.5 h-2.5 rounded-full bg-[#f0b232]" />
-                          <span className="text-xs font-medium text-[#e3e1db]">Idle</span>
-                        </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                          <div className="w-2.5 h-2.5 rounded-full bg-[#f23f43]" />
-                          <span className="text-xs font-medium text-[#e3e1db]">Do Not Disturb</span>
-                        </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                          <div className="w-2.5 h-2.5 rounded-full bg-[#80848e]" />
-                          <span className="text-xs font-medium text-[#e3e1db]">Invisible</span>
-                        </div>
-                      </div>
-                    )}
+                    <div className="flex flex-col min-w-0 text-left">
+                      <span className="text-[13px] font-bold text-white truncate leading-tight group-hover:text-primary transition-colors">{user?.display_name || user?.username}</span>
+                      <span className="text-[11px] text-[#a1a1aa] truncate leading-none">@{user?.username}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-col min-w-0 text-left cursor-pointer" onClick={() => { setShowUserSettingsModal(true); setMobileMenuOpen(false); }}>
-                    <span className="text-xs font-bold text-[#e3e1db] truncate leading-tight">{user?.display_name || user?.username}</span>
-                    <span className="text-[9px] text-[#a3a29e] truncate leading-none">@{user?.username}</span>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <button onClick={(e) => { e.stopPropagation(); toggleAudio(); }} className={`p-2 rounded-lg hover:bg-white/10 text-[#a1a1aa] hover:text-white transition-all duration-200 cursor-pointer ${!isAudioEnabled ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10' : ''}`}>
+                      {!isAudioEnabled ? <MicOff size={16} /> : <Mic size={16} />}
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); toggleDeafen(); }} className={`p-2 rounded-lg hover:bg-white/10 text-[#a1a1aa] hover:text-white relative transition-all duration-200 cursor-pointer ${isDeafened ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10' : ''}`}>
+                      <Headphones size={16} />
+                      {isDeafened && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-[1.5px] h-[14px] bg-rose-500 rotate-45" />
+                        </div>
+                      )}
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setShowUserSettingsModal(true); setMobileMenuOpen(false); }} className="p-2 rounded-lg hover:bg-white/10 text-[#a1a1aa] hover:text-white transition-all duration-200 cursor-pointer">
+                      <Settings size={16} />
+                    </button>
                   </div>
-                </div>
-                <div className="flex items-center gap-0.5 shrink-0">
-                  <button onClick={toggleAudio} className={`p-1.5 rounded hover:bg-white/5 text-[#b5bac1] hover:text-white transition-colors cursor-pointer ${!isAudioEnabled ? 'text-[#f23f43]' : ''}`}>
-                    {!isAudioEnabled ? <MicOff size={16} /> : <Mic size={16} />}
-                  </button>
-                  <button onClick={toggleDeafen} className={`p-1.5 rounded hover:bg-white/5 text-[#b5bac1] hover:text-white relative transition-colors cursor-pointer ${isDeafened ? 'text-[#f23f43]' : ''}`}>
-                    <Headphones size={16} />
-                    {isDeafened && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-[1.5px] h-[14px] bg-[#f23f43] rotate-45" />
-                      </div>
-                    )}
-                  </button>
-                  <button onClick={() => { setShowUserSettingsModal(true); setMobileMenuOpen(false); }} className="p-1.5 rounded hover:bg-white/5 text-[#b5bac1] hover:text-white transition-colors cursor-pointer">
-                    <Settings size={16} />
-                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-        {/* Column 3: Main Chat Content wrapper */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Chat Content wrapper */}
+        <div className="flex-1 flex flex-col overflow-hidden relative z-10 md:m-3 md:ml-0 rounded-2xl bg-[#09090b] md:bg-white/[0.02] md:border md:border-white/10 shadow-2xl">
           {activeTab === 'home' && activeHomeView === 'friends' ? (
           <div className="flex-1 flex flex-col">
-            <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0 gap-4 overflow-x-auto">
+            <div className="h-[60px] border-b border-white/5 flex items-center px-4 shadow-sm shrink-0 gap-4 overflow-x-auto bg-black/20 backdrop-blur-md relative z-10">
               <button 
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden p-1 mr-1 text-[#a3a29e] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+                className="md:hidden p-1 mr-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer shrink-0"
               >
                 <Menu size={24} />
               </button>
-              <div className="flex items-center gap-2 font-bold text-[#e3e1db] border-r border-[#2d2f31] pr-4 shrink-0">
-                <User size={20} className="text-[#a3a29e]" /> Friends
+              <div className="flex items-center gap-2 font-bold text-white border-r border-white/10 pr-4 shrink-0">
+                <User size={20} className="text-primary" /> Friends
               </div>
-              <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'all' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('all')}>All</Button>
-              <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'pending' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('pending')}>Pending</Button>
-              <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'blocked' ? 'bg-[#2d2f31] text-[#e3e1db] border border-[#343638]/50' : 'text-[#a3a29e] hover:bg-[#2d2f31]/50 hover:text-[#e3e1db]'}`} onClick={() => setFriendsFilter('blocked')}>Blocked</Button>
-              <Button variant="ghost" className={`h-8 px-2 shrink-0 ${friendsFilter === 'add' ? 'bg-[#248046] text-white hover:bg-[#1a6535] font-medium' : 'text-[#23a55a] bg-transparent hover:bg-[#23a55a]/10'}`} onClick={() => setFriendsFilter('add')}>Add Friend</Button>
+              <Button variant="ghost" className={`h-8 px-3 rounded-full shrink-0 transition-all ${friendsFilter === 'all' ? 'bg-white/10 text-white font-medium shadow-inner' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`} onClick={() => setFriendsFilter('all')}>All</Button>
+              <Button variant="ghost" className={`h-8 px-3 rounded-full shrink-0 transition-all ${friendsFilter === 'pending' ? 'bg-white/10 text-white font-medium shadow-inner' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`} onClick={() => setFriendsFilter('pending')}>Pending</Button>
+              <Button variant="ghost" className={`h-8 px-3 rounded-full shrink-0 transition-all ${friendsFilter === 'blocked' ? 'bg-white/10 text-white font-medium shadow-inner' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`} onClick={() => setFriendsFilter('blocked')}>Blocked</Button>
+              <Button variant="ghost" className={`h-8 px-3 rounded-full shrink-0 transition-all ${friendsFilter === 'add' ? 'bg-emerald-500 text-white hover:bg-emerald-600 font-medium shadow-sm' : 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 font-medium'}`} onClick={() => setFriendsFilter('add')}>Add Friend</Button>
             </div>
             
             <div className="flex-1 p-6 overflow-y-auto">
@@ -1706,25 +1694,24 @@ export default function HomePage() {
           </div>
         ) : activeTab === 'home' && activeHomeView === 'dm' && activeDmId ? (
           <>
-            <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shadow-sm shrink-0">
+            <div className="h-[60px] border-b border-white/5 flex items-center justify-between px-4 shadow-sm shrink-0 bg-black/20 backdrop-blur-md relative z-10">
               <div className="flex items-center gap-2 min-w-0">
                 <button 
                   onClick={() => setMobileMenuOpen(true)}
-                  className="md:hidden p-1 text-[#a3a29e] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+                  className="md:hidden p-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer shrink-0"
                 >
                   <Menu size={24} />
                 </button>
                 <div className="flex flex-col text-left min-w-0">
-                  <span className="font-bold text-[#e3e1db] truncate">@{dms.find(d => d.id === activeDmId)?.name}</span>
+                  <span className="font-bold text-white truncate text-lg display-font">@{dms.find(d => d.id === activeDmId)?.name}</span>
                   {isJoined && activeVoiceChannel?.id === activeDmId && (
-                    <span className="text-[10px] text-[#23a55a] font-semibold flex items-center gap-1 leading-none">
-                      <Phone size={8} className="fill-current text-[#23a55a]" />
+                    <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 leading-none">
                       In a call
                     </span>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-[#a3a29e]">
+              <div className="flex items-center gap-4 text-[#a1a1aa]">
                 <button 
                   onClick={() => {
                     const dmChannel = dms.find(d => d.id === activeDmId)
@@ -1733,7 +1720,7 @@ export default function HomePage() {
                       startCall(dmChannel.target_id, dmChannel.name, dmChannel.id, false)
                     }
                   }}
-                  className="hover:text-[#e3e1db] transition-colors cursor-pointer"
+                  className="hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                   title="Start Voice Call"
                 >
                   <Phone size={20} />
@@ -1746,7 +1733,7 @@ export default function HomePage() {
                       startCall(dmChannel.target_id, dmChannel.name, dmChannel.id, true)
                     }
                   }}
-                  className="hover:text-[#e3e1db] transition-colors cursor-pointer"
+                  className="hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                   title="Start Video Call"
                 >
                   <Video size={20} />
@@ -1756,14 +1743,14 @@ export default function HomePage() {
                     setShowPins(!showPins)
                     if (!showPins) fetchPins()
                   }}
-                  className={`hover:text-[#e3e1db] transition-colors cursor-pointer ${showPins ? 'text-white' : ''}`}
+                  className={`hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer ${showPins ? 'text-primary' : ''}`}
                   title="Pinned Messages"
                 >
-                  <Pin size={20} className={showPins ? 'fill-white' : ''} />
+                  <Pin size={20} className={showPins ? 'fill-primary text-primary' : ''} />
                 </button>
                 <button 
                   onClick={() => setShowDmProfile(!showDmProfile)}
-                  className={`transition-colors cursor-pointer ${showDmProfile ? 'text-white hover:text-[#e3e1db]' : 'text-[#a3a29e] hover:text-white'}`}
+                  className={`transition-all cursor-pointer hover:scale-110 active:scale-95 ${showDmProfile ? 'text-primary hover:text-primary/80' : 'hover:text-white'}`}
                   title={showDmProfile ? "Hide User Profile" : "Show User Profile"}
                 >
                   <User size={20} />
@@ -1919,30 +1906,30 @@ export default function HomePage() {
                   })}
                 </div>
                 <div className="px-4 pb-4 pt-0">
-                  <div className="bg-[#1e2022] border border-[#2d2f31] rounded-[8px] overflow-hidden">
+                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-md">
                     {replyToMsg && (
-                      <div className="bg-[#2b2d31]/50 px-3 py-1.5 flex items-center justify-between border-b border-[#1e1f22] text-xs">
-                        <span className="text-[#b5bac1]">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
-                        <button onClick={() => setReplyToMsg(null)} className="text-[#b5bac1] hover:text-white"><XIcon size={14} /></button>
+                      <div className="bg-black/20 px-3 py-1.5 flex items-center justify-between border-b border-white/5 text-xs">
+                        <span className="text-[#a1a1aa]">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
+                        <button onClick={() => setReplyToMsg(null)} className="text-[#a1a1aa] hover:text-white"><XIcon size={14} /></button>
                       </div>
                     )}
                     {pendingAttachments.length > 0 && (
                       <div className="p-3 pb-0 flex flex-wrap gap-2">
                         {pendingAttachments.map(att => (
-                          <div key={att.id} className="relative group bg-[#2b2d31] rounded-md p-2 w-48 h-48 flex items-center justify-center border border-[#1e1f22]">
+                          <div key={att.id} className="relative group bg-black/40 rounded-xl p-2 w-48 h-48 flex items-center justify-center border border-white/5 shadow-inner">
                             {att.content_type.startsWith('image/') ? (
-                              <img src={att.url} className="max-w-full max-h-full rounded object-contain" />
+                              <img src={att.url} className="max-w-full max-h-full rounded-lg object-contain" />
                             ) : (
                               <div className="text-center">
-                                <div className="w-12 h-16 bg-[#1e1f22] rounded mx-auto mb-2 flex items-center justify-center text-[#949ba4] font-bold uppercase text-[10px]">
+                                <div className="w-12 h-16 bg-white/5 rounded-lg mx-auto mb-2 flex items-center justify-center text-[#a1a1aa] font-bold uppercase text-[10px]">
                                   {att.filename.split('.').pop()}
                                 </div>
-                                <p className="text-xs text-[#dbdee1] truncate w-32">{att.filename}</p>
+                                <p className="text-xs text-white truncate w-32">{att.filename}</p>
                               </div>
                             )}
                             <button 
                               onClick={() => removePendingAttachment(att.id)}
-                              className="absolute -top-2 -right-2 bg-[#ed4245] text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <XIcon size={14} />
                             </button>
@@ -1950,14 +1937,14 @@ export default function HomePage() {
                         ))}
                       </div>
                     )}
-                    <div className="p-3 flex items-center gap-4">
+                    <div className="p-2 pl-3 flex items-center gap-3">
                       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" multiple />
                       <button 
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="w-6 h-6 rounded-full bg-[#b5bac1] hover:bg-white flex items-center justify-center text-[#313338] transition-colors shrink-0 disabled:opacity-50"
+                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all shrink-0 disabled:opacity-50"
                       >
-                        <Plus size={16} strokeWidth={4} />
+                        <Plus size={18} strokeWidth={3} />
                       </button>
                       <form onSubmit={handleSendDmMessage} className="flex-1">
                         <Input 
@@ -1975,7 +1962,7 @@ export default function HomePage() {
                               }
                             }
                           }} 
-                          className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white text-[15px] p-0" 
+                          className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white text-[15px] p-0 min-h-[40px]" 
                           placeholder={uploading ? "Uploading..." : `Message @${dms.find(d => d.id === activeDmId)?.name || 'user'}`} 
                         />
                       </form>
@@ -2033,16 +2020,16 @@ export default function HomePage() {
           </>
         ) : activeTab === 'server' && currentChannel && currentChannel.type === 'text' ? (
           <>
-            <div className="h-12 border-b border-[#1e1f22] flex items-center justify-between px-4 shadow-sm shrink-0">
+            <div className="h-[60px] border-b border-white/5 flex items-center justify-between px-4 shadow-sm shrink-0 bg-black/20 backdrop-blur-md relative z-10">
               <div className="flex items-center min-w-0">
                 <button 
                   onClick={() => setMobileMenuOpen(true)}
-                  className="md:hidden p-1 mr-2 text-[#949ba4] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+                  className="md:hidden p-1 mr-2 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer shrink-0"
                 >
                   <Menu size={24} />
                 </button>
-                <Hash size={24} className="text-[#949ba4] mr-1 shrink-0" />
-                <span className="font-bold truncate">{currentChannel.name}</span>
+                <Hash size={24} className="text-[#a1a1aa] mr-2 shrink-0" />
+                <span className="font-bold truncate text-lg display-font text-white">{currentChannel.name}</span>
               </div>
               <div className="flex items-center gap-4">
                 <button 
@@ -2050,14 +2037,14 @@ export default function HomePage() {
                     setShowPins(!showPins)
                     if (!showPins) fetchPins()
                   }}
-                  className={`hover:text-[#dbdee1] transition-colors cursor-pointer ${showPins ? 'text-white' : 'text-[#b5bac1]'}`}
+                  className={`hover:scale-110 active:scale-95 transition-all cursor-pointer ${showPins ? 'text-primary' : 'text-[#a1a1aa] hover:text-white'}`}
                   title="Pinned Messages"
                 >
-                  <Pin size={20} className={showPins ? 'fill-white' : ''} />
+                  <Pin size={20} className={showPins ? 'fill-primary' : ''} />
                 </button>
-                <div className="relative w-48">
-                  <Input value={messageSearchQuery} onChange={(e) => setMessageSearchQuery(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); setShowMsgSearchResults(true); searchMessages(messageSearchQuery); } }} placeholder="Search" className="h-7 text-xs bg-[#141517] border border-[#2d2f31] rounded-[8px] text-[#e3e1db] focus-visible:ring-0 focus-visible:ring-offset-0 pr-8" />
-                  <Search size={14} className="absolute right-2 top-1.5 text-[#a3a29e]" />
+                <div className="relative w-48 md:w-64 hidden sm:block">
+                  <Input value={messageSearchQuery} onChange={(e) => setMessageSearchQuery(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); setShowMsgSearchResults(true); searchMessages(messageSearchQuery); } }} placeholder="Search" className="h-8 text-[13px] bg-white/5 border border-white/10 rounded-full text-white placeholder:text-[#a1a1aa] focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary pr-9 shadow-inner transition-all" />
+                  <Search size={14} className="absolute right-3 top-2 text-[#a1a1aa]" />
                 </div>
               </div>
             </div>
@@ -2105,30 +2092,30 @@ export default function HomePage() {
                   })}
                 </div>
                 <div className="px-4 pb-4 pt-0">
-                  <div className="bg-[#1e2022] border border-[#2d2f31] rounded-[8px] overflow-hidden">
+                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-md">
                     {replyToMsg && (
-                      <div className="bg-[#2b2d31]/50 px-3 py-1.5 flex items-center justify-between border-b border-[#1e1f22] text-xs">
-                        <span className="text-[#b5bac1]">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
-                        <button onClick={() => setReplyToMsg(null)} className="text-[#b5bac1] hover:text-white"><XIcon size={14} /></button>
+                      <div className="bg-black/20 px-3 py-1.5 flex items-center justify-between border-b border-white/5 text-xs">
+                        <span className="text-[#a1a1aa]">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
+                        <button onClick={() => setReplyToMsg(null)} className="text-[#a1a1aa] hover:text-white"><XIcon size={14} /></button>
                       </div>
                     )}
                     {pendingAttachments.length > 0 && (
                       <div className="p-3 pb-0 flex flex-wrap gap-2">
                         {pendingAttachments.map(att => (
-                          <div key={att.id} className="relative group bg-[#2b2d31] rounded-md p-2 w-48 h-48 flex items-center justify-center border border-[#1e1f22]">
+                          <div key={att.id} className="relative group bg-black/40 rounded-xl p-2 w-48 h-48 flex items-center justify-center border border-white/5 shadow-inner">
                             {att.content_type.startsWith('image/') ? (
-                              <img src={att.url} className="max-w-full max-h-full rounded object-contain" />
+                              <img src={att.url} className="max-w-full max-h-full rounded-lg object-contain" />
                             ) : (
                               <div className="text-center">
-                                <div className="w-12 h-16 bg-[#1e1f22] rounded mx-auto mb-2 flex items-center justify-center text-[#949ba4] font-bold uppercase text-[10px]">
+                                <div className="w-12 h-16 bg-white/5 rounded-lg mx-auto mb-2 flex items-center justify-center text-[#a1a1aa] font-bold uppercase text-[10px]">
                                   {att.filename.split('.').pop()}
                                 </div>
-                                <p className="text-xs text-[#dbdee1] truncate w-32">{att.filename}</p>
+                                <p className="text-xs text-white truncate w-32">{att.filename}</p>
                               </div>
                             )}
                             <button 
                               onClick={() => removePendingAttachment(att.id)}
-                              className="absolute -top-2 -right-2 bg-[#ed4245] text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <XIcon size={14} />
                             </button>
@@ -2136,14 +2123,14 @@ export default function HomePage() {
                         ))}
                       </div>
                     )}
-                    <div className="p-3 flex items-center gap-4">
+                    <div className="p-2 pl-3 flex items-center gap-3">
                       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" multiple />
                       <button 
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="w-6 h-6 rounded-full bg-[#b5bac1] hover:bg-white flex items-center justify-center text-[#313338] transition-colors shrink-0 disabled:opacity-50"
+                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all shrink-0 disabled:opacity-50"
                       >
-                        <Plus size={16} strokeWidth={4} />
+                        <Plus size={18} strokeWidth={3} />
                       </button>
                       <form onSubmit={handleSendMessage} className="flex-1">
                         <Input 
@@ -2161,7 +2148,7 @@ export default function HomePage() {
                               }
                             }
                           }} 
-                          className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white text-[15px] p-0" 
+                          className="bg-transparent border-none ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-white text-[15px] p-0 min-h-[40px]" 
                           placeholder={uploading ? "Uploading..." : `Message #${currentChannel.name}`} 
                         />
                       </form>
@@ -2500,18 +2487,23 @@ export default function HomePage() {
             )}
           </>
         ) : (
-          <div className="flex-1 flex flex-col h-full bg-[#111214]">
-            <div className="md:hidden h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0 bg-[#111214]">
+          <div className="flex-1 flex flex-col h-full items-center justify-center bg-transparent text-center p-8 relative">
+            <div className="md:hidden h-[60px] border-b border-white/5 flex items-center px-4 shadow-sm shrink-0 w-full absolute top-0 left-0 bg-black/20 backdrop-blur-md z-10">
               <button 
                 onClick={() => setMobileMenuOpen(true)}
-                className="p-1 text-[#a3a29e] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
+                className="p-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer shrink-0"
               >
                 <Menu size={24} />
               </button>
-              <span className="ml-2 font-extrabold text-[#f1f3f5] font-['Plus_Jakarta_Sans',sans-serif] tracking-tight">Suhhp</span>
+              <span className="ml-2 font-extrabold text-white display-font text-lg tracking-tight">Suhhp</span>
             </div>
-            <div className="flex-1 flex items-center justify-center text-[#949ba4] p-4 text-center">
-              Select a channel to start talking
+            
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 max-w-sm w-full md:mt-0 mt-[60px] shadow-2xl backdrop-blur-md">
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/20 shadow-inner">
+                <MessageSquare size={32} className="text-white/50" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 display-font">Ready to connect?</h3>
+              <p className="text-[#a1a1aa] text-sm">Select a conversation or a channel to start talking with your community.</p>
             </div>
           </div>
         )}
@@ -2519,30 +2511,30 @@ export default function HomePage() {
 
       {/* Members Sidebar */}
       {activeTab === 'server' && currentServer && currentChannel?.type === 'text' && (
-        <div className="hidden md:flex w-60 bg-[#111214] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31]">
-          <div className="h-12 border-b border-[#2d2f31] flex items-center px-4 shadow-sm shrink-0">
-            <Users size={20} className="text-[#a3a29e] mr-2" />
-            <span className="font-bold text-[#e3e1db]">Members</span>
+        <div className="hidden md:flex w-64 bg-black/20 backdrop-blur-2xl flex flex-col overflow-hidden shrink-0 border-l border-white/5 z-10">
+          <div className="h-[60px] border-b border-white/5 flex items-center px-4 shadow-sm shrink-0 bg-transparent">
+            <Users size={20} className="text-[#a1a1aa] mr-2" />
+            <span className="font-bold text-white text-lg display-font">Members</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 no-scrollbar space-y-4">
             <div>
-              <p className="text-xs font-bold uppercase text-[#767572] mb-2 px-1">Online — {members.length}</p>
+              <p className="text-xs font-bold uppercase text-[#a1a1aa] mb-2 px-1">Online — {members.length}</p>
               <div className="space-y-1">
                 {members.map(member => (
-                  <div key={member.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31]/40 cursor-pointer group" onClick={() => setSelectedUserProfileId(member.id)}>
+                  <div key={member.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer group transition-all" onClick={() => setSelectedUserProfileId(member.id)}>
                     <div className="relative">
-                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
+                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-sm font-bold uppercase text-white border border-white/10 shadow-inner overflow-hidden">
                         {member.avatar ? (
                           <img src={getFileUrl(member.avatar)} alt={member.username} className="w-full h-full object-cover" />
                         ) : (
                           member.username[0]
                         )}
                       </div>
-                      <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-[#1e2022] ${getStatusColor(member.status)}`} />
+                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${getStatusColor(member.status)}`} />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[15px] font-medium text-[#a3a29e] group-hover:text-[#e3e1db] truncate">{member.display_name || member.username}</span>
-                      {member.status_message && <span className="text-[10px] text-[#767572] truncate">{member.status_message}</span>}
+                      <span className="text-[15px] font-medium text-white group-hover:text-primary transition-colors truncate">{member.display_name || member.username}</span>
+                      {member.status_message && <span className="text-[11px] text-[#a1a1aa] truncate">{member.status_message}</span>}
                     </div>
                   </div>
                 ))}
@@ -2554,13 +2546,13 @@ export default function HomePage() {
 
       {/* DM User Profile Sidebar */}
       {activeTab === 'home' && activeHomeView === 'dm' && activeDmId && showDmProfile && dmUserProfile && (
-        <div className="w-72 bg-[#111214] flex flex-col overflow-hidden shrink-0 border-l border-[#2d2f31] select-none text-left">
+        <div className="w-72 bg-black/20 backdrop-blur-2xl flex flex-col overflow-hidden shrink-0 border-l border-white/5 select-none text-left z-10">
           {/* Header block (non-scrollable) to prevent avatar clipping */}
           <div className="relative shrink-0">
-            <div className="h-16 bg-[#5865f2]" />
-            <div className="px-4 -mt-10 mb-2">
-              <div className="w-20 h-20 rounded-full bg-[#1e2022] p-1.5 relative z-10">
-                <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] shadow-lg border border-[#343638] overflow-hidden">
+            <div className="h-[120px] bg-gradient-to-r from-primary to-indigo-500 opacity-80" />
+            <div className="px-5 -mt-12 mb-2">
+              <div className="w-[100px] h-[100px] rounded-full bg-black/40 backdrop-blur-md p-1.5 relative z-10">
+                <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center text-4xl font-bold uppercase text-white shadow-inner border border-white/10 overflow-hidden">
                   {dmUserProfile.avatar ? (
                     <img src={getFileUrl(dmUserProfile.avatar)} alt={dmUserProfile.username} className="w-full h-full object-cover" />
                   ) : (
@@ -2568,62 +2560,62 @@ export default function HomePage() {
                   )}
                 </div>
                 {dmUserProfile.status && (
-                  <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 border-[#1e2022] ${getStatusColor(dmUserProfile.status)}`} />
+                  <div className={`absolute bottom-2 right-2 w-6 h-6 rounded-full border-[3px] border-black ${getStatusColor(dmUserProfile.status)} shadow-lg`} />
                 )}
               </div>
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 pt-1 relative flex flex-col custom-sidebar-scrollbar min-h-0">
+          <div className="flex-1 overflow-y-auto p-5 pt-2 relative flex flex-col custom-sidebar-scrollbar min-h-0">
             {/* Profile Info block */}
-            <div className="bg-[#141517] p-4 rounded-xl space-y-4 shadow-inner border border-[#2d2f31]">
+            <div className="bg-white/5 p-5 rounded-2xl space-y-5 shadow-inner border border-white/5 backdrop-blur-sm">
               <div>
-                <h2 className="text-lg font-bold text-[#e3e1db] leading-tight flex items-center gap-1.5">
+                <h2 className="text-xl font-bold text-white leading-tight flex items-center gap-1.5 display-font">
                   {dmUserProfile.display_name || dmUserProfile.username}
                 </h2>
-                <p className="text-xs text-[#a3a29e]">@{dmUserProfile.username}</p>
+                <p className="text-sm text-[#a1a1aa]">@{dmUserProfile.username}</p>
               </div>
 
               {dmUserProfile.status_message && (
-                <div className="border-t border-[#2d2f31] pt-3">
-                  <p className="text-[#a3a29e] text-[9px] font-bold uppercase tracking-wider mb-1">Custom Status</p>
-                  <p className="text-xs text-[#e3e1db] italic">"{dmUserProfile.status_message}"</p>
+                <div className="border-t border-white/5 pt-4">
+                  <p className="text-[#a1a1aa] text-[10px] font-bold uppercase tracking-wider mb-1.5">Custom Status</p>
+                  <p className="text-sm text-white italic">"{dmUserProfile.status_message}"</p>
                 </div>
               )}
 
               {dmUserProfile.bio && (
-                <div className="border-t border-[#2d2f31] pt-3">
-                  <p className="text-[#a3a29e] text-[9px] font-bold uppercase tracking-wider mb-1">About Me</p>
-                  <p className="text-xs text-[#a3a29e] whitespace-pre-wrap break-words">{dmUserProfile.bio}</p>
+                <div className="border-t border-white/5 pt-4">
+                  <p className="text-[#a1a1aa] text-[10px] font-bold uppercase tracking-wider mb-1.5">About Me</p>
+                  <p className="text-sm text-[#a1a1aa] whitespace-pre-wrap break-words">{dmUserProfile.bio}</p>
                 </div>
               )}
 
               {dmUserProfile.created_at && (
-                <div className="border-t border-[#2d2f31] pt-3">
-                  <p className="text-[#a3a29e] text-[9px] font-bold uppercase tracking-wider mb-1">Member Since</p>
-                  <p className="text-xs text-[#a3a29e]">
+                <div className="border-t border-white/5 pt-4">
+                  <p className="text-[#a1a1aa] text-[10px] font-bold uppercase tracking-wider mb-1.5">Member Since</p>
+                  <p className="text-sm text-white">
                     {parseUTCDate(dmUserProfile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </p>
                 </div>
               )}
 
-              <div className="border-t border-[#2d2f31] pt-3 space-y-2.5">
-                <div className="flex items-center justify-between text-xs text-[#e3e1db] hover:bg-[#2d2f31]/40 p-1.5 -mx-1.5 rounded transition-colors cursor-pointer">
-                  <span className="font-semibold text-[#e3e1db]">Mutual Servers</span>
-                  <span className="text-[#a3a29e] font-medium">{(dmUserProfile as any).mutual_servers || 0}</span>
+              <div className="border-t border-white/5 pt-4 space-y-3">
+                <div className="flex items-center justify-between text-sm text-white hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
+                  <span className="font-semibold">Mutual Servers</span>
+                  <span className="text-[#a1a1aa] font-medium">{(dmUserProfile as any).mutual_servers || 0}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-[#e3e1db] hover:bg-[#2d2f31]/40 p-1.5 -mx-1.5 rounded transition-colors cursor-pointer">
-                  <span className="font-semibold text-[#e3e1db]">Mutual Friends</span>
-                  <span className="text-[#a3a29e] font-medium">{(dmUserProfile as any).mutual_friends || 0}</span>
+                <div className="flex items-center justify-between text-sm text-white hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
+                  <span className="font-semibold">Mutual Friends</span>
+                  <span className="text-[#a1a1aa] font-medium">{(dmUserProfile as any).mutual_friends || 0}</span>
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="h-[48px] bg-[#141517] border-t border-[#2d2f31] flex items-center justify-center shrink-0">
+          <div className="p-4 shrink-0">
             <button 
               onClick={() => setSelectedUserProfileId(dmUserProfile.id)}
-              className="text-xs font-bold text-[#e3e1db] hover:underline cursor-pointer"
+              className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all shadow-sm cursor-pointer"
             >
               View Full Profile
             </button>
@@ -2633,147 +2625,7 @@ export default function HomePage() {
 
       </div>
 
-      {/* Mask to hide the bottom border line and curved corner of the Big Rounded Box under the floating card */}
-      <div 
-        className="hidden md:block absolute bottom-0 left-0 bg-[#111214] z-[15] pointer-events-none"
-        style={{ 
-          width: `${72 + sidebarWidth}px`, 
-          height: '24px' 
-        }}
-      />
 
-      {/* Floating Bottom Card: Unified Voice Connected status and User Panel card spanning both Column 1 and Column 2 */}
-      <div 
-        className="hidden md:flex absolute bottom-4 left-2 bg-[#111214] border border-[#2d2f31] rounded-[8px] flex flex-col shrink-0 shadow-lg overflow-hidden select-none z-20"
-        style={{ width: `${72 + sidebarWidth - 16}px` }}
-      >
-        
-        {/* Voice Connection Status */}
-        {activeVoiceChannel && (() => {
-          const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
-          const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
-          return (
-            <div className="w-full p-2.5 flex flex-col gap-2 border-b border-[#2d2f31] text-left relative z-10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#23a55a]">
-                  <Volume2 size={20} className="text-[#23a55a] shrink-0" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold leading-tight text-[#23a55a]">Voice Connected</span>
-                    <span className="text-[10px] leading-tight text-[#949ba4] truncate">{voiceSubtitle}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Animated Soundwave Visualizer matching Discord style */}
-                  <div className="flex items-end gap-[2px] h-3.5 px-1 shrink-0">
-                    <div className="w-[2px] h-2 bg-[#23a55a] rounded-full animate-pulse" />
-                    <div className="w-[2px] h-3.5 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                    <div className="w-[2px] h-2.5 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-                    <div className="w-[2px] h-3 bg-[#23a55a] rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-8 w-8 text-[#b5bac1] hover:text-[#ed4245] hover:bg-white/5 rounded"><PhoneOff size={18} /></Button>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="icon" onClick={toggleVideo} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isVideoEnabled ? 'bg-[#23a55a] text-white hover:bg-[#1a7f47]' : ''}`} title={isVideoEnabled ? 'Stop Video' : 'Video'}>
-                  {isVideoEnabled ? <VideoOff size={16} /> : <Video size={16} />}
-                </Button>
-                <Button variant="secondary" size="icon" onClick={toggleScreenShare} className={`flex-1 h-8 bg-[#2b2d31] text-[#dbdee1] hover:bg-[#35373c] border-none rounded-[6px] ${isScreenSharing ? 'bg-[#23a55a] text-white hover:bg-[#1a7f47]' : ''}`} title={isScreenSharing ? 'Stop Screen Share' : 'Screen Share'}>
-                  <MonitorUp size={16} />
-                </Button>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* User Panel */}
-        <div className="h-[52px] px-2 flex items-center justify-between shrink-0 relative z-10">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="relative group cursor-pointer shrink-0" onClick={() => setShowStatusMenu(!showStatusMenu)}>
-              <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] border border-[#343638] overflow-hidden">
-                {user?.avatar ? (
-                  <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover" />
-                ) : (
-                  user?.username[0]
-                )}
-              </div>
-              <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#251930] ${getStatusColor(user?.status)}`} />
-              
-              {showStatusMenu && (
-                <div className="absolute bottom-12 left-0 w-48 bg-[#232428] rounded-lg shadow-xl border border-[#2d2f31] p-1.5 z-50 flex flex-col gap-0.5">
-                  <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#23a559]" />
-                    <span className="text-xs font-medium text-[#e3e1db]">Online</span>
-                  </div>
-                  <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#f0b232]" />
-                    <span className="text-xs font-medium text-[#e3e1db]">Idle</span>
-                  </div>
-                  <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#f23f43]" />
-                    <span className="text-xs font-medium text-[#e3e1db]">Do Not Disturb</span>
-                  </div>
-                  <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); }} className="flex items-center gap-2 p-1.5 rounded hover:bg-[#2d2f31] hover:text-[#e3e1db] cursor-pointer group/status">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#80848e]" />
-                    <span className="text-xs font-medium text-[#e3e1db]">Invisible</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex flex-col min-w-0 cursor-pointer text-left" onClick={() => setShowUserSettingsModal(true)}>
-              <span className="text-sm font-semibold truncate leading-tight text-[#f2f3f5]">{user?.display_name || user?.username}</span>
-              {isJoined ? (
-                <span className="text-[11px] text-[#23a55a] truncate leading-tight font-medium flex items-center gap-1">
-                  <Volume2 size={10} className="text-[#23a55a] shrink-0" />
-                  In voice
-                </span>
-              ) : (
-                <span className="text-[11px] text-[#949ba4] truncate leading-tight font-normal">{user?.status_message || user?.status || 'Online'}</span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-0.5 shrink-0">
-            {/* Mic Controls */}
-            <div className="flex items-center hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors">
-              <button 
-                onClick={toggleAudio} 
-                className={`p-1 rounded transition-colors ${!isAudioEnabled ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
-                title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
-              >
-                {isAudioEnabled ? <Mic size={16} /> : <MicOff size={16} />}
-              </button>
-              <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
-            </div>
-
-            {/* Deafen Controls */}
-            <div className="flex items-center hover:bg-white/5 rounded px-1.5 py-0.5 transition-colors">
-              <button 
-                onClick={toggleDeafen} 
-                className={`p-1 rounded relative transition-colors ${isDeafened ? 'text-[#f23f43]' : 'text-[#dbdee1] hover:text-white'}`}
-                title={isDeafened ? "Undeafen" : "Deafen"}
-              >
-                <Headphones size={16} />
-                {isDeafened && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="w-[1.5px] h-[14px] bg-[#f23f43] rotate-45" />
-                  </div>
-                )}
-              </button>
-              <ChevronDown size={12} className="text-[#949ba4] hover:text-white cursor-pointer ml-0.5" />
-            </div>
-
-            {/* Settings Control */}
-            <button 
-              onClick={() => setShowUserSettingsModal(true)} 
-              className="p-1.5 hover:bg-white/5 text-[#dbdee1] hover:text-white rounded transition-colors"
-              title="User Settings"
-            >
-              <Settings size={16} />
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Modals... */}
       {showCreateServerModal && (
@@ -3094,12 +2946,12 @@ function MessageItem({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   return (
-    <div className={`flex flex-col group message-group-container relative hover:bg-[#2e3035] -mx-4 px-4 transition-colors duration-100 ease-in-out ${isGrouped ? 'py-[1px] mt-0' : 'py-1 mt-3'}`}>
+    <div className={`flex flex-col group message-group-container relative hover:bg-white/5 -mx-4 px-4 transition-colors duration-100 ease-in-out ${isGrouped ? 'py-[1px] mt-0' : 'py-1 mt-3'}`}>
       {/* Reply header */}
       {msg.reply_to_id && (
-        <div className="flex items-center gap-1.5 text-xs text-[#b5bac1] ml-14 mb-1 select-none">
-          <CornerUpLeft size={12} className="rotate-180 text-[#949ba4] shrink-0" />
-          <span className="font-bold text-[#dbdee1]">@{msg.reply_username}</span>
+        <div className="flex items-center gap-1.5 text-xs text-[#a1a1aa] ml-14 mb-1 select-none">
+          <CornerUpLeft size={12} className="rotate-180 text-[#a1a1aa] shrink-0" />
+          <span className="font-bold text-white">@{msg.reply_username}</span>
           <span className="truncate max-w-[240px] opacity-75">{msg.reply_content}</span>
         </div>
       )}
@@ -3107,12 +2959,12 @@ function MessageItem({
       <div className="flex gap-4">
         {isGrouped ? (
           /* Gutter placeholder with hover timestamp */
-          <div className="w-10 shrink-0 select-none flex items-center justify-center text-[9px] text-[#949ba4] opacity-0 group-hover:opacity-100 pr-1 font-medium h-4 mt-0.5">
+          <div className="w-10 shrink-0 select-none flex items-center justify-center text-[9px] text-[#a1a1aa] opacity-0 group-hover:opacity-100 pr-1 font-medium h-4 mt-0.5">
             {parseUTCDate(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M$/i, '')}
           </div>
         ) : (
           /* Avatar */
-          <div className="w-10 h-10 rounded-full bg-[#5865f2] flex items-center justify-center shrink-0 mt-0.5 uppercase font-bold text-white shadow-sm cursor-pointer hover:opacity-85 overflow-hidden" onClick={() => onProfileClick?.(msg.author_id)}>
+          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 mt-0.5 uppercase font-bold text-white shadow-inner border border-white/10 cursor-pointer hover:opacity-85 overflow-hidden" onClick={() => onProfileClick?.(msg.author_id)}>
             {msg.avatar ? (
               <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
             ) : (
@@ -3125,12 +2977,12 @@ function MessageItem({
           {!isGrouped && (
             <div className="flex items-baseline gap-2">
               <span className="font-bold hover:underline cursor-pointer text-white text-[15px]" onClick={() => onProfileClick?.(msg.author_id)}>{msg.username}</span>
-              <span className="text-[12px] font-medium text-[#949ba4]">
+              <span className="text-[12px] font-medium text-[#a1a1aa]">
                 {formatMessageTimestamp(msg.created_at)}
               </span>
               {msg.is_pinned === 1 && (
                 <span title="Pinned">
-                  <Pin size={10} className="text-[#f5a623] fill-[#f5a623] shrink-0" />
+                  <Pin size={10} className="text-primary fill-primary shrink-0" />
                 </span>
               )}
             </div>
@@ -3151,18 +3003,18 @@ function MessageItem({
                     onEditCancel();
                   }
                 }}
-                className="w-full bg-[#383a40] text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#5865f2] border-none"
+                className="w-full bg-black/40 text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary border border-white/10"
               />
-              <span className="text-[10px] text-[#949ba4]">
-                escape to <span className="text-[#ed4245] hover:underline cursor-pointer" onClick={onEditCancel}>cancel</span> • enter to <span className="text-[#23a559] hover:underline cursor-pointer" onClick={() => onEditSubmit(msg.id, editingContent)}>save</span>
+              <span className="text-[10px] text-[#a1a1aa]">
+                escape to <span className="text-rose-500 hover:underline cursor-pointer" onClick={onEditCancel}>cancel</span> • enter to <span className="text-emerald-500 hover:underline cursor-pointer" onClick={() => onEditSubmit(msg.id, editingContent)}>save</span>
               </span>
             </div>
           ) : (
-            <div className="text-[15px] text-[#dbdee1] flex flex-col gap-1">
+            <div className="text-[15px] text-white flex flex-col gap-1">
               <div className="flex items-baseline gap-1.5 flex-wrap">
                 <MessageContent content={msg.content} attachments={msg.attachments} />
                 {msg.edited_at && (
-                  <span className="text-[10px] text-[#949ba4] select-none">(edited)</span>
+                  <span className="text-[10px] text-[#a1a1aa] select-none">(edited)</span>
                 )}
               </div>
             </div>
@@ -3175,15 +3027,15 @@ function MessageItem({
                 <button
                   key={r.emoji}
                   onClick={() => onReact(msg.id, r.emoji, r.hasReacted)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs border transition-colors cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs border transition-colors cursor-pointer backdrop-blur-md shadow-sm ${
                     r.hasReacted 
-                      ? 'bg-[#5865f2]/15 border-[#5865f2] text-[#dbdee1] hover:bg-[#5865f2]/25' 
-                      : 'bg-[#2b2d31] border-[#3f4147] text-[#b5bac1] hover:bg-[#35373c] hover:border-[#4e5058]'
+                      ? 'bg-primary/20 border-primary/50 text-white hover:bg-primary/30' 
+                      : 'bg-black/20 border-white/10 text-[#a1a1aa] hover:bg-white/5 hover:text-white hover:border-white/20'
                   }`}
                   title={r.users.join(', ')}
                 >
                   <span>{r.emoji}</span>
-                  <span className="font-bold text-[#dbdee1]">{r.count}</span>
+                  <span className="font-bold text-white">{r.count}</span>
                 </button>
               ))}
             </div>
@@ -3193,18 +3045,18 @@ function MessageItem({
 
       {/* Floating Toolbar on Hover */}
       {!isEditing && (
-        <div className="absolute right-4 -top-3.5 bg-[#313338] border border-[#232428] rounded shadow-lg flex items-center p-0.5 opacity-0 group-hover:opacity-100 message-hover-toolbar transition-opacity z-10">
+        <div className="absolute right-4 -top-3.5 bg-black/40 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg flex items-center p-0.5 opacity-0 group-hover:opacity-100 message-hover-toolbar transition-opacity z-10">
           {/* Reaction Picker Icon */}
           <div className="relative">
             <button 
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="p-1.5 hover:bg-[#35373c] text-[#b5bac1] hover:text-white rounded transition-colors cursor-pointer"
+              className="p-1.5 hover:bg-white/10 text-[#a1a1aa] hover:text-white rounded transition-colors cursor-pointer"
               title="Add Reaction"
             >
               <Smile size={16} />
             </button>
             {showEmojiPicker && (
-              <div className="absolute bottom-8 right-0 bg-[#1e1f22] border border-[#2b2d31] rounded shadow-2xl p-2 z-50 flex gap-2 w-48 flex-wrap justify-center">
+              <div className="absolute bottom-8 right-0 bg-black/80 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl p-2 z-50 flex gap-2 w-48 flex-wrap justify-center">
                 {['👍', '❤️', '🔥', '🎉', '😂', '😢', '😮', '🙏'].map(emoji => (
                   <button 
                     key={emoji}
@@ -3213,7 +3065,7 @@ function MessageItem({
                       onReact(msg.id, emoji, hasReacted);
                       setShowEmojiPicker(false);
                     }}
-                    className="hover:scale-125 transition-transform text-lg cursor-pointer animate-in fade-in zoom-in-50 duration-75"
+                    className="hover:scale-125 hover:bg-white/10 rounded p-1 transition-all text-lg cursor-pointer animate-in fade-in zoom-in-50 duration-75"
                   >
                     {emoji}
                   </button>
@@ -3225,7 +3077,7 @@ function MessageItem({
           {/* Reply */}
           <button 
             onClick={() => onReply(msg)}
-            className="p-1.5 hover:bg-[#35373c] text-[#b5bac1] hover:text-white rounded transition-colors cursor-pointer"
+            className="p-1.5 hover:bg-white/10 text-[#a1a1aa] hover:text-white rounded transition-colors cursor-pointer"
             title="Reply"
           >
             <CornerUpLeft size={16} />
@@ -3234,12 +3086,12 @@ function MessageItem({
           {/* Pin */}
           <button 
             onClick={() => onTogglePin(msg.id, msg.is_pinned === 1)}
-            className={`p-1.5 hover:bg-[#35373c] rounded transition-colors cursor-pointer ${
-              msg.is_pinned === 1 ? 'text-[#f5a623]' : 'text-[#b5bac1] hover:text-white'
+            className={`p-1.5 hover:bg-white/10 rounded transition-colors cursor-pointer ${
+              msg.is_pinned === 1 ? 'text-primary' : 'text-[#a1a1aa] hover:text-white'
             }`}
             title={msg.is_pinned === 1 ? "Unpin Message" : "Pin Message"}
           >
-            <Pin size={16} className={msg.is_pinned === 1 ? 'fill-[#f5a623]' : ''} />
+            <Pin size={16} className={msg.is_pinned === 1 ? 'fill-primary' : ''} />
           </button>
 
           {/* Edit / Delete (for authors) */}
@@ -3247,7 +3099,7 @@ function MessageItem({
             <>
               <button 
                 onClick={() => onEditStart(msg.id, msg.content)}
-                className="p-1.5 hover:bg-[#35373c] text-[#b5bac1] hover:text-white rounded transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-white/10 text-[#a1a1aa] hover:text-white rounded transition-colors cursor-pointer"
                 title="Edit Message"
               >
                 <Edit3 size={16} />
@@ -3258,7 +3110,7 @@ function MessageItem({
                     onDelete(msg.id);
                   }
                 }}
-                className="p-1.5 hover:bg-[#35373c] text-[#ed4245] rounded transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-white/10 text-rose-500 rounded transition-colors cursor-pointer"
                 title="Delete Message"
               >
                 <Trash2 size={16} />
