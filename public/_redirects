@@ -1,3 +1,0 @@
-# SPA catch-all: serve index.html for all routes that don't match a static file
-# API requests now go directly to the Worker via apiFetch() in the frontend
-/* /index.html 200!
