@@ -58,55 +58,104 @@ function ContextSidebarHeader({
 
   // Only show server actions menu when on a server
   if (activeTab === 'server' && currentServer) {
+    const hasBanner = !!currentServer.banner;
     return (
       <div className="relative z-50 w-full shrink-0" ref={menuRef}>
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between px-4 h-12 hover:bg-white/[0.04] transition-colors border-b border-border group"
-        >
-          <span className="font-display font-bold text-base text-white tracking-wide truncate group-hover:text-primary transition-colors">
-            {currentServer.name}
-          </span>
-          <ChevronDown size={16} className={`text-white/70 group-hover:text-white transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
+        {hasBanner ? (
+          /* Rich Server Banner Header */
+          <div 
+            onClick={() => setIsOpen(!isOpen)}
+            className="relative h-28 w-full group cursor-pointer overflow-hidden border-b border-border/80"
+          >
+            <img 
+              src={getFileUrl(currentServer.banner)} 
+              alt={currentServer.name}
+              className="w-full h-full object-cover brightness-[0.6] group-hover:brightness-[0.75] transition-all duration-300 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between z-10">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {currentServer.icon ? (
+                  <img 
+                    src={getFileUrl(currentServer.icon)} 
+                    alt={currentServer.name} 
+                    className="w-8 h-8 rounded-lg object-cover border-2 border-white/20 shadow-lg shrink-0"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center text-sm font-bold text-white border border-white/20 shadow-lg shrink-0">
+                    {currentServer.name[0]?.toUpperCase()}
+                  </div>
+                )}
+                <span className="font-display font-extrabold text-base text-white tracking-wide truncate drop-shadow-md">
+                  {currentServer.name}
+                </span>
+              </div>
+              <ChevronDown size={18} className={`text-white/80 group-hover:text-white transition-transform duration-200 shrink-0 drop-shadow ${isOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+        ) : (
+          /* Clean Server Header with Icon Thumbnail */
+          <button 
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-full flex items-center justify-between px-3 h-14 hover:bg-white/[0.06] transition-all border-b border-border group"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              {currentServer.icon ? (
+                <img 
+                  src={getFileUrl(currentServer.icon)} 
+                  alt={currentServer.name} 
+                  className="w-8 h-8 rounded-lg object-cover border border-white/10 shadow-sm shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/30 to-indigo-600/30 flex items-center justify-center text-sm font-extrabold text-white border border-white/10 shadow-sm shrink-0">
+                  {currentServer.name[0]?.toUpperCase()}
+                </div>
+              )}
+              <span className="font-display font-extrabold text-base text-white tracking-wide truncate group-hover:text-primary transition-colors">
+                {currentServer.name}
+              </span>
+            </div>
+            <ChevronDown size={16} className={`text-white/70 group-hover:text-white transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+        )}
 
         {isOpen && (
-          <div className="absolute top-full left-2 right-2 mt-1 bg-popover border border-border rounded-lg shadow-xl p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
+          <div className="absolute top-full left-2 right-2 mt-1.5 bg-[#1e1f22]/95 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
             <button 
               onClick={() => { onInvite?.(); setIsOpen(false); }}
-              className="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-primary hover:bg-primary/15 transition-colors"
             >
               <span>Invite People</span>
-              <UserPlus size={14} />
+              <UserPlus size={15} />
             </button>
             
             {(isOwner || isAdmin || isManageChannels) && (
               <button 
                 onClick={() => { onCreateChannel?.(); setIsOpen(false); }}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-colors"
               >
                 <span>Create Channel</span>
-                <Plus size={14} />
+                <Plus size={15} />
               </button>
             )}
             
             {(isOwner || isAdmin) && (
               <button 
                 onClick={() => { onSettings?.(); setIsOpen(false); }}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-colors"
               >
                 <span>Server Settings</span>
-                <Settings size={14} />
+                <Settings size={15} />
               </button>
             )}
             
             {!isOwner && (
               <button 
                 onClick={() => { onLeave?.(); setIsOpen(false); }}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors mt-0.5"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-semibold text-rose-400 hover:bg-rose-500/15 transition-colors mt-0.5"
               >
                 <span>Leave Server</span>
-                <LogOut size={14} />
+                <LogOut size={15} />
               </button>
             )}
           </div>
@@ -2263,14 +2312,25 @@ export default function HomePage() {
         ) : activeTab === 'server' && currentChannel && currentChannel.type === 'text' ? (
           <>
             <div className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 relative z-20">
-              <div className="flex items-center min-w-0">
+              <div className="flex items-center min-w-0 gap-2">
                 <button 
                   onClick={() => setMobileMenuOpen(true)}
-                  className="md:hidden p-1 mr-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+                  className="md:hidden p-1 mr-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
                 >
                   <Menu size={20} />
                 </button>
-                <Hash size={18} className="text-white/70 mr-2 shrink-0" />
+                {currentServer?.icon ? (
+                  <img 
+                    src={getFileUrl(currentServer.icon)} 
+                    alt={currentServer.name} 
+                    className="w-6 h-6 rounded-md object-cover border border-white/10 shrink-0 shadow-sm" 
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-md bg-white/10 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    {currentServer?.name?.[0]?.toUpperCase() || 'S'}
+                  </div>
+                )}
+                <Hash size={18} className="text-white/70 shrink-0" />
                 <span className="font-display font-bold text-base text-white tracking-wide truncate">{currentChannel.name}</span>
               </div>
               <div className="flex items-center gap-4">

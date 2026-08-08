@@ -2,12 +2,15 @@ import { useState, useEffect } from "react"
 import { useServerSettings } from "@/hooks/useServerSettings"
 import { useFriends } from "@/hooks/useFriends"
 import { useDMs } from "@/hooks/useDMs"
+import { useServerStore } from "@/store/useServerStore"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, Copy, Check, Search } from "lucide-react"
 import { apiFetch, getFileUrl } from "@/lib/api"
 
 export default function InviteModal({ serverId, onClose }: { serverId: string, onClose: () => void }) {
+  const { servers } = useServerStore()
+  const server = servers.find(s => s.id === serverId)
   const { createInvite } = useServerSettings(serverId)
   const { friends } = useFriends()
   const { dms, sendMessage, fetchDMs } = useDMs()
@@ -89,23 +92,42 @@ export default function InviteModal({ serverId, onClose }: { serverId: string, o
   )
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-popover border border-border w-full max-w-md rounded-xl shadow-2xl relative overflow-hidden flex flex-col max-h-[600px]">
-        <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-10 text-white/70 hover:text-white" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
+      <div className="bg-[#1e1f22] border border-white/10 w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[600px]">
+        <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-10 text-white/70 hover:text-white rounded-full hover:bg-white/10" onClick={onClose}>
           <X size={20} />
         </Button>
         
         <div className="p-6 pb-2">
-          <h2 className="text-xl font-bold mb-4 uppercase text-white">Invite friends to server</h2>
+          {/* Server header banner/icon */}
+          <div className="flex items-center gap-3 mb-4">
+            {server?.icon ? (
+              <img 
+                src={getFileUrl(server.icon)} 
+                alt={server.name} 
+                className="w-12 h-12 rounded-xl object-cover border border-white/15 shadow-md shrink-0" 
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-lg font-bold text-white shadow-md shrink-0">
+                {server?.name?.[0]?.toUpperCase() || 'S'}
+              </div>
+            )}
+            <div className="min-w-0">
+              <h2 className="text-lg font-extrabold text-white leading-tight truncate">
+                Invite friends to {server?.name || 'server'}
+              </h2>
+              <p className="text-xs text-white/60 font-medium mt-0.5">Send a direct message invite or copy link</p>
+            </div>
+          </div>
           
           <div className="relative mb-4">
             <Input 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for friends" 
-              className="bg-card border border-border text-white focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0"
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              placeholder="Search for friends to invite..." 
+              className="bg-secondary/60 border border-white/10 text-white focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 rounded-xl pl-3 pr-9" 
             />
-            <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60" />
+            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50" />
           </div>
         </div>
 
