@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { getFileUrl } from '@/lib/api'
+import RichLinkEmbed from './chat/RichLinkEmbed'
 
 export interface Attachment {
   id: string
@@ -21,6 +22,11 @@ export default function MessageContent({
 }) {
   const isImage = (type: string) => type.startsWith('image/')
   const isVideo = (type: string) => type.startsWith('video/')
+
+  // Extract HTTP/HTTPS links for rich embed previews
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const matchedUrls = content ? (content.match(urlRegex) || []) : []
+  const uniqueUrls = Array.from(new Set(matchedUrls)).slice(0, 3)
 
   return (
     <div className="flex flex-col gap-2">
@@ -47,6 +53,15 @@ export default function MessageContent({
           >
             {content}
           </ReactMarkdown>
+        </div>
+      )}
+
+      {/* Rich URL Embed Cards */}
+      {uniqueUrls.length > 0 && (
+        <div className="flex flex-col gap-1 mt-1">
+          {uniqueUrls.map((url, idx) => (
+            <RichLinkEmbed key={`${url}-${idx}`} url={url} />
+          ))}
         </div>
       )}
       

@@ -1,0 +1,137 @@
+import { useState } from "react"
+import { Mic, MicOff, Video, VideoOff, MonitorUp, PhoneOff, Maximize2, Minimize2 } from "lucide-react"
+
+interface PipVideoOverlayProps {
+  channelName: string
+  participants: any[]
+  isMuted: boolean
+  isDeafened?: boolean
+  isCameraOn?: boolean
+  isScreenSharing?: boolean
+  activeSpeakerId?: string | null
+  onToggleMute: () => void
+  onToggleDeafen?: () => void
+  onToggleCamera?: () => void
+  onToggleScreenShare?: () => void
+  onDisconnect: () => void
+}
+
+export default function PipVideoOverlay({
+  channelName,
+  participants,
+  isMuted,
+  isDeafened = false,
+  isCameraOn = false,
+  isScreenSharing = false,
+  activeSpeakerId,
+  onToggleMute,
+  onToggleDeafen,
+  onToggleCamera,
+  onToggleScreenShare,
+  onDisconnect,
+}: PipVideoOverlayProps) {
+  const [isMinimized, setIsMinimized] = useState(false)
+
+  if (participants.length === 0) return null
+
+  return (
+    <div className={`fixed bottom-20 right-6 z-50 transition-all duration-300 ${
+      isMinimized ? "w-64" : "w-80 md:w-96"
+    } bg-card/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col`}>
+      {/* Header Bar */}
+      <div className="px-3 py-2 bg-secondary/80 border-b border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span className="text-xs font-bold text-white truncate">{channelName}</span>
+          <span className="text-[10px] text-white/50 font-medium shrink-0">({participants.length})</span>
+        </div>
+        <button 
+          onClick={() => setIsMinimized(!isMinimized)} 
+          className="p-1 text-white/60 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+        >
+          {isMinimized ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+        </button>
+      </div>
+
+      {/* Video / Avatar Grid */}
+      {!isMinimized && (
+        <div className="p-2 grid grid-cols-2 gap-2 max-h-56 overflow-y-auto bg-black/40">
+          {participants.map((p) => {
+            const isSpeaking = activeSpeakerId === p.id
+            return (
+              <div 
+                key={p.id}
+                className={`relative aspect-video rounded-xl overflow-hidden bg-secondary/60 flex items-center justify-center border transition-all ${
+                  isSpeaking ? "border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "border-white/5"
+                }`}
+              >
+                {p.stream ? (
+                  <video
+                    autoPlay
+                    playsInline
+                    ref={(el) => { if (el && el.srcObject !== p.stream) el.srcObject = p.stream }}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-sm font-bold text-white font-display uppercase">
+                    {p.username?.[0] || 'U'}
+                  </div>
+                )}
+                <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] text-white font-medium truncate max-w-[80%]">
+                  {p.username}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Controls Bar */}
+      <div className="p-2 bg-secondary/60 border-t border-white/10 flex items-center justify-center gap-2">
+        <button
+          onClick={onToggleMute}
+          className={`p-2 rounded-xl border transition-all ${
+            isMuted 
+              ? "bg-rose-600/20 text-rose-400 border-rose-500/40 hover:bg-rose-600/30" 
+              : "bg-white/5 text-white border-white/10 hover:bg-white/10"
+          }`}
+          title={isMuted ? "Unmute Mic" : "Mute Mic"}
+        >
+          {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
+        </button>
+
+        <button
+          onClick={onToggleCamera}
+          className={`p-2 rounded-xl border transition-all ${
+            isCameraOn 
+              ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-600/30" 
+              : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+          }`}
+          title={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+        >
+          {isCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+        </button>
+
+        <button
+          onClick={onToggleScreenShare}
+          className={`p-2 rounded-xl border transition-all ${
+            isScreenSharing 
+              ? "bg-primary/20 text-primary border-primary/40 hover:bg-primary/30" 
+              : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+          }`}
+          title={isScreenSharing ? "Stop Screen Share" : "Share Screen"}
+        >
+          <MonitorUp size={16} />
+        </button>
+
+        <button
+          onClick={onDisconnect}
+          className="p-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-md"
+          title="Disconnect Call"
+        >
+          <PhoneOff size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}

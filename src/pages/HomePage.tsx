@@ -23,6 +23,9 @@ import UserSettingsModal from "@/components/modals/UserSettingsModal"
 import ChannelSettingsModal from "@/components/modals/ChannelSettingsModal"
 import QuickSwitcherModal from "@/components/modals/QuickSwitcherModal"
 import ImageLightboxModal from "@/components/modals/ImageLightboxModal"
+import EmojiPickerPopover from "@/components/chat/EmojiPickerPopover"
+import GifPickerPopover from "@/components/chat/GifPickerPopover"
+import PipVideoOverlay from "@/components/voice/PipVideoOverlay"
 import { useUIStore } from "@/store/useUIStore"
 import MessageContent from "@/components/MessageContent"
 import { SidebarHeader } from "@/components/navigation/SidebarHeader"
@@ -168,6 +171,8 @@ export default function HomePage() {
     speakingUsers
   } = useWebRTC(activeVoiceChannel?.id || undefined)
 
+  const { roles: serverRoles } = useServerSettings(currentServer?.id)
+
   const [sidebarWidth, setSidebarWidth] = useState<number>(270) // Default 270px
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -273,6 +278,10 @@ export default function HomePage() {
   const [newChannelType, setNewChannelType] = useState<'text' | 'voice'>('text')
   const [showServerMenu, setShowServerMenu] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showGifPicker, setShowGifPicker] = useState(false)
+  const [emojiTarget, setEmojiTarget] = useState<'channel' | 'dm'>('channel')
+  const [gifTarget, setGifTarget] = useState<'channel' | 'dm'>('channel')
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2119,12 +2128,13 @@ export default function HomePage() {
                         ))}
                       </div>
                     )}
-                    <div className="p-2 pl-3 flex items-center gap-3">
+                    <div className="p-2 pl-3 flex items-center gap-3 relative">
                       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" multiple />
                       <button 
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
                         className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all shrink-0 disabled:opacity-50"
+                        title="Upload File / Image"
                       >
                         <Plus size={18} strokeWidth={3} />
                       </button>
@@ -2148,6 +2158,56 @@ export default function HomePage() {
                           placeholder={uploading ? "Uploading..." : `Message @${dms.find(d => d.id === activeDmId)?.name || 'user'}`} 
                         />
                       </form>
+
+                      {/* GIF & Emoji Triggers */}
+                      <div className="flex items-center gap-1.5 shrink-0 text-white/50">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGifTarget('dm')
+                            setShowGifPicker(!showGifPicker)
+                            setShowEmojiPicker(false)
+                          }}
+                          className="px-2 py-1 rounded-md text-[10px] font-extrabold bg-white/10 hover:bg-white/20 text-white transition-colors"
+                          title="Search GIFs"
+                        >
+                          GIF
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmojiTarget('dm')
+                            setShowEmojiPicker(!showEmojiPicker)
+                            setShowGifPicker(false)
+                          }}
+                          className="p-1.5 rounded-md hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                          title="Emoji Picker"
+                        >
+                          <Smile size={18} />
+                        </button>
+                      </div>
+
+                      {/* Floating Emoji Popover */}
+                      {showEmojiPicker && emojiTarget === 'dm' && (
+                        <EmojiPickerPopover
+                          onSelectEmoji={(emoji) => {
+                            setDmMessageContent(prev => prev + emoji)
+                            setShowEmojiPicker(false)
+                          }}
+                          onClose={() => setShowEmojiPicker(false)}
+                        />
+                      )}
+
+                      {/* Floating GIF Popover */}
+                      {showGifPicker && gifTarget === 'dm' && (
+                        <GifPickerPopover
+                          onSelectGif={(gifUrl) => {
+                            setDmMessageContent(prev => prev ? `${prev} ${gifUrl}` : gifUrl)
+                            setShowGifPicker(false)
+                          }}
+                          onClose={() => setShowGifPicker(false)}
+                        />
+                      )}
                     </div>
                   </div>
                   {typingUsers.length > 0 && (
@@ -2306,12 +2366,13 @@ export default function HomePage() {
                         ))}
                       </div>
                     )}
-                    <div className="p-2 pl-3 flex items-center gap-3">
+                    <div className="p-2 pl-3 flex items-center gap-3 relative">
                       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" multiple />
                       <button 
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
                         className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all shrink-0 disabled:opacity-50"
+                        title="Upload File / Image"
                       >
                         <Plus size={18} strokeWidth={3} />
                       </button>
@@ -2335,6 +2396,56 @@ export default function HomePage() {
                           placeholder={uploading ? "Uploading..." : `Message #${currentChannel.name}`} 
                         />
                       </form>
+
+                      {/* GIF & Emoji Triggers */}
+                      <div className="flex items-center gap-1.5 shrink-0 text-white/50">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGifTarget('channel')
+                            setShowGifPicker(!showGifPicker)
+                            setShowEmojiPicker(false)
+                          }}
+                          className="px-2 py-1 rounded-md text-[10px] font-extrabold bg-white/10 hover:bg-white/20 text-white transition-colors"
+                          title="Search GIFs"
+                        >
+                          GIF
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmojiTarget('channel')
+                            setShowEmojiPicker(!showEmojiPicker)
+                            setShowGifPicker(false)
+                          }}
+                          className="p-1.5 rounded-md hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                          title="Emoji Picker"
+                        >
+                          <Smile size={18} />
+                        </button>
+                      </div>
+
+                      {/* Floating Emoji Popover */}
+                      {showEmojiPicker && emojiTarget === 'channel' && (
+                        <EmojiPickerPopover
+                          onSelectEmoji={(emoji) => {
+                            setMessageContent(prev => prev + emoji)
+                            setShowEmojiPicker(false)
+                          }}
+                          onClose={() => setShowEmojiPicker(false)}
+                        />
+                      )}
+
+                      {/* Floating GIF Popover */}
+                      {showGifPicker && gifTarget === 'channel' && (
+                        <GifPickerPopover
+                          onSelectGif={(gifUrl) => {
+                            setMessageContent(prev => prev ? `${prev} ${gifUrl}` : gifUrl)
+                            setShowGifPicker(false)
+                          }}
+                          onClose={() => setShowGifPicker(false)}
+                        />
+                      )}
                     </div>
                   </div>
                   {typingUsers.length > 0 && (
@@ -2703,24 +2814,52 @@ export default function HomePage() {
             <div>
               <p className="text-xs font-bold uppercase text-muted-foreground mb-2 px-1">Online — {members.length}</p>
               <div className="space-y-1">
-                {members.map(member => (
-                  <div key={member.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer group transition-all" onClick={() => setSelectedUserProfileId(member.id)}>
-                    <div className="relative">
-                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-sm font-bold uppercase text-white border border-white/10 shadow-inner overflow-hidden">
-                        {member.avatar ? (
-                          <img src={getFileUrl(member.avatar)} alt={member.username} className="w-full h-full object-cover" />
-                        ) : (
-                          member.username[0]
-                        )}
+                {members.map(member => {
+                  const isServerOwner = currentServer?.owner_id === member.id;
+                  const memberRole = (serverRoles || []).find((r: any) => r.id === member.role_id) || (isServerOwner ? { name: 'Owner', color: '#10b981' } : null);
+                  return (
+                    <div key={member.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer group transition-all" onClick={() => setSelectedUserProfileId(member.id)}>
+                      <div className="relative shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-sm font-bold uppercase text-white border border-white/10 shadow-inner overflow-hidden">
+                          {member.avatar ? (
+                            <img src={getFileUrl(member.avatar)} alt={member.username} className="w-full h-full object-cover" />
+                          ) : (
+                            member.username[0]
+                          )}
+                        </div>
+                        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${getStatusColor(member.status)}`} />
                       </div>
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${getStatusColor(member.status)}`} />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span 
+                            className="text-[14px] font-semibold transition-colors truncate"
+                            style={{ color: memberRole?.color || '#ffffff' }}
+                          >
+                            {member.display_name || member.username}
+                          </span>
+                          {isServerOwner && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5 shrink-0" title="Server Owner">
+                              👑 Owner
+                            </span>
+                          )}
+                          {!isServerOwner && memberRole && (
+                            <span 
+                              className="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider border shrink-0"
+                              style={{ 
+                                backgroundColor: `${memberRole.color}20`, 
+                                color: memberRole.color,
+                                borderColor: `${memberRole.color}40`
+                              }}
+                            >
+                              {memberRole.name}
+                            </span>
+                          )}
+                        </div>
+                        {member.status_message && <span className="text-[11px] text-muted-foreground truncate">{member.status_message}</span>}
+                      </div>
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-[15px] font-medium text-white group-hover:text-primary transition-colors truncate">{member.display_name || member.username}</span>
-                      {member.status_message && <span className="text-[11px] text-muted-foreground truncate">{member.status_message}</span>}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -3056,6 +3195,19 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* Real-time Picture-in-Picture Video Overlay */}
+      {isJoined && activeVoiceChannel && (
+        <PipVideoOverlay
+          channelName={activeVoiceChannel.name}
+          participants={allParticipants}
+          isMuted={!isAudioEnabled}
+          isDeafened={isDeafened}
+          onToggleMute={toggleAudio}
+          onToggleDeafen={toggleDeafen}
+          onDisconnect={handleLeaveVoice}
+        />
+      )}
+
       {toast && (
         <div className="fixed bottom-6 right-6 bg-popover text-foreground px-4 py-2.5 rounded-lg shadow-2xl font-semibold border border-border z-[110] animate-in slide-in-from-bottom duration-200">
           {toast}
@@ -3200,7 +3352,13 @@ function MessageItem({
         <div className="flex-1 min-w-0">
           {!isGrouped && (
             <div className="flex items-baseline gap-2">
-              <span className="font-bold hover:underline cursor-pointer text-white text-[15px]" onClick={() => onProfileClick?.(msg.author_id)}>{msg.username}</span>
+              <span 
+                className="font-bold hover:underline cursor-pointer text-[15px]" 
+                style={{ color: msg.role_color || '#ffffff' }}
+                onClick={() => onProfileClick?.(msg.author_id)}
+              >
+                {msg.username}
+              </span>
               <span className="text-[12px] font-medium text-muted-foreground">
                 {formatMessageTimestamp(msg.created_at)}
               </span>
