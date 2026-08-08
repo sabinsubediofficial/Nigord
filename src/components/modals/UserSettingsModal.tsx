@@ -136,8 +136,17 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
   }
 
   useEffect(() => {
+    if (testProcessorRef.current) {
+      testProcessorRef.current.gainNode.gain.value = micVolume
+      testProcessorRef.current.setNoiseGateEnabled(noiseSuppression)
+      testProcessorRef.current.setThreshold(noiseGateThreshold)
+    }
+  }, [micVolume, noiseSuppression, noiseGateThreshold])
+
+  useEffect(() => {
     return () => {
       if (testAnimationRef.current) cancelAnimationFrame(testAnimationRef.current)
+      if (testProcessorRef.current) testProcessorRef.current.cleanup()
       if (testAudioContextRef.current) testAudioContextRef.current.close().catch(() => {})
       if (testStreamRef.current) testStreamRef.current.getTracks().forEach(t => t.stop())
     }

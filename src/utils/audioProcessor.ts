@@ -1,16 +1,16 @@
 /**
- * Open-Source Audio DSP Voice Processing & Noise Gate Engine
- * Implements:
- * 1. High-Pass Filter (removes sub-85Hz mechanical vibration, room resonance, and AC hum)
- * 2. Voice Clarity Peaking Filter (boosts speech intelligibility in 2.5kHz-3.5kHz band)
- * 3. Low-Pass Anti-Aliasing Filter (filters out high frequency hiss > 8500Hz)
- * 4. Fast Dynamics Compressor (prevents vocal clipping and evens out dynamic range)
- * 5. Intelligent Noise Gate (dynamic envelope follower with fast attack, 280ms hold, and smooth release)
+ * Open-Source Audio DSP Voice Processing & Studio Noise Gate Engine
+ * 
+ * Uses true RMS decibel (dBFS) energy detection with hysteresis:
+ * - Open Threshold (e.g. -48 dBFS): Gate opens smoothly when voice is detected
+ * - Close Threshold (-54 dBFS): Gate stays open during natural speech pauses
+ * - Hold Time (400ms): Prevents syllable chopping and preserves sentence endings
+ * - Attack (15ms) & Release (75ms): Smooth exponential ramps without pops or clicks
  */
 
 export interface VoiceProcessorOptions {
   enableNoiseGate?: boolean;
-  noiseGateThreshold?: number; // dB (-60 to -24)
+  noiseGateThreshold?: number; // dBFS (-60 to -24)
   enableHighPass?: boolean;
   enableVoicePresence?: boolean;
   enableCompressor?: boolean;
@@ -43,104 +43,115 @@ export function createVoiceProcessor(
 
   const source = audioCtx.createMediaStreamSource(sourceStream);
 
-  // 1. High-pass filter: Cuts sub-85Hz background rumblings, computer fan vibration, desk taps
+  // 1. High-Pass Filter: Cuts sub-80Hz rumble (desk bumps, PC fans, AC hum)
   const highpass = audioCtx.createBiquadFilter();
   highpass.type = 'highpass';
-  highpass.frequency.value = enableHighPass ? 85 : 10;
+  highpass.frequency.value = enableHighPass ? 80 : 10;
   highpass.Q.value = 0.707;
 
-  // 2. Voice Presence filter: 2.8kHz peaking filter to keep vocal harmonics clear and isolated
+  // 2. Voice Clarity Peaking Filter: Subtle +1.5dB boost at 3kHz for clear speech
   const presence = audioCtx.createBiquadFilter();
   presence.type = 'peaking';
-  presence.frequency.value = 2800;
-  presence.gain.value = enableVoicePresence ? 2.5 : 0;
+  presence.frequency.value = 3000;
+  presence.gain.value = enableVoicePresence ? 1.5 : 0;
   presence.Q.value = 1.0;
 
-  // 3. Low-pass filter: Eliminates ultra-high frequency hiss, coil whine, electrical interference
-  const lowpass = audioCtx.createBiquadFilter();
-  lowpass.type = 'lowpass';
-  lowpass.frequency.value = 8500;
-  lowpass.Q.value = 0.707;
-
-  // 4. Dynamics Compressor: Smooth vocal leveler
+  // 3. Dynamics Compressor: Gentle transparent leveler to prevent loud peaks
   const compressor = audioCtx.createDynamicsCompressor();
-  compressor.threshold.value = -24;
-  compressor.knee.value = 10;
-  compressor.ratio.value = 4;
-  compressor.attack.value = 0.003;
-  compressor.release.value = 0.15;
+  compressor.threshold.value = -18;
+  compressor.knee.value = 12;
+  compressor.ratio.value = 3;
+  compressor.attack.value = 0.005;
+  compressor.release.value = 0.100;
 
-  // 5. User Gain Node
+  // 4. User Mic Gain Node
   const gainNode = audioCtx.createGain();
   gainNode.gain.value = micGain;
 
-  // 6. Noise Gate Gain & Analyser
+  // 5. Noise Gate Gain & Analyser
   const gateGainNode = audioCtx.createGain();
   gateGainNode.gain.value = 1.0;
 
   const analyserNode = audioCtx.createAnalyser();
-  analyserNode.fftSize = 512;
-  analyserNode.smoothingTimeConstant = 0.15;
+  analyserNode.fftSize = 1024;
+  analyserNode.smoothingTimeConstant = 0.1;
 
-  // Connect Audio Pipeline:
+  // Connect Audio Signal Graph:
+  // source -> highpass -> presence -> compressor -> gainNode -> gateGainNode -> destination
   source.connect(highpass);
   highpass.connect(presence);
-  presence.connect(lowpass);
 
   if (enableCompressor) {
-    lowpass.connect(compressor);
+    presence.connect(compressor);
     compressor.connect(gainNode);
   } else {
-    lowpass.connect(gainNode);
+    presence.connect(gainNode);
   }
 
   gainNode.connect(gateGainNode);
-  gainNode.connect(analyserNode); // Feed analyser to evaluate speech energy
+  gainNode.connect(analyserNode);
 
   const destination = audioCtx.createMediaStreamDestination();
   gateGainNode.connect(destination);
 
-  // Noise Gate Tracking Loop
+  // True RMS dBFS Noise Gate Engine
   let gateEnabled = enableNoiseGate;
-  let currentThresholdDb = noiseGateThreshold;
-  let linearThreshold = Math.pow(10, currentThresholdDb / 20) * 128;
+  let openThresholdDb = noiseGateThreshold;
+  let closeThresholdDb = noiseGateThreshold - 6; // 6dB hysteresis to prevent stuttering
 
-  let isGated = false;
+  let isGateClosed = false;
   let lastSpokeTime = Date.now();
   let animId: number | null = null;
-  const bufferLength = analyserNode.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
+  const timeDomainBuffer = new Float32Array(analyserNode.fftSize);
 
   const processGate = () => {
-    analyserNode.getByteFrequencyData(dataArray);
-
-    let sum = 0;
-    // Calculate RMS/Average in voice frequency range (100Hz - 4000Hz)
-    const startBin = Math.floor(100 / (audioCtx.sampleRate / analyserNode.fftSize));
-    const endBin = Math.min(bufferLength - 1, Math.floor(4000 / (audioCtx.sampleRate / analyserNode.fftSize)));
-    const count = endBin - startBin + 1;
-
-    for (let i = startBin; i <= endBin; i++) {
-      sum += dataArray[i];
+    if (!gateEnabled) {
+      if (isGateClosed) {
+        gateGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+        gateGainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
+        isGateClosed = false;
+      }
+      animId = requestAnimationFrame(processGate);
+      return;
     }
-    const energy = count > 0 ? sum / count : 0;
+
+    analyserNode.getFloatTimeDomainData(timeDomainBuffer);
+
+    // Calculate true Root Mean Square (RMS) signal energy
+    let sumSquares = 0;
+    for (let i = 0; i < timeDomainBuffer.length; i++) {
+      const sample = timeDomainBuffer[i];
+      sumSquares += sample * sample;
+    }
+    const rms = Math.sqrt(sumSquares / timeDomainBuffer.length);
+    // Convert RMS to decibels full scale (dBFS)
+    const currentDb = rms > 0.000001 ? 20 * Math.log10(rms) : -100;
 
     const now = Date.now();
-    if (!gateEnabled || energy > linearThreshold) {
+
+    if (currentDb >= openThresholdDb) {
+      // Voice detected above open threshold -> open gate
       lastSpokeTime = now;
-      if (isGated) {
-        // Fast Attack (10ms) - open gate immediately without clipping voice start
-        gateGainNode.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.01);
-        isGated = false;
+      if (isGateClosed) {
+        gateGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+        gateGainNode.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.015);
+        isGateClosed = false;
+      }
+    } else if (currentDb < closeThresholdDb) {
+      // Audio is below close threshold
+      // Wait for 400ms hold time before gently closing gate
+      if (now - lastSpokeTime > 400) {
+        if (!isGateClosed) {
+          gateGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+          gateGainNode.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.075);
+          isGateClosed = true;
+        }
       }
     } else {
-      // Hold for 280ms before closing gate to preserve natural trailing syllables
-      if (now - lastSpokeTime > 280) {
-        if (!isGated) {
-          // Smooth Release (35ms) - exponential decay down to silence
-          gateGainNode.gain.setTargetAtTime(0.00001, audioCtx.currentTime, 0.035);
-          isGated = true;
-        }
+      // In hysteresis zone between closeThreshold and openThreshold
+      // Keep gate open if it was already open
+      if (!isGateClosed) {
+        lastSpokeTime = now;
       }
     }
 
@@ -154,7 +165,6 @@ export function createVoiceProcessor(
     try { source.disconnect(); } catch {}
     try { highpass.disconnect(); } catch {}
     try { presence.disconnect(); } catch {}
-    try { lowpass.disconnect(); } catch {}
     try { compressor.disconnect(); } catch {}
     try { gainNode.disconnect(); } catch {}
     try { gateGainNode.disconnect(); } catch {}
@@ -167,16 +177,18 @@ export function createVoiceProcessor(
     gateGainNode,
     analyserNode,
     setThreshold: (dB: number) => {
-      currentThresholdDb = dB;
-      linearThreshold = Math.pow(10, currentThresholdDb / 20) * 128;
+      openThresholdDb = dB;
+      closeThresholdDb = dB - 6;
     },
     setNoiseGateEnabled: (enabled: boolean) => {
       gateEnabled = enabled;
       if (!enabled) {
-        gateGainNode.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.01);
-        isGated = false;
+        gateGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+        gateGainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
+        isGateClosed = false;
       }
     },
     cleanup
   };
 }
+
