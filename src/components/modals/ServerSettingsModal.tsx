@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X } from "lucide-react"
 import { apiFetch, getFileUrl } from "@/lib/api"
+import ImageCropModal from "./ImageCropModal"
 
 export default function ServerSettingsModal({ 
   serverId, 
@@ -88,59 +89,60 @@ export default function ServerSettingsModal({
     setNewRoleName("")
   }
 
-  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Image Crop State
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+  const [cropAspect, setCropAspect] = useState<number>(1)
+  const [cropIsCircle, setCropIsCircle] = useState<boolean>(true)
+  const [cropTitle, setCropTitle] = useState<string>("Crop Image")
+  const [cropTarget, setCropTarget] = useState<'icon' | 'banner'>('icon')
+
+  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    
     if (file.size > 25 * 1024 * 1024) {
       setErrorMsg("Icon size exceeds maximum limit of 25MB")
       if (iconInputRef.current) iconInputRef.current.value = ""
       return
     }
-
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    setUploadingIcon(true)
-    setErrorMsg("")
-    setSuccessMsg("")
-    try {
-      const res = await apiFetch('/files/upload', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setIconUrl(data.url)
-        setSuccessMsg("Icon uploaded! Click Save Changes to apply.")
-      } else {
-        const data = await res.json()
-        setErrorMsg(data.error || "Upload failed")
-        if (iconInputRef.current) iconInputRef.current.value = ""
-      }
-    } catch (err) {
-      setErrorMsg("Upload failed")
-      if (iconInputRef.current) iconInputRef.current.value = ""
-    } finally {
-      setUploadingIcon(false)
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string)
+      setCropTarget('icon')
+      setCropAspect(1)
+      setCropIsCircle(true)
+      setCropTitle("Select Server Icon Frame")
     }
+    reader.readAsDataURL(file)
+    if (iconInputRef.current) iconInputRef.current.value = ""
   }
 
-  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    
     if (file.size > 25 * 1024 * 1024) {
       setErrorMsg("Banner size exceeds maximum limit of 25MB")
       if (bannerInputRef.current) bannerInputRef.current.value = ""
       return
     }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string)
+      setCropTarget('banner')
+      setCropAspect(16 / 9)
+      setCropIsCircle(false)
+      setCropTitle("Select Server Banner Frame")
+    }
+    reader.readAsDataURL(file)
+    if (bannerInputRef.current) bannerInputRef.current.value = ""
+  }
 
+  const uploadCroppedFile = async (croppedFile: File) => {
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', croppedFile)
     
-    setUploadingBanner(true)
+    if (cropTarget === 'icon') setUploadingIcon(true)
+    else setUploadingBanner(true)
+    
     setErrorMsg("")
     setSuccessMsg("")
     try {
@@ -151,17 +153,21 @@ export default function ServerSettingsModal({
       })
       if (res.ok) {
         const data = await res.json()
-        setBannerUrl(data.url)
-        setSuccessMsg("Banner uploaded! Click Save Changes to apply.")
+        if (cropTarget === 'icon') {
+          setIconUrl(data.url)
+          setSuccessMsg("Icon uploaded! Click Save Changes to apply.")
+        } else {
+          setBannerUrl(data.url)
+          setSuccessMsg("Banner uploaded! Click Save Changes to apply.")
+        }
       } else {
         const data = await res.json()
         setErrorMsg(data.error || "Upload failed")
-        if (bannerInputRef.current) bannerInputRef.current.value = ""
       }
     } catch (err) {
       setErrorMsg("Upload failed")
-      if (bannerInputRef.current) bannerInputRef.current.value = ""
     } finally {
+      setUploadingIcon(false)
       setUploadingBanner(false)
     }
   }
@@ -533,6 +539,18 @@ export default function ServerSettingsModal({
           </Button>
           <span className="hidden md:block text-[10px] font-bold text-white/60">ESC</span>
         </div>
+
+        {/* Interactive Image Frame Selector / Cropper Modal */}
+        {cropImageSrc && (
+          <ImageCropModal
+            imageSrc={cropImageSrc}
+            aspect={cropAspect}
+            isCircle={cropIsCircle}
+            title={cropTitle}
+            onCropSave={(file) => uploadCroppedFile(file)}
+            onClose={() => setCropImageSrc(null)}
+          />
+        )}
       </div>
     </div>
   )

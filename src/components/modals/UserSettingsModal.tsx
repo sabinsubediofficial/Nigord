@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { X, LogOut, Upload, ShieldAlert, Check, Volume2, Mic } from "lucide-react"
 import { apiFetch, getFileUrl, clearToken, saveToken } from "@/lib/api"
 import { useAudioStore } from "@/store/useAudioStore"
+import ImageCropModal from "./ImageCropModal"
 
 export default function UserSettingsModal({ onClose }: { onClose: () => void }) {
   const { user, setUser } = useAuthStore()
@@ -300,7 +301,10 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     }
   }
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Image Crop State
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     
@@ -310,8 +314,17 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
       return
     }
 
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropImageSrc(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  const uploadCroppedAvatar = async (croppedFile: File) => {
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', croppedFile)
     
     setUploading(true)
     setProfileError("")
@@ -329,11 +342,9 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
       } else {
         const data = await res.json()
         setProfileError(data.error || "Upload failed")
-        if (fileInputRef.current) fileInputRef.current.value = ""
       }
     } catch (err) {
       setProfileError("Upload failed")
-      if (fileInputRef.current) fileInputRef.current.value = ""
     } finally {
       setUploading(false)
     }
@@ -681,6 +692,18 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
           </Button>
           <span className="hidden md:block text-[10px] font-bold text-white/60">ESC</span>
         </div>
+
+        {/* Interactive Image Frame Selector / Cropper Modal */}
+        {cropImageSrc && (
+          <ImageCropModal
+            imageSrc={cropImageSrc}
+            aspect={1}
+            isCircle={true}
+            title="Select Profile Avatar Frame"
+            onCropSave={(file) => uploadCroppedAvatar(file)}
+            onClose={() => setCropImageSrc(null)}
+          />
+        )}
       </div>
     </div>
   )
