@@ -66,8 +66,16 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
 
   const startMicTest = async () => {
     try {
+      const audioConstraints: any = {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+      if (inputDeviceId && inputDeviceId !== 'default') {
+        audioConstraints.deviceId = { exact: inputDeviceId }
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: inputDeviceId && inputDeviceId !== 'default' ? { deviceId: { exact: inputDeviceId } } : true
+        audio: audioConstraints
       })
       testStreamRef.current = stream
 

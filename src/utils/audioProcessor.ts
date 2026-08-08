@@ -49,45 +49,22 @@ export function createVoiceProcessor(
   highpass.frequency.value = enableHighPass ? 80 : 10;
   highpass.Q.value = 0.707;
 
-  // 2. Voice Clarity Peaking Filter: Subtle +1.5dB boost at 3kHz for clear speech
-  const presence = audioCtx.createBiquadFilter();
-  presence.type = 'peaking';
-  presence.frequency.value = 3000;
-  presence.gain.value = enableVoicePresence ? 1.5 : 0;
-  presence.Q.value = 1.0;
-
-  // 3. Dynamics Compressor: Gentle transparent leveler to prevent loud peaks
-  const compressor = audioCtx.createDynamicsCompressor();
-  compressor.threshold.value = -18;
-  compressor.knee.value = 12;
-  compressor.ratio.value = 3;
-  compressor.attack.value = 0.005;
-  compressor.release.value = 0.100;
-
-  // 4. User Mic Gain Node
+  // 2. User Mic Gain Node
   const gainNode = audioCtx.createGain();
   gainNode.gain.value = micGain;
 
-  // 5. Noise Gate Gain & Analyser
+  // 3. Noise Gate Gain & Analyser
   const gateGainNode = audioCtx.createGain();
   gateGainNode.gain.value = 1.0;
 
   const analyserNode = audioCtx.createAnalyser();
   analyserNode.fftSize = 1024;
-  analyserNode.smoothingTimeConstant = 0.1;
+  analyserNode.smoothingTimeConstant = 0.05;
 
   // Connect Audio Signal Graph:
-  // source -> highpass -> presence -> compressor -> gainNode -> gateGainNode -> destination
+  // source -> highpass -> gainNode -> gateGainNode -> destination
   source.connect(highpass);
-  highpass.connect(presence);
-
-  if (enableCompressor) {
-    presence.connect(compressor);
-    compressor.connect(gainNode);
-  } else {
-    presence.connect(gainNode);
-  }
-
+  highpass.connect(gainNode);
   gainNode.connect(gateGainNode);
   gainNode.connect(analyserNode);
 
@@ -106,7 +83,7 @@ export function createVoiceProcessor(
 
   const processGate = () => {
     if (!gateEnabled) {
-      if (isGateClosed) {
+      if (isGateClosed || gateGainNode.gain.value < 1.0) {
         gateGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
         gateGainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
         isGateClosed = false;
@@ -139,17 +116,16 @@ export function createVoiceProcessor(
       }
     } else if (currentDb < closeThresholdDb) {
       // Audio is below close threshold
-      // Wait for 400ms hold time before gently closing gate
-      if (now - lastSpokeTime > 400) {
+      // Wait for 500ms hold time before gently closing gate
+      if (now - lastSpokeTime > 500) {
         if (!isGateClosed) {
           gateGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-          gateGainNode.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.075);
+          gateGainNode.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.1);
           isGateClosed = true;
         }
       }
     } else {
       // In hysteresis zone between closeThreshold and openThreshold
-      // Keep gate open if it was already open
       if (!isGateClosed) {
         lastSpokeTime = now;
       }
@@ -164,8 +140,6 @@ export function createVoiceProcessor(
     if (animId) cancelAnimationFrame(animId);
     try { source.disconnect(); } catch {}
     try { highpass.disconnect(); } catch {}
-    try { presence.disconnect(); } catch {}
-    try { compressor.disconnect(); } catch {}
     try { gainNode.disconnect(); } catch {}
     try { gateGainNode.disconnect(); } catch {}
     try { analyserNode.disconnect(); } catch {}
