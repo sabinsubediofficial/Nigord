@@ -8,19 +8,11 @@ import { apiFetch, getFileUrl, clearToken, saveToken } from "@/lib/api"
 import { useAudioStore } from "@/store/useAudioStore"
 import ImageCropModal from "./ImageCropModal"
 import ImageLightboxModal from "./ImageLightboxModal"
+import { useUIStore } from "@/store/useUIStore"
 
 export default function UserSettingsModal({ onClose }: { onClose: () => void }) {
   const { user, setUser } = useAuthStore()
-  
-  // Tab control with state management persistence
-  const [activeSubTab, setActiveSubTab] = useState<'account' | 'profile' | 'voice'>(() => {
-    const saved = localStorage.getItem('suhhp_userSettingsSubTab');
-    return (saved as any) || 'account';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('suhhp_userSettingsSubTab', activeSubTab);
-  }, [activeSubTab]);
+  const { userSettingsSubTab: activeSubTab, setUserSettingsSubTab: setActiveSubTab } = useUIStore()
 
   // Profile fields state
   const [displayName, setDisplayName] = useState(user?.display_name || "")

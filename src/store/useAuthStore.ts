@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface User {
   id: string
@@ -18,9 +19,16 @@ interface AuthState {
   setIsLoading: (isLoading: boolean) => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isLoading: true,
-  setUser: (user) => set({ user }),
-  setIsLoading: (isLoading) => set({ isLoading }),
-}))
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isLoading: true,
+      setUser: (user) => set({ user }),
+      setIsLoading: (isLoading) => set({ isLoading }),
+    }),
+    {
+      name: 'suhhp_auth_state',
+    }
+  )
+)

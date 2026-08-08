@@ -8,6 +8,7 @@ import { X } from "lucide-react"
 import { apiFetch, getFileUrl } from "@/lib/api"
 import ImageCropModal from "./ImageCropModal"
 import ImageLightboxModal from "./ImageLightboxModal"
+import { useUIStore } from "@/store/useUIStore"
 
 export default function ServerSettingsModal({ 
   serverId, 
@@ -22,6 +23,7 @@ export default function ServerSettingsModal({
 }) {
   const { user } = useAuthStore()
   const { servers, setServers, setCurrentServer } = useServerStore()
+  const { serverSettingsTab: activeTab, setServerSettingsTab: setActiveTab } = useUIStore()
   const isOwner = user?.id === ownerId
 
   const [uploadingIcon, setUploadingIcon] = useState(false)
@@ -39,15 +41,6 @@ export default function ServerSettingsModal({
     transferOwnership 
   } = useServerSettings(serverId)
 
-  // Tab control with state management persistence
-  const [activeTab, setActiveTab] = useState<'overview' | 'roles' | 'members'>(() => {
-    const saved = localStorage.getItem('suhhp_serverSettingsTab');
-    return (saved as any) || 'overview';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('suhhp_serverSettingsTab', activeTab);
-  }, [activeTab]);
   const [newRoleName, setNewRoleName] = useState("")
   const [newRoleColor, setNewRoleColor] = useState("#99aab5")
 

@@ -23,6 +23,7 @@ import UserSettingsModal from "@/components/modals/UserSettingsModal"
 import ChannelSettingsModal from "@/components/modals/ChannelSettingsModal"
 import QuickSwitcherModal from "@/components/modals/QuickSwitcherModal"
 import ImageLightboxModal from "@/components/modals/ImageLightboxModal"
+import { useUIStore } from "@/store/useUIStore"
 import MessageContent from "@/components/MessageContent"
 import { SidebarHeader } from "@/components/navigation/SidebarHeader"
 import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone, Pencil, Menu } from "lucide-react"
@@ -235,42 +236,55 @@ export default function HomePage() {
     }
   }, [isJoined, outgoingCall, incomingCall])
 
-  // Modals
-  const [showCreateServerModal, setShowCreateServerModal] = useState(false)
+  // Master UI & Navigation Store
+  const {
+    showUserSettingsModal,
+    setShowUserSettingsModal,
+    showServerSettingsModal,
+    setShowServerSettingsModal,
+    showQuickSwitcher,
+    setShowQuickSwitcher,
+    selectedLightboxImage,
+    setSelectedLightboxImage,
+    showInviteModal,
+    setShowInviteModal,
+    showChannelSettingsModal,
+    setShowChannelSettingsModal,
+    showCreateServerModal,
+    setShowCreateServerModal,
+    showCreateChannelModal,
+    setShowCreateChannelModal,
+    activeTab,
+    setActiveTab,
+    activeHomeView,
+    setActiveHomeView,
+    activeDmId,
+    setActiveDmId,
+    mobileMenuOpen,
+    setMobileMenuOpen,
+    rightSidebarOpen,
+    setRightSidebarOpen,
+    messageSearchQuery,
+    setMessageSearchQuery,
+  } = useUIStore()
+
   const [newServerName, setNewServerName] = useState("")
-  const [showCreateChannelModal, setShowCreateChannelModal] = useState(false)
   const [newChannelName, setNewChannelName] = useState("")
   const [newChannelType, setNewChannelType] = useState<'text' | 'voice'>('text')
-  
   const [showServerMenu, setShowServerMenu] = useState(false)
-  const [showServerSettingsModal, setShowServerSettingsModal] = useState(() => {
-    return localStorage.getItem('suhhp_showServerSettingsModal') === 'true'
-  })
-  const [showInviteModal, setShowInviteModal] = useState(false)
-  
   const [showStatusMenu, setShowStatusMenu] = useState(false)
-  const [showUserSettingsModal, setShowUserSettingsModal] = useState(() => {
-    return localStorage.getItem('suhhp_showUserSettingsModal') === 'true'
-  })
-
-  useEffect(() => {
-    localStorage.setItem('suhhp_showServerSettingsModal', showServerSettingsModal.toString())
-  }, [showServerSettingsModal])
-
-  const [showQuickSwitcher, setShowQuickSwitcher] = useState(false)
-  const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setShowQuickSwitcher(prev => !prev)
+        setShowQuickSwitcher(!showQuickSwitcher)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-  const [showChannelSettingsModal, setShowChannelSettingsModal] = useState(false)
+  }, [showQuickSwitcher, setShowQuickSwitcher])
+
   const [channelToEdit, setChannelToEdit] = useState<any | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
   const [hoveredChannelId, setHoveredChannelId] = useState<string | null>(null)
@@ -292,40 +306,7 @@ export default function HomePage() {
   const [members, setMembers] = useState<any[]>([])
   const [voiceParticipants, setVoiceParticipants] = useState<any[]>([])
   const [focusedParticipantId, setFocusedParticipantId] = useState<string | null>(null)
-
-  // Friends & DMs State
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'home' | 'server'>(() => {
-    try {
-      const saved = localStorage.getItem('suhhp_activeTab')
-      return saved === 'server' ? 'server' : 'home'
-    } catch {
-      return 'home'
-    }
-  })
-
-  const [activeHomeView, setActiveHomeView] = useState<'friends' | 'dm'>(() => {
-    try {
-      const saved = localStorage.getItem('suhhp_activeHomeView')
-      return saved === 'dm' ? 'dm' : 'friends'
-    } catch {
-      return 'friends'
-    }
-  })
   const [friendsFilter, setFriendsFilter] = useState<'all' | 'pending' | 'add' | 'blocked'>('all')
-  const [activeDmId, setActiveDmId] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem('suhhp_activeDmId') || null
-    } catch {
-      return null
-    }
-  })
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('suhhp_activeTab', activeTab)
-    } catch (e) {}
-  }, [activeTab])
 
   useEffect(() => {
     try {
@@ -349,7 +330,6 @@ export default function HomePage() {
   const { unreads } = useNotifications(currentServer?.id)
   const { searchResults: msgSearchResults, searchMessages, isSearching, setSearchResults: setMsgSearchResults } = useSearch(currentServer?.id)
   const { notifications, fetchNotifications } = useGlobalNotifications()
-  const [messageSearchQuery, setMessageSearchQuery] = useState('')
   const [showMsgSearchResults, setShowMsgSearchResults] = useState(false)
   const [hasSearchedUsers, setHasSearchedUsers] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
