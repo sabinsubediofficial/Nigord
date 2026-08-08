@@ -75,6 +75,10 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
       const ctx = new AudioContextClass()
       testAudioContextRef.current = ctx
 
+      if (ctx.state === 'suspended') {
+        await ctx.resume()
+      }
+
       const processor = createVoiceProcessor(ctx, stream, {
         enableNoiseGate: noiseSuppression,
         noiseGateThreshold,
@@ -84,8 +88,11 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
         micGain: micVolume
       })
       testProcessorRef.current = processor
-      const analyser = processor.analyserNode
 
+      // Route processed audio to speaker/headphones so user can hear their own voice live
+      processor.gateGainNode.connect(ctx.destination)
+
+      const analyser = processor.analyserNode
       const bufferLength = analyser.frequencyBinCount
       const dataArray = new Uint8Array(bufferLength)
 
@@ -814,21 +821,29 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
 
                 {/* Mic Level Test Meter */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">Live Mic & Gate Test</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Live Mic & Audio Test</h3>
+                    {isTestingMic && (
+                      <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1.5 animate-pulse">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" />
+                        🎧 Monitoring Live Audio Playback
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-white/70 leading-relaxed">
-                    Test your microphone with the active noise suppression and noise gate in real-time.
+                    Test your microphone and hear your processed voice live through your headphones to evaluate noise gate performance and clarity.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-4">
                     <Button
                       onClick={isTestingMic ? stopMicTest : startMicTest}
-                      className={`w-full sm:w-auto font-semibold rounded-xl h-10 min-w-[120px] transition-colors ${
+                      className={`w-full sm:w-auto font-semibold rounded-xl h-10 min-w-[130px] transition-colors ${
                         isTestingMic 
                           ? "bg-rose-600 text-white hover:bg-rose-700" 
-                          : "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
                       }`}
                     >
-                      {isTestingMic ? "Stop Test" : "Test Mic"}
+                      {isTestingMic ? "Stop Audio Test" : "Test Mic (Hear Self)"}
                     </Button>
 
                     <div className="flex-1 w-full bg-secondary/60 h-3 rounded-full overflow-hidden relative border border-border">
