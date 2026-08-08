@@ -110,8 +110,8 @@ export default function LoginPage() {
         <div className="bg-card/95 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 sm:p-12 shadow-2xl shadow-black/80 max-w-[440px] w-full flex flex-col relative z-20">
           
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="w-16 h-16 bg-primary/15 border border-primary/30 text-primary rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-primary/10">
-              <Gamepad2 className="w-8 h-8" />
+            <div className="w-16 h-16 bg-primary/15 border border-primary/30 rounded-2xl flex items-center justify-center mb-5 shadow-lg shadow-primary/10">
+              <img src="/favicon.svg" alt="Suhhp Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_10px_rgba(255,94,108,0.6)]" />
             </div>
             <h1 className="text-3xl font-display font-extrabold text-white tracking-tight">
               {!isRecovering ? "Welcome Back" : "Recover Access"}
