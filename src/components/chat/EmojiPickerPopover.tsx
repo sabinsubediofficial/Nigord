@@ -54,7 +54,7 @@ export default function EmojiPickerPopover({ onSelectEmoji, onClose }: EmojiPick
   return (
     <div 
       ref={popoverRef}
-      className="absolute bottom-12 right-0 z-50 w-72 md:w-80 bg-card/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
+      className="absolute bottom-full mb-3 right-0 z-[100] w-72 md:w-80 bg-[#1e1f22]/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
     >
       {/* Search Header */}
       <div className="p-2.5 border-b border-white/10 flex items-center gap-2 bg-secondary/40">

@@ -2097,7 +2097,7 @@ export default function HomePage() {
                   })}
                 </div>
                 <div className="px-4 pb-4 pt-0">
-                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-md">
+                  <div className="bg-white/5 border border-white/10 rounded-xl shadow-sm backdrop-blur-md relative">
                     {replyToMsg && (
                       <div className="bg-black/20 px-3 py-1.5 flex items-center justify-between border-b border-white/5 text-xs">
                         <span className="text-muted-foreground">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
@@ -2335,7 +2335,7 @@ export default function HomePage() {
                   })}
                 </div>
                 <div className="px-4 pb-4 pt-0">
-                  <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-md">
+                  <div className="bg-white/5 border border-white/10 rounded-xl shadow-sm backdrop-blur-md relative">
                     {replyToMsg && (
                       <div className="bg-black/20 px-3 py-1.5 flex items-center justify-between border-b border-white/5 text-xs">
                         <span className="text-muted-foreground">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
