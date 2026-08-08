@@ -7,6 +7,7 @@ import { X, LogOut, Upload, ShieldAlert, Check, Volume2, Mic } from "lucide-reac
 import { apiFetch, getFileUrl, clearToken, saveToken } from "@/lib/api"
 import { useAudioStore } from "@/store/useAudioStore"
 import ImageCropModal from "./ImageCropModal"
+import ImageLightboxModal from "./ImageLightboxModal"
 
 export default function UserSettingsModal({ onClose }: { onClose: () => void }) {
   const { user, setUser } = useAuthStore()
@@ -520,7 +521,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                 <div 
                   onClick={() => {
                     if (avatarUrl) {
-                      setCropImageSrc(getFileUrl(avatarUrl))
+                      setPreviewImageSrc(getFileUrl(avatarUrl))
                     } else {
                       fileInputRef.current?.click()
                     }
@@ -534,13 +535,19 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                       {user?.username[0]}
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/75 rounded-full flex flex-col items-center justify-center text-[10px] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px] gap-0.5">
+                  <div className="absolute inset-0 bg-black/80 rounded-full flex flex-col items-center justify-center text-[10px] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px] gap-0.5">
                     {avatarUrl ? (
                       <>
-                        <span className="hover:text-primary transition-colors">✏️ Adjust</span>
+                        <span className="hover:text-primary transition-colors flex items-center gap-0.5">🔍 View</span>
+                        <span 
+                          onClick={(e) => { e.stopPropagation(); setCropImageSrc(getFileUrl(avatarUrl)); }}
+                          className="hover:text-primary transition-colors flex items-center gap-0.5"
+                        >
+                          ✏️ Adjust
+                        </span>
                         <span 
                           onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                          className="hover:text-primary transition-colors"
+                          className="hover:text-primary transition-colors flex items-center gap-0.5"
                         >
                           📷 Change
                         </span>
@@ -556,6 +563,14 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
                   <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
                     {avatarUrl ? (
                       <>
+                        <button 
+                          type="button" 
+                          onClick={() => setPreviewImageSrc(getFileUrl(avatarUrl))}
+                          className="text-white/80 hover:text-white font-semibold"
+                        >
+                          View
+                        </button>
+                        <span className="text-white/30">•</span>
                         <button 
                           type="button" 
                           onClick={() => fileInputRef.current?.click()}
@@ -739,6 +754,12 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
           </Button>
           <span className="hidden md:block text-[10px] font-bold text-white/60">ESC</span>
         </div>
+
+        {/* Full Screen Image Lightbox Preview */}
+        <ImageLightboxModal
+          imageUrl={previewImageSrc}
+          onClose={() => setPreviewImageSrc(null)}
+        />
 
         {/* Interactive Image Frame Selector / Cropper Modal */}
         {cropImageSrc && (

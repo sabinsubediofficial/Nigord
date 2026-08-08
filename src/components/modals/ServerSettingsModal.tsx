@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { X } from "lucide-react"
 import { apiFetch, getFileUrl } from "@/lib/api"
 import ImageCropModal from "./ImageCropModal"
+import ImageLightboxModal from "./ImageLightboxModal"
 
 export default function ServerSettingsModal({ 
   serverId, 
@@ -283,11 +284,7 @@ export default function ServerSettingsModal({
                         <div 
                           onClick={() => {
                             if (iconUrl) {
-                              setCropImageSrc(getFileUrl(iconUrl))
-                              setCropTarget('icon')
-                              setCropAspect(1)
-                              setCropShape('rounded-square')
-                              setCropTitle("Adjust Server Icon Frame")
+                              setPreviewImageSrc(getFileUrl(iconUrl))
                             } else {
                               iconInputRef.current?.click()
                             }
@@ -299,13 +296,26 @@ export default function ServerSettingsModal({
                           ) : (
                             <span className="text-2xl font-bold text-white uppercase font-display">{name.substring(0, 2)}</span>
                           )}
-                          <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1 text-[11px] text-white font-bold transition-opacity backdrop-blur-[2px]">
+                          <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1 text-[11px] text-white font-bold transition-opacity backdrop-blur-[2px]">
                             {iconUrl ? (
                               <>
-                                <span className="hover:text-primary transition-colors py-0.5">✏️ Adjust Frame</span>
+                                <span className="hover:text-primary transition-colors py-0.5 flex items-center gap-1">🔍 View Preview</span>
+                                <span 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setCropImageSrc(getFileUrl(iconUrl))
+                                    setCropTarget('icon')
+                                    setCropAspect(1)
+                                    setCropShape('rounded-square')
+                                    setCropTitle("Adjust Server Icon Frame")
+                                  }}
+                                  className="hover:text-primary transition-colors py-0.5 flex items-center gap-1"
+                                >
+                                  ✏️ Adjust Frame
+                                </span>
                                 <span 
                                   onClick={(e) => { e.stopPropagation(); iconInputRef.current?.click(); }}
-                                  className="hover:text-primary transition-colors py-0.5"
+                                  className="hover:text-primary transition-colors py-0.5 flex items-center gap-1"
                                 >
                                   📷 Change
                                 </span>
@@ -325,6 +335,14 @@ export default function ServerSettingsModal({
                         <div className="flex flex-wrap gap-2 pt-1 text-xs">
                           {iconUrl ? (
                             <>
+                              <button
+                                type="button"
+                                className="text-white/80 hover:text-white font-semibold"
+                                onClick={() => setPreviewImageSrc(getFileUrl(iconUrl))}
+                              >
+                                View
+                              </button>
+                              <span className="text-white/30">•</span>
                               <button
                                 type="button"
                                 className="text-primary hover:underline font-semibold"
@@ -373,11 +391,7 @@ export default function ServerSettingsModal({
                         <div 
                           onClick={() => {
                             if (bannerUrl) {
-                              setCropImageSrc(getFileUrl(bannerUrl))
-                              setCropTarget('banner')
-                              setCropAspect(16 / 9)
-                              setCropShape('rect')
-                              setCropTitle("Adjust Server Banner Frame")
+                              setPreviewImageSrc(getFileUrl(bannerUrl))
                             } else {
                               bannerInputRef.current?.click()
                             }
@@ -392,10 +406,23 @@ export default function ServerSettingsModal({
                               <p className="text-[10px] opacity-70 mt-1">Recommended size: 960x540</p>
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-4 text-xs text-white font-bold transition-opacity backdrop-blur-[2px]">
+                          <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-4 text-xs text-white font-bold transition-opacity backdrop-blur-[2px]">
                             {bannerUrl ? (
                               <>
-                                <span className="hover:text-primary transition-colors">✏️ Adjust Frame</span>
+                                <span className="hover:text-primary transition-colors">🔍 View Preview</span>
+                                <span 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setCropImageSrc(getFileUrl(bannerUrl))
+                                    setCropTarget('banner')
+                                    setCropAspect(16 / 9)
+                                    setCropShape('rect')
+                                    setCropTitle("Adjust Server Banner Frame")
+                                  }}
+                                  className="hover:text-primary transition-colors"
+                                >
+                                  ✏️ Adjust Frame
+                                </span>
                                 <span 
                                   onClick={(e) => { e.stopPropagation(); bannerInputRef.current?.click(); }}
                                   className="hover:text-primary transition-colors"
@@ -418,6 +445,14 @@ export default function ServerSettingsModal({
                         <div className="flex flex-wrap gap-2 pt-1 text-xs">
                           {bannerUrl ? (
                             <>
+                              <button
+                                type="button"
+                                className="text-white/80 hover:text-white font-semibold"
+                                onClick={() => setPreviewImageSrc(getFileUrl(bannerUrl))}
+                              >
+                                View
+                              </button>
+                              <span className="text-white/30">•</span>
                               <button
                                 type="button"
                                 className="text-primary hover:underline font-semibold"
@@ -645,6 +680,12 @@ export default function ServerSettingsModal({
           </Button>
           <span className="hidden md:block text-[10px] font-bold text-white/60">ESC</span>
         </div>
+
+        {/* Full Screen Image Lightbox Preview */}
+        <ImageLightboxModal
+          imageUrl={previewImageSrc}
+          onClose={() => setPreviewImageSrc(null)}
+        />
 
         {/* Interactive Image Frame Selector / Cropper Modal */}
         {cropImageSrc && (
