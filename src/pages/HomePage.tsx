@@ -164,21 +164,13 @@ function ContextSidebarHeader({
     );
   }
 
-  // For home/chats/people — header with Settings button
+  // For home/chats/people — clean branding header
   return (
-    <div className="w-full flex items-center justify-between px-4 h-12 border-b border-border shrink-0 bg-secondary/50">
+    <div className="w-full flex items-center px-4 h-12 border-b border-border shrink-0 bg-secondary/50 select-none">
       <div className="flex items-center gap-2">
         <img src="/favicon.svg" alt="Suhhp" className="w-6 h-6 rounded-md shadow-sm" />
         <span className="font-display font-extrabold text-xl text-white tracking-widest uppercase">Suhhp</span>
       </div>
-      <button
-        onClick={onUserSettings}
-        className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all duration-200 cursor-pointer flex items-center gap-1.5 border border-white/10 shadow-sm"
-        title="Open User Settings"
-      >
-        <Settings size={14} className="text-white" />
-        <span className="font-sans font-semibold text-xs text-white tracking-wide">Settings</span>
-      </button>
     </div>
   );
 }
