@@ -92,7 +92,7 @@ export default function ServerSettingsModal({
   // Image Crop State
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
   const [cropAspect, setCropAspect] = useState<number>(1)
-  const [cropIsCircle, setCropIsCircle] = useState<boolean>(true)
+  const [cropShape, setCropShape] = useState<'circle' | 'rounded-square' | 'rect'>('rounded-square')
   const [cropTitle, setCropTitle] = useState<string>("Crop Image")
   const [cropTarget, setCropTarget] = useState<'icon' | 'banner'>('icon')
 
@@ -109,7 +109,7 @@ export default function ServerSettingsModal({
       setCropImageSrc(reader.result as string)
       setCropTarget('icon')
       setCropAspect(1)
-      setCropIsCircle(true)
+      setCropShape('rounded-square')
       setCropTitle("Select Server Icon Frame")
     }
     reader.readAsDataURL(file)
@@ -129,7 +129,7 @@ export default function ServerSettingsModal({
       setCropImageSrc(reader.result as string)
       setCropTarget('banner')
       setCropAspect(16 / 9)
-      setCropIsCircle(false)
+      setCropShape('rect')
       setCropTitle("Select Server Banner Frame")
     }
     reader.readAsDataURL(file)
@@ -545,7 +545,7 @@ export default function ServerSettingsModal({
           <ImageCropModal
             imageSrc={cropImageSrc}
             aspect={cropAspect}
-            isCircle={cropIsCircle}
+            cropShape={cropShape}
             title={cropTitle}
             onCropSave={(file) => uploadCroppedFile(file)}
             onClose={() => setCropImageSrc(null)}

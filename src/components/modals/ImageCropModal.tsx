@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 interface ImageCropModalProps {
   imageSrc: string | null
   aspect?: number // e.g. 1 for 1:1 or 16/9 for banner
-  isCircle?: boolean
+  cropShape?: 'circle' | 'rounded-square' | 'rect'
   title?: string
   onCropSave: (croppedFile: File) => void
   onClose: () => void
@@ -14,7 +14,7 @@ interface ImageCropModalProps {
 export default function ImageCropModal({
   imageSrc,
   aspect = 1,
-  isCircle = true,
+  cropShape = 'circle',
   title = "Crop Image",
   onCropSave,
   onClose
@@ -78,10 +78,6 @@ export default function ImageCropModal({
     const sourceWidth = cropBox.width * scaleX
     const sourceHeight = cropBox.height * scaleY
 
-    // Fill background with black for transparent PNGs
-    ctx.fillStyle = "#0a0a0d"
-    ctx.fillRect(0, 0, outputWidth, outputHeight)
-
     ctx.drawImage(
       img,
       sourceX,
@@ -94,12 +90,19 @@ export default function ImageCropModal({
       outputHeight
     )
 
+    // Export as highly optimized WebP format
     canvas.toBlob((blob) => {
       if (!blob) return
-      const file = new File([blob], `cropped_image_${Date.now()}.png`, { type: "image/png" })
+      const file = new File([blob], `cropped_image_${Date.now()}.webp`, { type: "image/webp" })
       onCropSave(file)
       onClose()
-    }, "image/png", 0.95)
+    }, "image/webp", 0.85)
+  }
+
+  const getShapeClass = () => {
+    if (cropShape === 'circle') return 'rounded-full'
+    if (cropShape === 'rounded-square') return 'rounded-[2.2rem]'
+    return 'rounded-2xl'
   }
 
   return (
@@ -147,9 +150,7 @@ export default function ImageCropModal({
                 width: aspect === 1 ? '240px' : '380px',
                 height: aspect === 1 ? '240px' : '213px',
               }}
-              className={`border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.65)] relative ${
-                isCircle ? 'rounded-full' : 'rounded-xl'
-              }`}
+              className={`border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.65)] relative overflow-hidden ${getShapeClass()}`}
             >
               {/* Grid Lines */}
               <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-30">

@@ -698,7 +698,7 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
           <ImageCropModal
             imageSrc={cropImageSrc}
             aspect={1}
-            isCircle={true}
+            cropShape="circle"
             title="Select Profile Avatar Frame"
             onCropSave={(file) => uploadCroppedAvatar(file)}
             onClose={() => setCropImageSrc(null)}
