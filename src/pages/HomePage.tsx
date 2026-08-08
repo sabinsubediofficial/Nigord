@@ -3293,8 +3293,8 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Real-time Picture-in-Picture Video Overlay */}
-      {isJoined && activeVoiceChannel && (
+      {/* Real-time Picture-in-Picture Video Overlay (only shown when navigated away from voice view) */}
+      {isJoined && activeVoiceChannel && !(activeTab === 'server' && currentChannel?.id === activeVoiceChannel?.id && currentChannel?.type === 'voice') && (
         <PipVideoOverlay
           channelName={activeVoiceChannel.name}
           participants={allParticipants}
