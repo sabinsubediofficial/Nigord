@@ -302,7 +302,8 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     }
   }
 
-  // Image Crop State
+  // Image Crop & Lightbox Preview State
+  const [previewImageSrc, setPreviewImageSrc] = useState<string | null>(null)
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -90,7 +90,8 @@ export default function ServerSettingsModal({
     setNewRoleName("")
   }
 
-  // Image Crop State
+  // Image Crop & Lightbox Preview State
+  const [previewImageSrc, setPreviewImageSrc] = useState<string | null>(null)
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null)
   const [cropAspect, setCropAspect] = useState<number>(1)
   const [cropShape, setCropShape] = useState<'circle' | 'rounded-square' | 'rect'>('rounded-square')
