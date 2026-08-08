@@ -1364,7 +1364,7 @@ export default function HomePage() {
               isManageChannels={!!(currentServer as any)?.permissions?.includes('MANAGE_CHANNELS')}
             />
             
-            <div className={`flex-1 overflow-y-auto p-3.5 no-scrollbar ${activeVoiceChannel ? 'pb-[160px]' : 'pb-[68px]'}`}>
+            <div className="flex-1 overflow-y-auto p-3.5 no-scrollbar">
               {/* Sidebar tabs: Chats / People / Servers — 3-equal grid, high contrast, zero truncation */}
               <div className="grid grid-cols-3 gap-1 mb-3.5 bg-background/60 rounded-xl p-1 border border-white/10">
                 <button 
@@ -1863,70 +1863,84 @@ export default function HomePage() {
               className="hidden md:block absolute right-0 top-0 bottom-0 w-[4px] cursor-col-resize hover:bg-white/10 active:bg-white/20 z-30 transition-colors"
             />
 
-            {/* Mobile Bottom User/Voice Panel */}
-            <div className="md:hidden absolute bottom-0 left-0 right-0 bg-black/40 backdrop-blur-2xl border-t border-white/5 flex flex-col shrink-0 z-20">
+            {/* Universal Bottom User & Voice Panel (Always accessible across all channels, servers, and screens) */}
+            <div className="w-full bg-black/50 backdrop-blur-2xl border-t border-white/10 flex flex-col shrink-0 z-20 relative select-none">
               {/* Voice Connected status if active */}
               {activeVoiceChannel && (() => {
                 const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
                 const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
                 return (
-                  <div className="w-full p-2 flex items-center justify-between border-b border-white/5 text-left bg-emerald-500/10">
+                  <div className="w-full px-3 py-2 flex items-center justify-between border-b border-white/10 text-left bg-emerald-500/10">
                     <div className="flex items-center gap-2 text-emerald-400 min-w-0">
                       <Volume2 size={16} className="text-emerald-400 shrink-0" />
                       <div className="flex flex-col min-w-0">
-                        <span className="text-[10px] font-bold leading-tight text-emerald-400">Voice Connected</span>
-                        <span className="text-[8px] leading-tight text-emerald-400/70 truncate">{voiceSubtitle}</span>
+                        <span className="text-[11px] font-bold leading-tight text-emerald-400">Voice Connected</span>
+                        <span className="text-[9px] leading-tight text-emerald-400/80 truncate">{voiceSubtitle}</span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-6 w-6 text-emerald-400/70 hover:text-emerald-400 rounded"><PhoneOff size={14} /></Button>
+                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-7 w-7 text-emerald-400/80 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg cursor-pointer">
+                      <PhoneOff size={14} />
+                    </Button>
                   </div>
                 );
               })()}
 
-              {/* User Panel */}
-              <div className="w-full flex items-center justify-between p-3 shrink-0">
-                <div className="flex items-center gap-2 min-w-0 group cursor-pointer" onClick={() => { setShowUserSettingsModal(true); setMobileMenuOpen(false); }}>
+              {/* User Panel with Avatar, Name, Mic, Deafen, and Settings */}
+              <div className="w-full flex items-center justify-between px-3 py-2 shrink-0 bg-background/80">
+                <div 
+                  className="flex items-center gap-2.5 min-w-0 group cursor-pointer hover:bg-white/5 p-1 -m-1 rounded-lg transition-colors flex-1 mr-1" 
+                  onClick={() => { setShowUserSettingsModal(true); setMobileMenuOpen(false); }}
+                  title="Open User Settings"
+                >
                   <div className="relative shrink-0" onClick={(e) => { e.stopPropagation(); setShowStatusMenu(!showStatusMenu); }}>
-                    <div className="w-8 h-8 rounded-[10px] bg-white/10 flex items-center justify-center text-xs font-bold uppercase text-white border border-white/10 overflow-hidden shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold uppercase text-white border border-white/10 overflow-hidden shadow-sm">
                       {user?.avatar ? (
                         <img src={getFileUrl(user.avatar)} alt={user.username} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                       ) : (
                         user?.username?.[0] || '?'
                       )}
                     </div>
-                    <div className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-black ${getStatusColor(user?.status)} shadow-sm transition-colors duration-300`} />
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#121214] ${getStatusColor(user?.status)} shadow-sm transition-colors duration-300`} />
                     
                     {showStatusMenu && (
-                      <div className="absolute bottom-12 left-0 w-48 bg-black/80 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 p-2 z-50 flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-muted-foreground">
-                          <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm" />
-                          <span className="text-sm font-medium">Online</span>
+                      <div className="absolute bottom-11 left-0 w-48 bg-black/90 backdrop-blur-xl rounded-xl shadow-2xl border border-white/15 p-1.5 z-50 flex flex-col gap-0.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); setShowStatusMenu(false); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer transition-colors text-white/80">
+                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" />
+                          <span className="text-xs font-semibold">Online</span>
                         </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-muted-foreground">
-                          <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm" />
-                          <span className="text-sm font-medium">Idle</span>
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); setShowStatusMenu(false); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer transition-colors text-white/80">
+                          <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm" />
+                          <span className="text-xs font-semibold">Idle</span>
                         </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-muted-foreground">
-                          <div className="w-3 h-3 rounded-full bg-rose-500 shadow-sm" />
-                          <span className="text-sm font-medium">Do Not Disturb</span>
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); setShowStatusMenu(false); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer transition-colors text-white/80">
+                          <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" />
+                          <span className="text-xs font-semibold">Do Not Disturb</span>
                         </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-muted-foreground">
-                          <div className="w-3 h-3 rounded-full bg-zinc-500 shadow-sm" />
-                          <span className="text-sm font-medium">Invisible</span>
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); setShowStatusMenu(false); }} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-white/10 hover:text-white cursor-pointer transition-colors text-white/80">
+                          <div className="w-2.5 h-2.5 rounded-full bg-zinc-400 shadow-sm" />
+                          <span className="text-xs font-semibold">Invisible</span>
                         </div>
                       </div>
                     )}
                   </div>
                   <div className="flex flex-col min-w-0 text-left">
                     <span className="text-[13px] font-bold text-white truncate leading-tight group-hover:text-primary transition-colors">{user?.display_name || user?.username}</span>
-                    <span className="text-[11px] text-white/50 truncate leading-none">@{user?.username}</span>
+                    <span className="text-[10px] text-white/50 truncate leading-none mt-0.5 font-medium">@{user?.username}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0 ml-2">
-                  <button onClick={(e) => { e.stopPropagation(); toggleAudio(); }} className={`p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-all duration-200 cursor-pointer ${!isAudioEnabled ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10' : ''}`}>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); toggleAudio(); }} 
+                    title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
+                    className={`p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-all duration-150 cursor-pointer ${!isAudioEnabled ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10' : ''}`}
+                  >
                     {!isAudioEnabled ? <MicOff size={16} /> : <Mic size={16} />}
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); toggleDeafen(); }} className={`p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white relative transition-all duration-200 cursor-pointer ${isDeafened ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10' : ''}`}>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); toggleDeafen(); }} 
+                    title={isDeafened ? "Undeafen" : "Deafen Audio"}
+                    className={`p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white relative transition-all duration-150 cursor-pointer ${isDeafened ? 'text-rose-500 hover:text-rose-400 hover:bg-rose-500/10' : ''}`}
+                  >
                     <Headphones size={16} />
                     {isDeafened && (
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1934,7 +1948,11 @@ export default function HomePage() {
                       </div>
                     )}
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); setShowUserSettingsModal(true); setMobileMenuOpen(false); }} className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-all duration-200 cursor-pointer">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setShowUserSettingsModal(true); setMobileMenuOpen(false); }} 
+                    title="User Settings"
+                    className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-all duration-150 cursor-pointer hover:rotate-45"
+                  >
                     <Settings size={16} />
                   </button>
                 </div>
