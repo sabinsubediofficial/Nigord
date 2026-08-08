@@ -58,10 +58,12 @@ function ContextSidebarHeader({
       <div className="relative z-50 w-full shrink-0" ref={menuRef}>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between px-4 h-12 hover:bg-white/[0.03] transition-colors border-b border-border group"
+          className="w-full flex items-center justify-between px-4 h-12 hover:bg-white/[0.04] transition-colors border-b border-border group"
         >
-          <span className="font-semibold text-sm text-foreground truncate">{currentServer.name}</span>
-          <ChevronDown size={14} className={`text-muted-foreground transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+          <span className="font-display font-bold text-base text-white tracking-wide truncate group-hover:text-primary transition-colors">
+            {currentServer.name}
+          </span>
+          <ChevronDown size={16} className={`text-white/70 group-hover:text-white transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {isOpen && (
@@ -2228,8 +2230,8 @@ export default function HomePage() {
                 >
                   <Menu size={20} />
                 </button>
-                <Hash size={18} className="text-muted-foreground mr-2 shrink-0" />
-                <span className="font-semibold truncate text-sm text-foreground">{currentChannel.name}</span>
+                <Hash size={18} className="text-white/70 mr-2 shrink-0" />
+                <span className="font-display font-bold text-base text-white tracking-wide truncate">{currentChannel.name}</span>
               </div>
               <div className="flex items-center gap-4">
                 <button 
