@@ -1540,10 +1540,10 @@ export default function HomePage() {
                   ))}
                   <button 
                     onClick={() => setShowCreateServerModal(true)}
-                    className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm text-emerald-400 hover:bg-emerald-500/15 transition-colors font-semibold"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/90 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all font-semibold shadow-sm group"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                      <Plus size={18} />
+                    <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shrink-0">
+                      <Plus size={16} strokeWidth={2.5} />
                     </div>
                     <span className="font-semibold text-sm">Create Server</span>
                   </button>
@@ -1687,9 +1687,9 @@ export default function HomePage() {
                                 onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); handleJoinVoice(channel); setMobileMenuOpen(false); }} 
                                 className={`relative flex items-center justify-between pl-4 pr-2 py-2 rounded-xl cursor-pointer group transition-all duration-200 ${
                                   isConnected
-                                    ? 'bg-emerald-500/10 text-emerald-400 font-medium border border-emerald-500/20'
+                                    ? 'bg-primary/15 text-white font-semibold border border-primary/30 shadow-sm'
                                     : (isActive 
-                                      ? 'bg-white/10 text-white shadow-inner font-semibold' 
+                                      ? 'bg-white/10 text-white shadow-inner font-semibold border border-white/10' 
                                       : 'text-white/80 hover:bg-white/5 hover:text-white font-medium')
                                 }`}
                               >
@@ -1698,7 +1698,7 @@ export default function HomePage() {
                                     size={18} 
                                     className={`transition-colors shrink-0 mt-[2px] ${
                                       isConnected
-                                        ? 'text-emerald-400'
+                                        ? 'text-primary'
                                         : (isActive 
                                           ? 'text-white' 
                                           : 'text-white/70 group-hover:text-white')
@@ -1707,10 +1707,10 @@ export default function HomePage() {
                                   <div className="flex flex-col min-w-0 flex-1 select-none">
                                     <span className={`text-[14px] truncate transition-all duration-200 ${
                                       isConnected
-                                        ? 'font-medium text-emerald-400'
+                                        ? 'font-semibold text-white'
                                         : (isActive
-                                          ? 'font-medium text-white'
-                                          : 'font-medium text-muted-foreground group-hover:text-white')
+                                          ? 'font-semibold text-white'
+                                          : 'font-medium text-white/80 group-hover:text-white')
                                     }`}>{channel.name}</span>
                                     
                                     {/* Voice Channel Status */}
@@ -1862,15 +1862,15 @@ export default function HomePage() {
                 const voiceServer = servers.find(s => s.id === activeVoiceChannel.server_id);
                 const voiceSubtitle = voiceServer ? `${activeVoiceChannel.name} / ${voiceServer.name}` : `${activeVoiceChannel.name} / Direct Call`;
                 return (
-                  <div className="w-full px-3 py-2 flex items-center justify-between border-b border-white/10 text-left bg-emerald-500/10">
-                    <div className="flex items-center gap-2 text-emerald-400 min-w-0">
-                      <Volume2 size={16} className="text-emerald-400 shrink-0" />
+                  <div className="w-full px-3 py-2 flex items-center justify-between border-b border-white/10 text-left bg-white/5 backdrop-blur-md">
+                    <div className="flex items-center gap-2.5 text-white min-w-0">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse shrink-0" />
                       <div className="flex flex-col min-w-0">
-                        <span className="text-[11px] font-bold leading-tight text-emerald-400">Voice Connected</span>
-                        <span className="text-[9px] leading-tight text-emerald-400/80 truncate">{voiceSubtitle}</span>
+                        <span className="text-[11px] font-bold leading-tight text-white">Voice Connected</span>
+                        <span className="text-[10px] leading-tight text-white/60 truncate mt-0.5">{voiceSubtitle}</span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} className="h-7 w-7 text-emerald-400/80 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg cursor-pointer">
+                    <Button variant="ghost" size="icon" onClick={handleLeaveVoice} title="Disconnect" className="h-7 w-7 text-white/60 hover:text-rose-400 hover:bg-rose-500/20 rounded-lg cursor-pointer transition-colors">
                       <PhoneOff size={14} />
                     </Button>
                   </div>
@@ -2924,46 +2924,38 @@ export default function HomePage() {
               <div className="space-y-1">
                 {members.map(member => {
                   const isServerOwner = currentServer?.owner_id === member.id;
-                  const memberRole = (serverRoles || []).find((r: any) => r.id === member.role_id) || (isServerOwner ? { name: 'Owner', color: '#10b981' } : null);
+                  const memberRole = (serverRoles || []).find((r: any) => r.id === member.role_id);
                   return (
                     <div key={member.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer group transition-all" onClick={() => setSelectedUserProfileId(member.id)}>
                       <div className="relative shrink-0">
-                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-sm font-bold uppercase text-white border border-white/10 shadow-inner overflow-hidden">
+                        <div className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-sm font-bold uppercase text-white border border-white/10 shadow-inner overflow-hidden">
                           {member.avatar ? (
                             <img src={getFileUrl(member.avatar)} alt={member.username} className="w-full h-full object-cover" />
                           ) : (
                             member.username[0]
                           )}
                         </div>
-                        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-black ${getStatusColor(member.status)}`} />
+                        <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-black ${getStatusColor(member.status)}`} />
                       </div>
                       <div className="flex flex-col min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span 
-                            className="text-[14px] font-semibold transition-colors truncate"
-                            style={{ color: memberRole?.color || '#ffffff' }}
-                          >
+                          <span className="text-[13px] font-semibold text-white group-hover:text-primary transition-colors truncate">
                             {member.display_name || member.username}
                           </span>
                           {isServerOwner && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5 shrink-0" title="Server Owner">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-primary/15 text-primary border border-primary/30 flex items-center gap-0.5 shrink-0" title="Server Owner">
                               👑 Owner
                             </span>
                           )}
                           {!isServerOwner && memberRole && (
                             <span 
-                              className="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider border shrink-0"
-                              style={{ 
-                                backgroundColor: `${memberRole.color}20`, 
-                                color: memberRole.color,
-                                borderColor: `${memberRole.color}40`
-                              }}
+                              className="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider border shrink-0 bg-white/10 text-white/90 border-white/15"
                             >
                               {memberRole.name}
                             </span>
                           )}
                         </div>
-                        {member.status_message && <span className="text-[11px] text-muted-foreground truncate">{member.status_message}</span>}
+                        {member.status_message && <span className="text-[11px] text-white/50 truncate">{member.status_message}</span>}
                       </div>
                     </div>
                   );
