@@ -511,9 +511,9 @@ export default function HomePage() {
             <video 
               ref={el => { if (el && el.srcObject !== stream) el.srcObject = stream }} 
               autoPlay 
-              muted={isLocal} 
+              muted={true} 
               playsInline 
-              className="w-full h-full object-contain" 
+              className="w-full h-full object-contain pointer-events-none" 
             />
             {isSpeaking && (
               <div className="absolute inset-0 pointer-events-none border-2 border-[#23a55a] shadow-[inset_0_0_20px_rgba(35,165,90,0.4)]" />

@@ -69,9 +69,10 @@ export default function PipVideoOverlay({
                   <div className="w-full h-full relative bg-black flex items-center justify-center">
                     <video
                       autoPlay
+                      muted={true}
                       playsInline
                       ref={(el) => { if (el && el.srcObject !== p.stream) el.srcObject = p.stream }}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain pointer-events-none"
                     />
                     {isSpeaking && (
                       <div className="absolute inset-0 pointer-events-none border border-emerald-500 shadow-[inset_0_0_12px_rgba(16,185,129,0.5)]" />
