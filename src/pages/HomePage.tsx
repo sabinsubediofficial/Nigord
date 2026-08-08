@@ -29,7 +29,7 @@ import PipVideoOverlay from "@/components/voice/PipVideoOverlay"
 import { useUIStore } from "@/store/useUIStore"
 import MessageContent from "@/components/MessageContent"
 import { SidebarHeader } from "@/components/navigation/SidebarHeader"
-import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone, Pencil, Menu } from "lucide-react"
+import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone, Pencil, Menu, Crown } from "lucide-react"
 
 function ContextSidebarHeader({ 
   activeTab, 
@@ -2943,13 +2943,13 @@ export default function HomePage() {
                             {member.display_name || member.username}
                           </span>
                           {isServerOwner && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-primary/15 text-primary border border-primary/30 flex items-center gap-0.5 shrink-0" title="Server Owner">
-                              👑 Owner
+                            <span title="Server Owner" className="flex items-center">
+                              <Crown size={14} className="text-amber-400 fill-amber-400/20 shrink-0 ml-0.5" />
                             </span>
                           )}
                           {!isServerOwner && memberRole && (
                             <span 
-                              className="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider border shrink-0 bg-white/10 text-white/90 border-white/15"
+                              className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider border shrink-0 bg-white/5 text-white/80 border-white/10"
                             >
                               {memberRole.name}
                             </span>
