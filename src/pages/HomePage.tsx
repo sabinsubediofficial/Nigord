@@ -401,8 +401,31 @@ export default function HomePage() {
   const [voiceChannelsCollapsed, setVoiceChannelsCollapsed] = useState(false)
   
 
+  // Find all user IDs that currently have a screen share active
+  const screenSharingUserIds = new Set<string>();
+  if (isScreenSharing && localScreenStream) {
+    screenSharingUserIds.add('local');
+    if (user?.id) screenSharingUserIds.add(user.id);
+  }
+  Object.keys(remoteStreams).forEach(peerId => {
+    if (peerId.endsWith('-screen')) {
+      screenSharingUserIds.add(peerId.replace('-screen', ''));
+    }
+  });
+
   const allParticipants = [
-    {
+    // If local user is streaming, show ONLY their screen window!
+    ...(isScreenSharing && localScreenStream ? [{
+      id: 'local-screen',
+      username: user?.username || 'You',
+      isLocal: true,
+      isVideoEnabled: true,
+      isAudioEnabled,
+      isDeafened,
+      stream: localScreenStream,
+      isScreenShare: true,
+      avatar: user?.avatar
+    }] : [{
       id: 'local',
       username: user?.username || 'You',
       isLocal: true,
@@ -410,41 +433,43 @@ export default function HomePage() {
       isAudioEnabled,
       isDeafened,
       stream: localStream,
+      isScreenShare: false,
       avatar: user?.avatar
-    },
-    ...(isScreenSharing && localScreenStream ? [{
-      id: 'local-screen',
-      username: `${user?.username || 'You'} (Screen)`,
-      isLocal: true,
-      isVideoEnabled: true,
-      isAudioEnabled: false,
-      isDeafened: false,
-      stream: localScreenStream,
-      isScreenShare: true,
-      avatar: user?.avatar
-    }] : []),
-    ...Object.entries(remoteStreams).map(([peerId, stream]) => {
-      const actualUserId = peerId.replace('-screen', '');
-      const isScreenShare = peerId.endsWith('-screen');
-      const peer = voiceParticipants.find(p => p.user_id === actualUserId) 
-        || members.find(m => m.id === actualUserId) 
-        || dms.find(d => d.target_id === actualUserId)
-        || { username: 'Unknown' };
-      const hasVideo = stream.getVideoTracks().some(track => track.enabled && !track.muted && track.readyState !== 'ended');
-      const isMuted = voiceParticipants.find(p => p.user_id === actualUserId)?.is_muted === 1;
-      const isDeaf = voiceParticipants.find(p => p.user_id === actualUserId)?.is_deafened === 1;
-      return {
-        id: peerId,
-        username: ((peer as any).username || (peer as any).name || 'Unknown') + (isScreenShare ? " (Screen)" : ""),
-        isLocal: false,
-        isVideoEnabled: hasVideo,
-        isAudioEnabled: !isMuted,
-        isDeafened: isDeaf,
-        stream,
-        isScreenShare,
-        avatar: (peer as any).avatar
-      }
-    })
+    }]),
+
+    // For remote users: if streaming, show ONLY their screen share window!
+    ...Object.entries(remoteStreams)
+      .filter(([peerId]) => {
+        const isScreenShare = peerId.endsWith('-screen');
+        const actualUserId = peerId.replace('-screen', '');
+        // If this user is streaming, include their screen share window and omit their duplicate avatar tile
+        if (screenSharingUserIds.has(actualUserId)) {
+          return isScreenShare;
+        }
+        return true;
+      })
+      .map(([peerId, stream]) => {
+        const actualUserId = peerId.replace('-screen', '');
+        const isScreenShare = peerId.endsWith('-screen');
+        const peer = voiceParticipants.find(p => p.user_id === actualUserId) 
+          || members.find(m => m.id === actualUserId) 
+          || dms.find(d => d.target_id === actualUserId)
+          || { username: 'Unknown' };
+        const hasVideo = stream.getVideoTracks().some(track => track.enabled && !track.muted && track.readyState !== 'ended');
+        const isMuted = voiceParticipants.find(p => p.user_id === actualUserId)?.is_muted === 1;
+        const isDeaf = voiceParticipants.find(p => p.user_id === actualUserId)?.is_deafened === 1;
+        return {
+          id: peerId,
+          username: ((peer as any).username || (peer as any).name || 'Unknown'),
+          isLocal: false,
+          isVideoEnabled: hasVideo,
+          isAudioEnabled: !isMuted,
+          isDeafened: isDeaf,
+          stream,
+          isScreenShare,
+          avatar: (peer as any).avatar
+        };
+      })
   ];
 
   const renderParticipantCard = (p: any, size: 'large' | 'small' | 'normal') => {
@@ -456,13 +481,13 @@ export default function HomePage() {
     const isScreenShare = p.isScreenShare;
     const isFocused = focusedParticipantId === p.id;
     const isSpeaking = p.isLocal 
-      ? (speakingUsers[user?.id || 'local'] || speakingUsers['local'])
-      : speakingUsers[p.id.replace('-screen', '')] === true;
+      ? !!(speakingUsers[user?.id || 'local'] || speakingUsers['local'])
+      : !!(speakingUsers[p.id] || speakingUsers[p.id.replace('-screen', '')]);
 
-    const cardClasses = `bg-background rounded-[8px] flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all cursor-pointer group shadow-md ${
+    const cardClasses = `bg-background rounded-xl flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all duration-150 cursor-pointer group shadow-lg ${
       isSpeaking 
-        ? 'border-[#23a55a]' 
-        : (isFocused && size !== 'small' ? 'border-[#b5bac1]' : 'border-[#2b2d31] hover:border-[#35373c]')
+        ? 'border-[#23a55a] ring-4 ring-[#23a55a]/50 shadow-[0_0_30px_rgba(35,165,90,0.65)]' 
+        : (isFocused && size !== 'small' ? 'border-[#b5bac1]' : 'border-white/10 hover:border-white/20')
     } ${
       size === 'small' ? 'w-48 aspect-video shrink-0 text-[10px]' : 'w-full h-full aspect-video'
     }`;
@@ -482,18 +507,23 @@ export default function HomePage() {
         className={cardClasses}
       >
         {hasVideo && stream ? (
-          <video 
-            ref={el => { if (el && el.srcObject !== stream) el.srcObject = stream }} 
-            autoPlay 
-            muted={isLocal} 
-            playsInline 
-            className="w-full h-full object-cover" 
-          />
+          <div className="w-full h-full relative flex items-center justify-center bg-black">
+            <video 
+              ref={el => { if (el && el.srcObject !== stream) el.srcObject = stream }} 
+              autoPlay 
+              muted={isLocal} 
+              playsInline 
+              className="w-full h-full object-contain" 
+            />
+            {isSpeaking && (
+              <div className="absolute inset-0 pointer-events-none border-2 border-[#23a55a] shadow-[inset_0_0_20px_rgba(35,165,90,0.4)]" />
+            )}
+          </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-secondary">
             <div className={`relative z-10 rounded-full bg-background text-foreground flex items-center justify-center font-bold uppercase transition-all duration-150 overflow-hidden ${avatarSizeClass} ${
               isSpeaking 
-                ? 'ring-[3px] ring-[#23a55a] ring-offset-2 ring-offset-[#2b2d31]' 
+                ? 'ring-[4px] ring-[#23a55a] ring-offset-2 ring-offset-[#2b2d31] shadow-[0_0_20px_#23a55a]' 
                 : ''
             }`}>
               {p.avatar ? (
@@ -504,9 +534,17 @@ export default function HomePage() {
             </div>
           </div>
         )}
-        <div className={`absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-[4px] text-xs font-medium text-white flex items-center gap-1.5 z-10 ${
+        <div className={`absolute bottom-2 left-2 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-md text-xs font-semibold text-white flex items-center gap-1.5 z-10 border transition-all ${
+          isSpeaking ? 'border-[#23a55a] text-[#23a55a]' : 'border-white/10'
+        } ${
           size === 'small' ? 'text-[10px] px-1.5 py-0.5 bottom-1.5 left-1.5 gap-1' : ''
         }`}>
+          {isSpeaking && (
+            <span className="w-2 h-2 rounded-full bg-[#23a55a] animate-pulse shrink-0 shadow-[0_0_8px_#23a55a]" />
+          )}
+          {isScreenShare && (
+            <MonitorUp size={size === 'small' ? 10 : 13} className="text-primary shrink-0" />
+          )}
           {!isScreenShare && !isAudioEnabled && <MicOff size={size === 'small' ? 10 : 12} className="text-[#f23f43]" />}
           {!isScreenShare && isDeafened && (
             <div className="relative flex items-center justify-center">
@@ -516,7 +554,7 @@ export default function HomePage() {
               </div>
             </div>
           )}
-          <span className="truncate max-w-[100px]">{p.username} {isLocal ? '(You)' : ''}</span>
+          <span className="truncate max-w-[120px]">{p.username} {isLocal ? '(You)' : ''}</span>
         </div>
       </div>
     );

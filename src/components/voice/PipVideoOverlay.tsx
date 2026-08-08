@@ -57,28 +57,38 @@ export default function PipVideoOverlay({
       {!isMinimized && (
         <div className="p-2 grid grid-cols-2 gap-2 max-h-56 overflow-y-auto bg-black/40">
           {participants.map((p) => {
-            const isSpeaking = activeSpeakerId === p.id
+            const isSpeaking = activeSpeakerId === p.id || activeSpeakerId === p.id.replace('-screen', '')
             return (
               <div 
                 key={p.id}
                 className={`relative aspect-video rounded-xl overflow-hidden bg-secondary/60 flex items-center justify-center border transition-all ${
-                  isSpeaking ? "border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "border-white/5"
+                  isSpeaking ? "border-emerald-500 ring-2 ring-emerald-500/50 shadow-[0_0_16px_rgba(16,185,129,0.6)]" : "border-white/10"
                 }`}
               >
                 {p.stream ? (
-                  <video
-                    autoPlay
-                    playsInline
-                    ref={(el) => { if (el && el.srcObject !== p.stream) el.srcObject = p.stream }}
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="w-full h-full relative bg-black flex items-center justify-center">
+                    <video
+                      autoPlay
+                      playsInline
+                      ref={(el) => { if (el && el.srcObject !== p.stream) el.srcObject = p.stream }}
+                      className="w-full h-full object-contain"
+                    />
+                    {isSpeaking && (
+                      <div className="absolute inset-0 pointer-events-none border border-emerald-500 shadow-[inset_0_0_12px_rgba(16,185,129,0.5)]" />
+                    )}
+                  </div>
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-sm font-bold text-white font-display uppercase">
+                  <div className={`w-10 h-10 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-sm font-bold text-white font-display uppercase transition-all ${
+                    isSpeaking ? "ring-2 ring-emerald-500 shadow-[0_0_10px_#10b981]" : ""
+                  }`}>
                     {p.username?.[0] || 'U'}
                   </div>
                 )}
-                <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] text-white font-medium truncate max-w-[80%]">
-                  {p.username}
+                <div className={`absolute bottom-1 left-1 bg-black/75 backdrop-blur-md px-1.5 py-0.5 rounded text-[10px] text-white font-semibold truncate max-w-[85%] flex items-center gap-1 border transition-all ${
+                  isSpeaking ? "border-emerald-500 text-emerald-400" : "border-white/10"
+                }`}>
+                  {isSpeaking && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />}
+                  <span className="truncate">{p.username}</span>
                 </div>
               </div>
             )
