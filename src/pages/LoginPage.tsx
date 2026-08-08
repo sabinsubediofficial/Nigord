@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/useAuthStore"
-import { ShieldAlert, Check, MessageSquare, ArrowRight, Sparkles } from "lucide-react"
+import { ShieldAlert, Check, Gamepad2, ArrowRight } from "lucide-react"
 import { apiFetch, saveToken } from "@/lib/api"
 import { InteractiveBackground } from "@/components/ui/InteractiveBackground"
 
@@ -53,7 +53,7 @@ export default function LoginPage() {
         setError(data.error || "Invalid credentials")
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      setError("Connection lost. Please try again.")
     } finally {
       setLoading("")
     }
@@ -65,7 +65,7 @@ export default function LoginPage() {
     setSuccess("")
     
     if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters.")
+      setError("Password must be at least 6 characters.")
       return
     }
 
@@ -83,7 +83,7 @@ export default function LoginPage() {
       })
 
       if (res.ok) {
-        setSuccess("Password recovered successfully! You can now log in.")
+        setSuccess("Password recovered successfully. You can now log in.")
         setIsRecovering(false)
         setEmail(usernameOrEmail)
         setPassword("")
@@ -96,169 +96,179 @@ export default function LoginPage() {
         setError(data.error || "Failed to recover password")
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      setError("Connection lost. Please try again.")
     } finally {
       setLoading("")
     }
   }
 
   return (
-    <InteractiveBackground>
-      <div className="flex flex-col items-center mb-8">
-        <div className="w-12 h-12 rounded-[12px] bg-white/[0.03] border border-white/10 flex items-center justify-center mb-6 shadow-xl backdrop-blur-md">
-          <MessageSquare className="w-6 h-6 text-white" />
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">
-          {!isRecovering ? "Welcome back" : "Recover account"}
-        </h1>
-        <p className="text-[#a1a1aa] text-sm">
-          {!isRecovering ? "Enter your details to sign in" : "Enter your recovery code to reset password"}
-        </p>
-      </div>
+    <div className="relative w-full h-screen overflow-hidden bg-background flex flex-col">
+      <InteractiveBackground fullScreen={true} />
       
-      <div className="bg-white/[0.02] border border-white/5 p-8 rounded-2xl backdrop-blur-xl shadow-2xl">
-        {error && (
-          <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-sm flex items-start gap-3">
-            <ShieldAlert size={16} className="shrink-0 mt-0.5" /> 
-            <span>{error}</span>
-          </div>
-        )}
-        {success && (
-          <div className="mb-6 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm flex items-start gap-3">
-            <Check size={16} className="shrink-0 mt-0.5" /> 
-            <span>{success}</span>
-          </div>
-        )}
-
-        {!isRecovering ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#a1a1aa]">Email or Username</label>
-              <Input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="bg-[#09090b]/50 border-white/10 text-white placeholder:text-[#a1a1aa]/40 focus:border-white/30 focus:bg-white/[0.02] h-11 rounded-lg transition-all"
-                required
-              />
+      <div className="absolute inset-0 z-10 flex items-center justify-center p-4 sm:p-8">
+        <div className="bg-white rounded-[2rem] p-8 sm:p-12 shadow-2xl max-w-[440px] w-full flex flex-col relative z-20">
+          
+          <div className="flex flex-col items-center text-center mb-10">
+            <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-6">
+              <Gamepad2 className="w-8 h-8" />
             </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-[#a1a1aa]">Password</label>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setIsRecovering(true)
-                    setError("")
-                    setSuccess("")
-                  }} 
-                  className="text-xs text-white/70 hover:text-white transition-colors"
+            <h1 className="text-4xl font-serif text-foreground font-bold tracking-tight">
+              {!isRecovering ? "Welcome Back" : "Recover Access"}
+            </h1>
+            <p className="text-foreground/60 mt-3 text-sm">
+              {!isRecovering 
+                ? "Sign in to continue to your communities."
+                : "Reset your password to regain access."}
+            </p>
+          </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-sm flex items-center gap-3 font-medium">
+              <ShieldAlert size={18} /> 
+              <span>{error}</span>
+            </div>
+          )}
+          {success && (
+            <div className="mb-6 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-sm flex items-center gap-3 font-medium">
+              <Check size={18} /> 
+              <span>{success}</span>
+            </div>
+          )}
+
+          {!isRecovering ? (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-foreground/80 ml-1">Email</label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="bg-background border-none rounded-2xl h-14 px-5 text-foreground placeholder:text-foreground/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-sm font-semibold text-foreground/80">Password</label>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsRecovering(true)
+                      setError("")
+                      setSuccess("")
+                    }} 
+                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Forgot?
+                  </button>
+                </div>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-background border-none rounded-2xl h-14 px-5 text-foreground placeholder:text-foreground/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+                  required
+                />
+              </div>
+
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  disabled={loading === "login"}
+                  className="w-full bg-primary hover:bg-primary/90 text-white h-14 rounded-full text-base font-semibold shadow-lg shadow-primary/25 transition-all active:scale-[0.98]"
                 >
-                  Forgot password?
-                </button>
+                  {loading === "login" ? "Signing in..." : "Sign In"}
+                </Button>
               </div>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="bg-[#09090b]/50 border-white/10 text-white placeholder:text-[#a1a1aa]/40 focus:border-white/30 focus:bg-white/[0.02] h-11 rounded-lg transition-all"
-                required
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading === "login"}
-              className="w-full bg-white text-black hover:bg-white/90 font-medium h-11 mt-4 rounded-lg flex items-center justify-center gap-2 transition-colors hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] duration-300"
-            >
-              {loading === "login" ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-        ) : (
-          <form onSubmit={handleRecoverPassword} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#a1a1aa]">Username or Email</label>
-              <Input
-                type="text"
-                value={usernameOrEmail}
-                onChange={(e) => setUsernameOrEmail(e.target.value)}
-                placeholder="johndoe"
-                className="bg-[#09090b]/50 border-white/10 text-white placeholder:text-[#a1a1aa]/40 focus:border-white/30 focus:bg-white/[0.02] h-11 rounded-lg transition-all"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#a1a1aa]">Recovery Code</label>
-              <Input
-                type="text"
-                placeholder="SUHHP-XXXX-XXXX"
-                value={recoveryCode}
-                onChange={(e) => setRecoveryCode(e.target.value)}
-                className="bg-[#09090b]/50 border-white/10 text-white placeholder:text-[#a1a1aa]/40 focus:border-white/30 focus:bg-white/[0.02] h-11 rounded-lg transition-all font-mono tracking-wider uppercase"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
+            </form>
+          ) : (
+            <form onSubmit={handleRecoverPassword} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#a1a1aa]">New Password</label>
+                <label className="text-sm font-semibold text-foreground/80 ml-1">Email or Username</label>
                 <Input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-[#09090b]/50 border-white/10 text-white placeholder:text-[#a1a1aa]/40 focus:border-white/30 focus:bg-white/[0.02] h-11 rounded-lg transition-all"
+                  type="text"
+                  value={usernameOrEmail}
+                  onChange={(e) => setUsernameOrEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="bg-background border-none rounded-2xl h-14 px-5 text-foreground placeholder:text-foreground/40 focus-visible:ring-2 focus-visible:ring-primary/20"
                   required
                 />
               </div>
+
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-[#a1a1aa]">Confirm</label>
+                <label className="text-sm font-semibold text-foreground/80 ml-1">Recovery Code</label>
                 <Input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-[#09090b]/50 border-white/10 text-white placeholder:text-[#a1a1aa]/40 focus:border-white/30 focus:bg-white/[0.02] h-11 rounded-lg transition-all"
+                  type="text"
+                  placeholder="XXXX-XXXX"
+                  value={recoveryCode}
+                  onChange={(e) => setRecoveryCode(e.target.value)}
+                  className="bg-background border-none rounded-2xl h-14 px-5 text-foreground placeholder:text-foreground/40 focus-visible:ring-2 focus-visible:ring-primary/20 tracking-widest uppercase"
                   required
                 />
               </div>
-            </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setIsRecovering(false)
-                  setError("")
-                }}
-                className="flex-1 text-[#a1a1aa] hover:text-white border border-white/10 hover:bg-white/5 h-11 rounded-lg transition-all"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={loading === "recover"}
-                className="flex-1 bg-white text-black hover:bg-white/90 font-medium h-11 rounded-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] duration-300"
-              >
-                {loading === "recover" ? "Recovering..." : "Recover"}
-              </Button>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-foreground/80 ml-1">New Password</label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="bg-background border-none rounded-2xl h-14 px-5 text-foreground placeholder:text-foreground/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-foreground/80 ml-1">Confirm</label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="bg-background border-none rounded-2xl h-14 px-5 text-foreground placeholder:text-foreground/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setIsRecovering(false)
+                    setError("")
+                  }}
+                  className="flex-1 bg-background hover:bg-background/80 text-foreground h-14 rounded-full font-semibold transition-all"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading === "recover"}
+                  className="flex-1 bg-primary hover:bg-primary/90 text-white h-14 rounded-full font-semibold shadow-lg shadow-primary/25 transition-all"
+                >
+                  {loading === "recover" ? "Resetting..." : "Reset"}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {!isRecovering && (
+            <div className="mt-8 text-center text-sm font-medium text-foreground/60">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-primary hover:text-primary/80 font-semibold transition-colors">
+                Join the community
+              </Link>
             </div>
-          </form>
-        )}
-      </div>
-      
-      {!isRecovering && (
-        <div className="mt-8 text-center text-sm text-[#a1a1aa]">
-          Need an account?{" "}
-          <Link to="/register" className="text-white hover:underline transition-colors hover:text-white/80">
-            Create one
-          </Link>
+          )}
         </div>
-      )}
-    </InteractiveBackground>
+      </div>
+    </div>
   )
 }

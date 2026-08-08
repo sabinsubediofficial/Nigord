@@ -37,7 +37,15 @@ export default function ServerSettingsModal({
     transferOwnership 
   } = useServerSettings(serverId)
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'roles' | 'members'>('overview')
+  // Tab control with state management persistence
+  const [activeTab, setActiveTab] = useState<'overview' | 'roles' | 'members'>(() => {
+    const saved = localStorage.getItem('suhhp_serverSettingsTab');
+    return (saved as any) || 'overview';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('suhhp_serverSettingsTab', activeTab);
+  }, [activeTab]);
   const [newRoleName, setNewRoleName] = useState("")
   const [newRoleColor, setNewRoleColor] = useState("#99aab5")
 
@@ -211,28 +219,28 @@ export default function ServerSettingsModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-[#141517] z-50 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+    <div className="fixed inset-0 bg-background z-50 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
       {/* Settings Sidebar */}
-      <div className="w-full md:w-[280px] bg-[#1e2022] flex flex-col items-center md:items-end py-4 md:py-14 px-4 md:pr-4 border-b md:border-b-0 md:border-r border-[#2d2f31] shrink-0">
+      <div className="w-full md:w-[280px] bg-secondary flex flex-col items-center md:items-end py-4 md:py-14 px-4 md:pr-4 border-b md:border-b-0 md:border-r border-border shrink-0">
         <div className="w-full max-w-[200px] flex md:flex-col gap-2 md:gap-1 items-center md:items-stretch overflow-x-auto no-scrollbar py-2 md:py-0">
           <div className="hidden md:block px-2 mb-2">
-            <h3 className="text-xs font-bold uppercase text-[#a3a29e] truncate">{serverName}</h3>
+            <h3 className="text-xs font-bold uppercase text-white/70 truncate">{serverName}</h3>
           </div>
           <div 
             onClick={() => setActiveTab('overview')} 
-            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeTab === 'overview' ? 'bg-[#2d2f31] text-[#e3e1db]' : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'}`}
+            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeTab === 'overview' ? 'bg-white/10 text-white font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
           >
             Overview
           </div>
           <div 
             onClick={() => setActiveTab('roles')} 
-            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeTab === 'roles' ? 'bg-[#2d2f31] text-[#e3e1db]' : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'}`}
+            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeTab === 'roles' ? 'bg-white/10 text-white font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
           >
             Roles
           </div>
           <div 
             onClick={() => setActiveTab('members')} 
-            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeTab === 'members' ? 'bg-[#2d2f31] text-[#e3e1db]' : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'}`}
+            className={`px-3 py-1.5 md:px-2 rounded cursor-pointer transition-colors text-center md:text-left shrink-0 ${activeTab === 'members' ? 'bg-white/10 text-white font-semibold' : 'text-white/70 hover:bg-white/5 hover:text-white'}`}
           >
             Members
           </div>
@@ -240,40 +248,40 @@ export default function ServerSettingsModal({
       </div>
 
       {/* Settings Content */}
-      <div className="flex-1 bg-[#141517] p-4 py-8 md:p-10 md:py-14 overflow-y-auto relative">
+      <div className="flex-1 bg-background p-4 py-8 md:p-10 md:py-14 overflow-y-auto relative">
         <div className="max-w-[740px]">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-6 text-[#e3e1db]">Server Overview</h2>
+              <h2 className="text-2xl font-bold mb-6 text-white font-display">Server Overview</h2>
 
               {successMsg && (
-                <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg text-sm">
+                <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-xl text-sm font-medium">
                   {successMsg}
                 </div>
               )}
               {errorMsg && (
-                <div className="p-3 bg-red-500/15 border border-red-500/30 text-red-400 rounded-lg text-sm">
+                <div className="p-3 bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-xl text-sm font-medium">
                   {errorMsg}
                 </div>
               )}
 
               {isOwner ? (
-                <div className="bg-[#1e2022] rounded-xl p-6 border border-[#2d2f31] space-y-6">
+                <div className="space-y-8">
                   {/* Server Settings Form */}
-                  <form onSubmit={handleUpdateServerSettings} className="space-y-6">
+                  <form onSubmit={handleUpdateServerSettings} className="space-y-8">
                     {/* Upload Settings (Icon and Banner) */}
                     <div className="flex flex-col md:flex-row gap-6 items-start">
                       {/* Server Icon */}
                       <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider block">Server Icon</label>
+                        <label className="text-xs font-bold uppercase text-white/80 tracking-wider block">Server Icon</label>
                         <div 
                           onClick={() => iconInputRef.current?.click()}
-                          className="relative group w-24 h-24 rounded-full overflow-hidden bg-[#141517] border-2 border-[#2d2f31] flex items-center justify-center cursor-pointer hover:border-[#5865f2] transition-all"
+                          className="relative group w-24 h-24 rounded-2xl overflow-hidden bg-secondary/60 border border-border flex items-center justify-center cursor-pointer hover:border-primary transition-all shadow-md"
                         >
                           {iconUrl ? (
                             <img src={getFileUrl(iconUrl)} className="w-full h-full object-cover" alt="Server Icon" />
                           ) : (
-                            <span className="text-xl font-bold text-[#a3a29e] uppercase">{name.substring(0, 2)}</span>
+                            <span className="text-2xl font-bold text-white uppercase font-display">{name.substring(0, 2)}</span>
                           )}
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-white font-bold transition-opacity">
                             <span>{uploadingIcon ? "UPLOADING..." : "CHANGE"}</span>
@@ -291,7 +299,7 @@ export default function ServerSettingsModal({
                             type="button" 
                             variant="ghost" 
                             size="sm" 
-                            className="text-xs text-red-400 hover:text-red-300 hover:bg-transparent p-0"
+                            className="text-xs text-rose-400 hover:text-rose-300 hover:bg-transparent p-0"
                             onClick={(e) => { e.stopPropagation(); setIconUrl(""); }}
                           >
                             Remove Icon
@@ -301,15 +309,15 @@ export default function ServerSettingsModal({
 
                       {/* Server Banner */}
                       <div className="flex-1 space-y-2 w-full">
-                        <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider block">Server Banner</label>
+                        <label className="text-xs font-bold uppercase text-white/80 tracking-wider block">Server Banner</label>
                         <div 
                           onClick={() => bannerInputRef.current?.click()} 
-                          className="relative group h-24 w-full rounded-lg bg-[#141517] border-2 border-[#2d2f31] border-dashed flex items-center justify-center cursor-pointer hover:border-[#5865f2] overflow-hidden transition-all"
+                          className="relative group h-24 w-full rounded-xl bg-secondary/60 border border-border border-dashed flex items-center justify-center cursor-pointer hover:border-primary overflow-hidden transition-all shadow-inner"
                         >
                           {bannerUrl ? (
                             <img src={getFileUrl(bannerUrl)} className="w-full h-full object-cover" alt="Server Banner" />
                           ) : (
-                            <div className="text-center text-xs text-[#a3a29e] p-4">
+                            <div className="text-center text-xs text-white/70 p-4">
                               <p className="font-semibold">{uploadingBanner ? "Uploading..." : "Click to upload banner"}</p>
                               <p className="text-[10px] opacity-70 mt-1">Recommended size: 960x540</p>
                             </div>
@@ -332,7 +340,7 @@ export default function ServerSettingsModal({
                             type="button" 
                             variant="ghost" 
                             size="sm" 
-                            className="text-xs text-red-400 hover:text-red-300 hover:bg-transparent p-0"
+                            className="text-xs text-rose-400 hover:text-rose-300 hover:bg-transparent p-0"
                             onClick={(e) => { e.stopPropagation(); setBannerUrl(""); }}
                           >
                             Remove Banner
@@ -341,35 +349,35 @@ export default function ServerSettingsModal({
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase text-[#a3a29e] tracking-wider">Server Name</label>
+                    <div className="space-y-2 max-w-md">
+                      <label className="text-xs font-bold uppercase text-white/80 tracking-wider">Server Name</label>
                       <Input 
                         value={name} 
                         onChange={(e) => setName(e.target.value)} 
-                        className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" 
+                        className="bg-secondary/60 border border-border text-white focus-visible:ring-1 focus-visible:ring-primary rounded-xl h-11" 
                       />
                     </div>
-                    <div className="flex justify-end">
-                      <Button type="submit" className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold rounded-[4px]">
+                    <div className="flex justify-start">
+                      <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl px-6 h-10 shadow-md">
                         Save Changes
                       </Button>
                     </div>
                   </form>
 
                   {/* Transfer Ownership */}
-                  <div className="w-full h-[1px] bg-[#2d2f31]" />
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-[#e3e1db] uppercase">Transfer Ownership</h3>
-                    <p className="text-xs text-[#a3a29e]">
+                  <div className="w-full h-[1px] bg-border/50" />
+                  <div className="space-y-4 max-w-lg">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Transfer Ownership</h3>
+                    <p className="text-xs text-white/70 leading-relaxed">
                       Transfer this server to another member. This action cannot be undone.
                     </p>
                     <div className="flex gap-4 items-end">
                       <div className="flex-1 space-y-2">
-                        <label className="text-xs font-bold uppercase text-[#a3a29e]">Select Member</label>
+                        <label className="text-xs font-bold uppercase text-white/80 tracking-wider">Select Member</label>
                         <select
                           value={transferTargetUserId}
                           onChange={(e) => setTransferTargetUserId(e.target.value)}
-                          className="w-full bg-[#141517] border border-[#2d2f31] rounded-md text-[#e3e1db] p-2 focus:outline-none focus:border-[#5865f2]"
+                          className="w-full bg-secondary/60 border border-border rounded-xl text-white p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         >
                           <option value="">Choose a member...</option>
                           {members
@@ -384,22 +392,22 @@ export default function ServerSettingsModal({
                       <Button 
                         onClick={() => transferTargetUserId && setShowTransferConfirm(true)} 
                         disabled={!transferTargetUserId} 
-                        className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold rounded-[4px]"
+                        className="bg-white/10 text-white hover:bg-white/20 font-semibold rounded-xl h-11 px-5"
                       >
                         Transfer
                       </Button>
                     </div>
 
                     {showTransferConfirm && (
-                      <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-4">
-                        <p className="text-xs text-amber-500 font-semibold">
+                      <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded-xl space-y-4">
+                        <p className="text-xs text-amber-400 font-semibold leading-relaxed">
                           Are you sure you want to transfer server ownership? You will lose owner permissions.
                         </p>
                         <div className="flex gap-2 justify-end">
-                          <Button onClick={() => setShowTransferConfirm(false)} variant="ghost" className="text-[#a3a29e] hover:text-[#e3e1db]">
+                          <Button onClick={() => setShowTransferConfirm(false)} variant="ghost" className="text-white/70 hover:text-white rounded-xl">
                             Cancel
                           </Button>
-                          <Button onClick={handleTransferOwnership} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                          <Button onClick={handleTransferOwnership} className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl px-5">
                             Confirm Transfer
                           </Button>
                         </div>
@@ -408,23 +416,23 @@ export default function ServerSettingsModal({
                   </div>
 
                   {/* Danger Zone: Delete Server */}
-                  <div className="w-full h-[1px] bg-red-500/20" />
+                  <div className="w-full h-[1px] bg-rose-500/20" />
                   <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-red-400 uppercase">Danger Zone</h3>
+                    <h3 className="text-sm font-bold text-rose-400 uppercase tracking-wider">Danger Zone</h3>
                     {!showDeleteConfirm ? (
-                      <Button onClick={() => setShowDeleteConfirm(true)} variant="destructive" className="bg-red-950 text-red-400 border border-red-800/40 hover:bg-red-900">
+                      <Button onClick={() => setShowDeleteConfirm(true)} variant="destructive" className="bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 rounded-xl font-semibold">
                         Delete Server
                       </Button>
                     ) : (
-                      <div className="p-4 bg-red-950/20 border border-red-900/40 rounded-xl space-y-4">
-                        <p className="text-xs text-red-400 font-semibold">
+                      <div className="p-5 bg-rose-500/10 border border-rose-500/25 rounded-2xl space-y-4 max-w-lg">
+                        <p className="text-xs text-rose-400 font-semibold leading-relaxed">
                           Warning: This action is permanent! Deleting the server will permanently delete all channels, messages, invites, and settings.
                         </p>
                         <div className="flex gap-2 justify-end">
-                          <Button onClick={() => setShowDeleteConfirm(false)} variant="ghost" className="text-[#a3a29e] hover:text-[#e3e1db]">
+                          <Button onClick={() => setShowDeleteConfirm(false)} variant="ghost" className="text-white/70 hover:text-white rounded-xl">
                             Cancel
                           </Button>
-                          <Button onClick={handleDeleteServer} className="bg-red-600 hover:bg-red-700 text-white font-bold">
+                          <Button onClick={handleDeleteServer} className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl px-5">
                             Confirm Delete Server
                           </Button>
                         </div>
@@ -433,40 +441,41 @@ export default function ServerSettingsModal({
                   </div>
                 </div>
               ) : (
-                <div className="bg-[#1e2022] rounded-xl p-6 border border-[#2d2f31] space-y-4 text-center">
-                  <p className="text-sm text-[#a3a29e]">You are viewing server settings as an administrator.</p>
-                  <p className="text-xs text-[#767572]">Only the server owner can rename the server, transfer ownership, or delete it.</p>
+                <div className="space-y-2 py-4">
+                  <p className="text-sm text-white/80 font-medium">You are viewing server settings as an administrator.</p>
+                  <p className="text-xs text-white/60">Only the server owner can rename the server, transfer ownership, or delete it.</p>
                 </div>
               )}
             </div>
           )}
 
           {activeTab === 'roles' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6 text-[#e3e1db]">Roles</h2>
-              <div className="bg-[#1e2022] p-4 rounded-lg mb-6 border border-[#2d2f31]">
-                <h3 className="text-sm font-bold text-[#e3e1db] mb-4 uppercase">Create Role</h3>
+            <div className="space-y-8">
+              <h2 className="text-2xl font-bold text-white font-display">Roles</h2>
+              
+              <div className="space-y-4 max-w-xl pb-6 border-b border-border/50">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Create Role</h3>
                 <form onSubmit={handleCreateRole} className="flex gap-4 items-end">
                   <div className="flex-1 space-y-2">
-                    <label className="text-xs font-bold uppercase text-[#a3a29e]">Role Name</label>
-                    <Input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus:border-[#5865f2]" placeholder="New Role" />
+                    <label className="text-xs font-bold uppercase text-white/80 tracking-wider">Role Name</label>
+                    <Input value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} className="bg-secondary/60 border border-border text-white focus-visible:ring-1 focus-visible:ring-primary rounded-xl h-11" placeholder="New Role" />
                   </div>
                   <div className="w-24 space-y-2">
-                    <label className="text-xs font-bold uppercase text-[#a3a29e]">Color</label>
-                    <Input type="color" value={newRoleColor} onChange={(e) => setNewRoleColor(e.target.value)} className="h-9 p-1 bg-[#141517] border border-[#2d2f31] cursor-pointer" />
+                    <label className="text-xs font-bold uppercase text-white/80 tracking-wider">Color</label>
+                    <Input type="color" value={newRoleColor} onChange={(e) => setNewRoleColor(e.target.value)} className="h-11 p-1 bg-secondary/60 border border-border cursor-pointer rounded-xl" />
                   </div>
-                  <Button type="submit" className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-semibold rounded-[4px]">Create</Button>
+                  <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold rounded-xl h-11 px-6 shadow-md">Create</Button>
                 </form>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5 max-w-xl">
                 {roles.map(role => (
-                  <div key={role.id} className="flex items-center justify-between p-3 rounded bg-[#1e2022] border border-[#2d2f31]">
+                  <div key={role.id} className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-secondary/40">
                     <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: role.color }}></div>
-                      <span className="font-medium text-[#e3e1db]">{role.name}</span>
+                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: role.color }}></div>
+                      <span className="font-semibold text-white">{role.name}</span>
                     </div>
-                    <span className="text-xs text-[#a3a29e]">{role.permissions.length} permissions</span>
+                    <span className="text-xs text-white/70 font-medium">{role.permissions.length} permissions</span>
                   </div>
                 ))}
               </div>
@@ -474,13 +483,13 @@ export default function ServerSettingsModal({
           )}
 
           {activeTab === 'members' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6 text-[#e3e1db]">Server Members</h2>
-              <div className="space-y-2">
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white font-display">Server Members</h2>
+              <div className="space-y-2.5 max-w-xl">
                 {members.map(member => (
-                  <div key={member.id} className="flex items-center justify-between p-3 rounded bg-[#1e2022] border border-[#2d2f31]">
+                  <div key={member.id} className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-secondary/40">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shrink-0 overflow-hidden">
+                      <div className="w-9 h-9 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-bold uppercase text-white shrink-0 overflow-hidden">
                         {member.avatar ? (
                           <img src={getFileUrl(member.avatar)} alt={member.username} className="w-full h-full object-cover" />
                         ) : (
@@ -488,18 +497,18 @@ export default function ServerSettingsModal({
                         )}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <span className="font-medium text-[#e3e1db] truncate">{member.display_name || member.username}</span>
-                        <span className="text-xs text-[#a3a29e]">@{member.username}</span>
+                        <span className="font-semibold text-white truncate">{member.display_name || member.username}</span>
+                        <span className="text-xs text-white/70">@{member.username}</span>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#a3a29e]">Role:</span>
+                      <span className="text-xs text-white/70 font-medium">Role:</span>
                       <select 
                         value={member.role_id || ""} 
                         onChange={(e) => updateMemberRole(member.id, e.target.value || null)}
                         disabled={member.id === ownerId}
-                        className="bg-[#141517] border border-[#2d2f31] rounded text-xs text-[#e3e1db] p-1.5 focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-secondary/60 border border-border rounded-xl text-xs text-white p-2 focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <option value="">No Role</option>
                         {roles.map(role => (
@@ -510,7 +519,7 @@ export default function ServerSettingsModal({
                   </div>
                 ))}
                 {members.length === 0 && (
-                  <p className="text-[#a3a29e] text-center py-8">No members found.</p>
+                  <p className="text-white/70 text-center py-8 font-medium">No members found.</p>
                 )}
               </div>
             </div>
@@ -519,10 +528,10 @@ export default function ServerSettingsModal({
 
         {/* Close Button */}
         <div className="absolute top-4 right-4 md:top-14 md:right-10 flex flex-col items-center gap-2 z-50">
-          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full border-2 border-[#a3a29e] text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="w-9 h-9 rounded-full border border-border text-white/80 hover:bg-white/10 hover:text-white" onClick={onClose}>
             <X size={18} />
           </Button>
-          <span className="hidden md:block text-[10px] font-bold text-[#a3a29e]">ESC</span>
+          <span className="hidden md:block text-[10px] font-bold text-white/60">ESC</span>
         </div>
       </div>
     </div>

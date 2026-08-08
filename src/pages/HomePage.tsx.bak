@@ -21,11 +21,13 @@ import InviteModal from "@/components/modals/InviteModal"
 import ServerSettingsModal from "@/components/modals/ServerSettingsModal"
 import UserSettingsModal from "@/components/modals/UserSettingsModal"
 import ChannelSettingsModal from "@/components/modals/ChannelSettingsModal"
-import QuickSwitcherModal from "@/components/modals/QuickSwitcherModal"
-import ImageLightboxModal from "@/components/modals/ImageLightboxModal"
 import MessageContent from "@/components/MessageContent"
 import { SidebarHeader } from "@/components/navigation/SidebarHeader"
+import { BottomDock } from "@/components/navigation/BottomDock"
 import { Plus, LogOut, Settings, Hash, Volume2, Shield, User, Users, Mic, MicOff, Headphones, Video, VideoOff, Phone, PhoneOff, MonitorUp, MessageSquare, Check, X as XIcon, Search, UserMinus, Ban, ChevronDown, UserPlus, Gamepad2, CornerUpLeft, Edit3, Trash2, Pin, Smile, MoreHorizontal, Compass, Megaphone, Pencil, Menu } from "lucide-react"
+
+
+import { InteractiveBackground } from "@/components/ui/InteractiveBackground"
 
 function ContextSidebarHeader({ 
   activeTab, 
@@ -34,10 +36,9 @@ function ContextSidebarHeader({
   onCreateChannel, 
   onSettings, 
   onLeave,
-  onUserSettings,
   isOwner,
   isAdmin,
-  isManageChannels,
+  isManageChannels
 }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -52,78 +53,70 @@ function ContextSidebarHeader({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Only show server actions menu when on a server
-  if (activeTab === 'server' && currentServer) {
+  if (activeTab === 'home') {
     return (
-      <div className="relative z-50 w-full shrink-0" ref={menuRef}>
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between px-4 h-12 hover:bg-white/[0.03] transition-colors border-b border-border group"
-        >
-          <span className="font-semibold text-sm text-foreground truncate">{currentServer.name}</span>
-          <ChevronDown size={14} className={`text-muted-foreground transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-
-        {isOpen && (
-          <div className="absolute top-full left-2 right-2 mt-1 bg-popover border border-border rounded-lg shadow-xl p-1.5 animate-in fade-in slide-in-from-top-2 duration-150 z-50">
-            <button 
-              onClick={() => { onInvite?.(); setIsOpen(false); }}
-              className="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
-            >
-              <span>Invite People</span>
-              <UserPlus size={14} />
-            </button>
-            
-            {(isOwner || isAdmin || isManageChannels) && (
-              <button 
-                onClick={() => { onCreateChannel?.(); setIsOpen(false); }}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors"
-              >
-                <span>Create Channel</span>
-                <Plus size={14} />
-              </button>
-            )}
-            
-            {(isOwner || isAdmin) && (
-              <button 
-                onClick={() => { onSettings?.(); setIsOpen(false); }}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-white/[0.06] hover:text-foreground transition-colors"
-              >
-                <span>Server Settings</span>
-                <Settings size={14} />
-              </button>
-            )}
-            
-            {!isOwner && (
-              <button 
-                onClick={() => { onLeave?.(); setIsOpen(false); }}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-md text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors mt-0.5"
-              >
-                <span>Leave Server</span>
-                <LogOut size={14} />
-              </button>
-            )}
-          </div>
-        )}
+      <div className="w-full flex items-center justify-between px-4 py-3 bg-transparent border-b border-white/5 shadow-sm">
+        <div className="flex items-center gap-2 text-white/90">
+          <MessageSquare size={16} className="text-primary" />
+          <span className="font-bold display-font">Direct Messages</span>
+        </div>
       </div>
     );
   }
 
-  // For home/chats/people — header with Settings button
+  if (!currentServer) return null;
+
   return (
-    <div className="w-full flex items-center justify-between px-4 h-12 border-b border-border shrink-0 bg-secondary/50">
-      <div className="flex items-center gap-2">
-        <img src="/favicon.svg" alt="Suhhp" className="w-6 h-6 rounded-md shadow-sm" />
-        <span className="font-display font-extrabold text-xl text-white tracking-widest uppercase">Suhhp</span>
-      </div>
-      <button
-        onClick={onUserSettings}
-        className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all duration-200 cursor-pointer flex items-center gap-1.5 border border-white/10 shadow-sm"
-        title="Open User Settings"
+    <div className="relative z-50 w-full shrink-0" ref={menuRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-transparent hover:bg-white/5 transition-colors border-b border-white/5 shadow-sm group"
       >
-        <Settings size={14} className="text-white" />
-        <span className="font-sans font-semibold text-xs text-white tracking-wide">Settings</span>
+        <span className="font-bold text-white truncate display-font">{currentServer.name}</span>
+        <ChevronDown size={16} className={`text-[#a1a1aa] group-hover:text-white transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-2 right-2 mt-2 bg-black/60 backdrop-blur-3xl border border-white/10 rounded-xl shadow-2xl p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <button 
+            onClick={() => { onInvite?.(); setIsOpen(false); }}
+            className="w-full flex items-center justify-between px-2 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary hover:text-white transition-colors"
+          >
+            <span>Invite People</span>
+            <UserPlus size={16} />
+          </button>
+          
+          {(isOwner || isAdmin || isManageChannels) && (
+            <button 
+              onClick={() => { onCreateChannel?.(); setIsOpen(false); }}
+              className="w-full flex items-center justify-between px-2 py-2 rounded-lg text-sm font-medium text-[#a1a1aa] hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <span>Create Channel</span>
+              <Plus size={16} />
+            </button>
+          )}
+          
+          {(isOwner || isAdmin) && (
+            <button 
+              onClick={() => { onSettings?.(); setIsOpen(false); }}
+              className="w-full flex items-center justify-between px-2 py-2 rounded-lg text-sm font-medium text-[#a1a1aa] hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <span>Server Settings</span>
+              <Settings size={16} />
+            </button>
+          )}
+          
+          {!isOwner && (
+            <button 
+              onClick={() => { onLeave?.(); setIsOpen(false); }}
+              className="w-full flex items-center justify-between px-2 py-2 rounded-lg text-sm font-medium text-rose-400 hover:bg-rose-500 hover:text-white transition-colors mt-1"
+            >
+              <span>Leave Server</span>
+              <LogOut size={16} />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -165,7 +158,7 @@ export default function HomePage() {
     speakingUsers
   } = useWebRTC(activeVoiceChannel?.id || undefined)
 
-  const [sidebarWidth, setSidebarWidth] = useState<number>(270) // Default 270px
+  const [sidebarWidth, setSidebarWidth] = useState<number>(240) // Default 240px
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -174,7 +167,7 @@ export default function HomePage() {
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
-      const newWidth = Math.max(260, Math.min(480, startWidth + deltaX)); // clamp between 260px and 480px
+      const newWidth = Math.max(160, Math.min(480, startWidth + deltaX)); // clamp between 160px and 480px
       setSidebarWidth(newWidth);
     };
 
@@ -241,33 +234,11 @@ export default function HomePage() {
   const [newChannelType, setNewChannelType] = useState<'text' | 'voice'>('text')
   
   const [showServerMenu, setShowServerMenu] = useState(false)
-  const [showServerSettingsModal, setShowServerSettingsModal] = useState(() => {
-    return localStorage.getItem('suhhp_showServerSettingsModal') === 'true'
-  })
+  const [showServerSettingsModal, setShowServerSettingsModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
   
   const [showStatusMenu, setShowStatusMenu] = useState(false)
-  const [showUserSettingsModal, setShowUserSettingsModal] = useState(() => {
-    return localStorage.getItem('suhhp_showUserSettingsModal') === 'true'
-  })
-
-  useEffect(() => {
-    localStorage.setItem('suhhp_showServerSettingsModal', showServerSettingsModal.toString())
-  }, [showServerSettingsModal])
-
-  const [showQuickSwitcher, setShowQuickSwitcher] = useState(false)
-  const [selectedLightboxImage, setSelectedLightboxImage] = useState<string | null>(null)
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setShowQuickSwitcher(prev => !prev)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  const [showUserSettingsModal, setShowUserSettingsModal] = useState(false)
   const [showChannelSettingsModal, setShowChannelSettingsModal] = useState(false)
   const [channelToEdit, setChannelToEdit] = useState<any | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
@@ -293,53 +264,11 @@ export default function HomePage() {
 
   // Friends & DMs State
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'home' | 'server'>(() => {
-    try {
-      const saved = localStorage.getItem('suhhp_activeTab')
-      return saved === 'server' ? 'server' : 'home'
-    } catch {
-      return 'home'
-    }
-  })
+  const [activeTab, setActiveTab] = useState<'home' | 'server'>('home')
 
-  const [activeHomeView, setActiveHomeView] = useState<'friends' | 'dm'>(() => {
-    try {
-      const saved = localStorage.getItem('suhhp_activeHomeView')
-      return saved === 'dm' ? 'dm' : 'friends'
-    } catch {
-      return 'friends'
-    }
-  })
+  const [activeHomeView, setActiveHomeView] = useState<'friends' | 'dm'>('friends')
   const [friendsFilter, setFriendsFilter] = useState<'all' | 'pending' | 'add' | 'blocked'>('all')
-  const [activeDmId, setActiveDmId] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem('suhhp_activeDmId') || null
-    } catch {
-      return null
-    }
-  })
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('suhhp_activeTab', activeTab)
-    } catch (e) {}
-  }, [activeTab])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('suhhp_activeHomeView', activeHomeView)
-    } catch (e) {}
-  }, [activeHomeView])
-
-  useEffect(() => {
-    try {
-      if (activeDmId) {
-        localStorage.setItem('suhhp_activeDmId', activeDmId)
-      } else {
-        localStorage.removeItem('suhhp_activeDmId')
-      }
-    } catch (e) {}
-  }, [activeDmId])
+  const [activeDmId, setActiveDmId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const { friends, searchResults, searchUsers, sendRequest, acceptRequest, removeFriend, blockUser } = useFriends()
@@ -419,7 +348,7 @@ export default function HomePage() {
       ? (speakingUsers[user?.id || 'local'] || speakingUsers['local'])
       : speakingUsers[p.id.replace('-screen', '')] === true;
 
-    const cardClasses = `bg-background rounded-[8px] flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all cursor-pointer group shadow-md ${
+    const cardClasses = `bg-[#1e1f22] rounded-[8px] flex flex-col items-center justify-center relative overflow-hidden border-2 transition-all cursor-pointer group shadow-md ${
       isSpeaking 
         ? 'border-[#23a55a]' 
         : (isFocused && size !== 'small' ? 'border-[#b5bac1]' : 'border-[#2b2d31] hover:border-[#35373c]')
@@ -450,8 +379,8 @@ export default function HomePage() {
             className="w-full h-full object-cover" 
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-secondary">
-            <div className={`relative z-10 rounded-full bg-background text-foreground flex items-center justify-center font-bold uppercase transition-all duration-150 overflow-hidden ${avatarSizeClass} ${
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#2b2d31]">
+            <div className={`relative z-10 rounded-full bg-[#1e1f22] text-[#e3e1db] flex items-center justify-center font-bold uppercase transition-all duration-150 overflow-hidden ${avatarSizeClass} ${
               isSpeaking 
                 ? 'ring-[3px] ring-[#23a55a] ring-offset-2 ring-offset-[#2b2d31]' 
                 : ''
@@ -1245,8 +1174,9 @@ export default function HomePage() {
   const voiceChannels = channels.filter(c => c.type === 'voice')
 
   return (
-    <div className="flex h-screen w-screen bg-background text-foreground overflow-hidden">
-      {Object.entries(remoteStreams).map(([peerId, stream]) => (
+    <div className="flex h-screen bg-transparent text-white overflow-hidden p-0 gap-0 relative">
+      <InteractiveBackground fullScreen={true}>
+        {Object.entries(remoteStreams).map(([peerId, stream]) => (
         <RemoteStream key={peerId} stream={stream} peerId={peerId} />
       ))}
 
@@ -1258,27 +1188,39 @@ export default function HomePage() {
         />
       )}
 
-      {/* Main Layout — Clean 2-Panel Split */}
-      <div className="flex-1 flex h-full z-10">
-        <div className="w-full h-full flex overflow-hidden relative">
+      {/* Bottom Dock (Replaces WorkspaceSwitcher) */}
+      <BottomDock
+        servers={servers}
+        currentServer={currentServer}
+        activeTab={activeTab}
+        goHome={goHome}
+        onSelectServer={(server) => {
+          setCurrentServer(server);
+          setActiveTab('server');
+        }}
+        onAddServer={() => setShowCreateServerModal(true)}
+      />
+
+      {/* Main Layout Container - Spatial UI Floating Window */}
+      <div className="flex-1 flex w-full h-full p-4 pb-32 z-10">
+        <div className="mx-auto w-full max-w-[1600px] h-full flex bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl relative">
           
           {/* Mobile slide-out drawer wrapper for Context Sidebar */}
           <div className={`fixed md:relative top-0 bottom-0 left-0 z-40 h-full shrink-0 flex transition-transform duration-300 md:translate-x-0 ${
               mobileMenuOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
             }`}
           >
-            {/* Context Sidebar */}
+            {/* Context Sidebar (Resizable) */}
             <div 
-              style={{ width: `${sidebarWidth}px`, maxWidth: '350px', minWidth: '260px' }}
-              className={`h-full bg-secondary border-r border-border/50 shrink-0 flex flex-col relative`}
+              style={{ width: `${sidebarWidth}px`, maxWidth: '350px', minWidth: '220px' }}
+              className={`h-full bg-white/[0.02] border-r border-white/5 shrink-0 flex flex-col relative`}
             >
-            {/* Workspace Switcher Header */}
+            {/* Header Dropdown (Replaces the old WorkspaceSwitcher header) */}
             <ContextSidebarHeader 
               activeTab={activeTab}
               currentServer={currentServer}
               onInvite={() => setShowInviteModal(true)}
               onSettings={() => setShowServerSettingsModal(true)}
-              onUserSettings={() => setShowUserSettingsModal(true)}
               onCreateChannel={() => { setNewChannelType('text'); setShowCreateChannelModal(true); }}
               onLeave={handleLeaveServer}
               isOwner={currentServer?.owner_id === user?.id}
@@ -1286,203 +1228,58 @@ export default function HomePage() {
               isManageChannels={!!(currentServer as any)?.permissions?.includes('MANAGE_CHANNELS')}
             />
             
-            <div className={`flex-1 overflow-y-auto p-3.5 no-scrollbar ${activeVoiceChannel ? 'pb-[160px]' : 'pb-[68px]'}`}>
-              {/* Sidebar tabs: Chats / People / Servers — 3-equal grid, high contrast, zero truncation */}
-              <div className="grid grid-cols-3 gap-1 mb-3.5 bg-background/60 rounded-xl p-1 border border-white/10">
-                <button 
-                  onClick={() => { setActiveTab('home'); setActiveHomeView('dm'); setMobileMenuOpen(false); }}
-                  className={`py-2 px-1 rounded-lg text-sm font-extrabold transition-all text-center truncate select-none ${
-                    activeTab === 'home' && activeHomeView !== 'friends' 
-                      ? 'bg-white/15 text-white shadow-sm border border-white/10' 
-                      : 'text-white/70 hover:text-white hover:bg-white/5 font-semibold'
-                  }`}
-                >
-                  Chats
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('home'); setActiveHomeView('friends'); setActiveDmId(null); setMobileMenuOpen(false); }}
-                  className={`py-2 px-1 rounded-lg text-sm font-extrabold transition-all text-center truncate select-none ${
-                    activeTab === 'home' && activeHomeView === 'friends' 
-                      ? 'bg-white/15 text-white shadow-sm border border-white/10' 
-                      : 'text-white/70 hover:text-white hover:bg-white/5 font-semibold'
-                  }`}
-                >
-                  People
-                </button>
-                <button 
-                  onClick={() => { setActiveTab('server'); setCurrentServer(null as any); setMobileMenuOpen(false); }}
-                  className={`py-2 px-1 rounded-lg text-sm font-extrabold transition-all text-center truncate select-none ${
-                    activeTab === 'server' 
-                      ? 'bg-white/15 text-white shadow-sm border border-white/10' 
-                      : 'text-white/70 hover:text-white hover:bg-white/5 font-semibold'
-                  }`}
-                >
-                  Servers
-                </button>
-              </div>
-
-              {/* Tab content */}
-              {activeTab === 'home' && activeHomeView === 'friends' ? (
-                /* People tab — Friends management inline in sidebar */
-                <div className="space-y-2.5">
-                  {/* Search / Add friend */}
-                  <form onSubmit={handleSearchUsers} className="relative">
-                    <Input 
-                      value={searchQuery} 
-                      onChange={(e) => setSearchQuery(e.target.value)} 
-                      placeholder="Find or add people..." 
-                      className="bg-background/80 border border-white/10 text-white text-sm font-medium h-10 pl-9 pr-3 focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-0 placeholder:text-white/70" 
-                    />
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70" />
-                  </form>
-
-                  {/* Search results */}
-                  {searchResults.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-xs font-bold uppercase tracking-wider text-white/80 px-1">Results</span>
-                      {searchResults.map(u => (
-                        <div key={u.id} className="flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/[0.06] transition-colors">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-xs font-bold text-white border border-white/10 overflow-hidden shrink-0">
-                              {u.avatar ? <img src={getFileUrl(u.avatar)} alt={u.username} className="w-full h-full object-cover" /> : u.username?.[0]}
-                            </div>
-                            <span className="text-sm font-semibold text-white truncate">{u.username}</span>
-                          </div>
-                          <Button size="sm" className="h-7 text-xs px-2.5 bg-primary/20 text-white hover:bg-primary border border-primary/30" onClick={async () => { const ok = await sendRequest(u.id); if (ok) showToast("Request sent!"); }}>Add</Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Filter tabs */}
-                  <div className="flex gap-1.5 px-1">
-                    {(['all', 'pending', 'blocked'] as const).map(f => (
-                      <button key={f} onClick={() => setFriendsFilter(f)} className={`text-sm px-3.5 py-1.5 rounded-lg transition-all capitalize font-bold ${friendsFilter === f ? 'bg-white/15 text-white shadow-sm border border-white/10' : 'text-white/70 hover:text-white hover:bg-white/5 font-semibold'}`}>{f}</button>
-                    ))}
-                  </div>
-
-                  {/* Friends list */}
-                  <div className="space-y-1">
-                    {friends.filter(f => friendsFilter === 'all' ? f.status === 'accepted' : f.status === friendsFilter).map(friend => (
-                      <div key={friend.id} className="flex items-center gap-3 px-2.5 py-2.5 rounded-lg hover:bg-white/[0.06] group cursor-pointer transition-colors" onClick={() => setSelectedUserProfileId(friend.id)}>
-                        <div className="relative shrink-0">
-                          <div className="w-9 h-9 rounded-full bg-card flex items-center justify-center text-sm font-bold text-white border border-white/10 overflow-hidden">
-                            {friend.avatar ? <img src={getFileUrl(friend.avatar)} alt={friend.username} className="w-full h-full object-cover" /> : friend.username[0]}
-                          </div>
-                          {friend.status === 'accepted' && (
-                            <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-secondary ${getStatusColor(friend.presence_status)}`} />
-                          )}
-                        </div>
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <span className="text-base font-bold text-white truncate">{friend.display_name || friend.username}</span>
-                          <span className="text-xs text-white/80 truncate leading-none mt-0.5 font-semibold">
-                            {friend.status === 'pending' ? (friend.direction === 'incoming' ? 'Incoming request' : 'Sent request') : 
-                             friend.status === 'blocked' ? 'Blocked' : (friend.status_message || friend.presence_status || 'offline')}
-                          </span>
-                        </div>
-                        <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {friend.status === 'pending' && friend.direction === 'incoming' && (
-                            <>
-                              <button className="w-7 h-7 rounded-full flex items-center justify-center text-white/80 hover:text-emerald-400 hover:bg-emerald-500/20 transition-colors" onClick={async (e) => { e.stopPropagation(); const success = await acceptRequest(friend.id); if (success) { const latestDms = await fetchDMs(); const newDm = latestDms?.find((d: any) => d.target_id === friend.id); if (newDm) openDm(newDm.id); }}} title="Accept"><Check size={14} /></button>
-                              <button className="w-7 h-7 rounded-full flex items-center justify-center text-white/80 hover:text-rose-400 hover:bg-rose-500/20 transition-colors" onClick={(e) => { e.stopPropagation(); removeFriend(friend.id); }} title="Decline"><XIcon size={14} /></button>
-                            </>
-                          )}
-                          {friend.status === 'accepted' && (
-                            <button className="w-7 h-7 rounded-full flex items-center justify-center text-white/80 hover:text-primary hover:bg-primary/20 transition-colors" onClick={async (e) => { e.stopPropagation(); let existingDm = dms.find(d => d.target_id === friend.id); if (!existingDm) { const latestDms = await fetchDMs(); existingDm = latestDms?.find((d: any) => d.target_id === friend.id); } if (existingDm) openDm(existingDm.id); }} title="Message"><MessageSquare size={14} /></button>
-                          )}
-                          {friend.status === 'blocked' && (
-                            <button className="text-xs text-white/80 hover:text-white px-2 py-0.5 rounded transition-colors" onClick={(e) => { e.stopPropagation(); removeFriend(friend.id); }}>Unblock</button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {friends.filter(f => friendsFilter === 'all' ? f.status === 'accepted' : f.status === friendsFilter).length === 0 && (
-                      <div className="flex flex-col items-center justify-center py-10 text-white text-base font-bold gap-1">
-                        <Users size={36} className="mb-1 text-white/60" />
-                        <span>No people yet</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : activeTab === 'home' ? (
-                /* Chats tab — DM list */
+            <div className={`flex-1 overflow-y-auto p-3 no-scrollbar ${activeVoiceChannel ? 'pb-[160px]' : 'pb-[68px]'}`}>
+              {activeTab === 'home' ? (
                 <div className="space-y-1">
-                {dms.map(dm => {
-                  const unreadCount = notifications.dms.find(d => d.channel_id === dm.id)?.unread_count || 0;
-                  return (
                   <div 
-                    key={dm.id} 
-                    onClick={() => { openDm(dm.id); setMobileMenuOpen(false); }}
-                    className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg cursor-pointer group relative transition-all duration-150 ${activeHomeView === 'dm' && activeDmId === dm.id ? 'bg-white/15 text-white font-bold shadow-sm border border-white/10' : 'text-white/80 hover:bg-white/[0.06] hover:text-white'}`}
+                    onClick={() => { setActiveHomeView('friends'); setMobileMenuOpen(false); }}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 ${activeHomeView === 'friends' ? 'bg-primary/10 text-primary font-semibold' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`}
                   >
-                    <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-card flex items-center justify-center text-sm font-bold uppercase text-white border border-white/10 overflow-hidden">
-                        {dm.avatar ? (
-                          <img src={getFileUrl(dm.avatar)} alt={dm.name} className="w-full h-full object-cover" />
-                        ) : (
-                          dm.name[0]
+                    <User size={18} />
+                    <span className="text-[14px]">Friends</span>
+                  </div>
+                  <div className="pt-6">
+                    <span className="text-[10px] font-bold uppercase text-[#a1a1aa] tracking-widest px-3 mb-3 block">Direct Messages</span>
+                    <div className="space-y-1">
+                    {dms.map(dm => {
+                      const unreadCount = notifications.dms.find(d => d.channel_id === dm.id)?.unread_count || 0;
+                      return (
+                      <div 
+                        key={dm.id} 
+                        onClick={() => { openDm(dm.id); setMobileMenuOpen(false); }}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer group relative transition-all duration-200 ${activeHomeView === 'dm' && activeDmId === dm.id ? 'bg-white/10 text-white font-medium shadow-inner' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`}
+                      >
+                        <div className="relative shrink-0">
+                          <div className="w-8 h-8 rounded-[10px] bg-black/40 flex items-center justify-center text-xs font-bold uppercase text-white border border-white/5 overflow-hidden shadow-sm">
+                            {dm.avatar ? (
+                              <img src={getFileUrl(dm.avatar)} alt={dm.name} className="w-full h-full object-cover" />
+                            ) : (
+                              dm.name[0]
+                            )}
+                          </div>
+                          {dm.active_call && dm.active_call > 0 ? (
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#0b0c0e] flex items-center justify-center text-white shadow-sm">
+                              <Phone size={8} className="fill-current" />
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className="flex flex-col min-w-0 flex-1 text-left">
+                          <span className={`text-[14px] truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-white font-bold' : ''}`}>{dm.name}</span>
+                          {dm.active_call && dm.active_call > 0 ? (
+                            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 leading-none mt-0.5">
+                              In a call
+                            </span>
+                          ) : null}
+                        </div>
+                        {unreadCount > 0 && activeDmId !== dm.id && (
+                          <div className="absolute right-3 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center justify-center shadow-sm">
+                            {unreadCount}
+                          </div>
                         )}
                       </div>
-                      {dm.active_call && dm.active_call > 0 ? (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-secondary flex items-center justify-center text-white">
-                          <Phone size={8} className="fill-current" />
-                        </div>
-                      ) : null}
+                    )})}
                     </div>
-                    <div className="flex flex-col min-w-0 flex-1 text-left">
-                      <span className={`text-sm truncate ${unreadCount > 0 && activeDmId !== dm.id ? 'text-white font-bold' : 'font-semibold'}`}>{dm.name}</span>
-                      {dm.active_call && dm.active_call > 0 ? (
-                        <span className="text-xs text-emerald-400 font-semibold leading-none mt-0.5">In a call</span>
-                      ) : null}
-                    </div>
-                    {unreadCount > 0 && activeDmId !== dm.id && (
-                      <div className="bg-primary text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">
-                        {unreadCount}
-                      </div>
-                    )}
                   </div>
-                )})}
-                {dms.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-10 text-white/80 text-sm font-medium">
-                    <MessageSquare size={32} className="mb-2 opacity-50 text-white" />
-                    No conversations yet
-                  </div>
-                )}
-                </div>
-              ) : activeTab === 'server' && !currentServer ? (
-                /* Servers tab — no server selected, show server list */
-                <div className="space-y-1">
-                  {servers.map((server: any) => (
-                    <button
-                      key={server.id}
-                      onClick={() => { setCurrentServer(server); setMobileMenuOpen(false); }}
-                      className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm text-white/80 hover:bg-white/[0.06] hover:text-white transition-colors text-left font-semibold"
-                    >
-                      {server.icon ? (
-                        <img src={getFileUrl(server.icon)} className="w-9 h-9 rounded-lg object-cover shrink-0" alt="" />
-                      ) : (
-                        <div className="w-9 h-9 rounded-lg bg-card flex items-center justify-center text-sm font-bold text-white border border-white/10 shrink-0">
-                          {server.name[0]?.toUpperCase()}
-                        </div>
-                      )}
-                      <span className="font-semibold text-sm truncate">{server.name}</span>
-                    </button>
-                  ))}
-                  <button 
-                    onClick={() => setShowCreateServerModal(true)}
-                    className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm text-emerald-400 hover:bg-emerald-500/15 transition-colors font-semibold"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                      <Plus size={18} />
-                    </div>
-                    <span className="font-semibold text-sm">Create Server</span>
-                  </button>
-                  {servers.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-10 text-white/80 text-sm font-medium">
-                      <Compass size={32} className="mb-2 opacity-50 text-white" />
-                      No servers yet
-                    </div>
-                  )}
                 </div>
               ) : currentServer ? (
                 <div className="space-y-4 pt-2">
@@ -1490,7 +1287,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between px-3 mb-2 group/header select-none">
                       <button 
                         onClick={() => setTextChannelsCollapsed(!textChannelsCollapsed)}
-                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-white/80 tracking-widest hover:text-white transition-colors"
+                        className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-[#a1a1aa] tracking-widest hover:text-white transition-colors"
                       >
                         <ChevronDown 
                           size={12} 
@@ -1501,7 +1298,7 @@ export default function HomePage() {
                       {(currentServer.owner_id === user?.id || (currentServer as any).permissions?.includes('ADMINISTRATOR') || (currentServer as any).permissions?.includes('MANAGE_CHANNELS')) && (
                         <Plus 
                           size={14} 
-                          className="text-white/80 cursor-pointer hover:text-white hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
+                          className="text-[#a1a1aa] cursor-pointer hover:text-white hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
                           onClick={(e) => { e.stopPropagation(); setNewChannelType('text'); setShowCreateChannelModal(true); }} 
                         />
                       )}
@@ -1517,8 +1314,8 @@ export default function HomePage() {
                               onClick={() => { sendTypingStatus(false); setCurrentChannel(channel); setMobileMenuOpen(false); }} 
                               className={`relative flex items-center justify-between pl-4 pr-2 py-2 rounded-xl cursor-pointer group transition-all duration-200 ${
                                 isActive 
-                                  ? 'bg-white/10 text-white shadow-inner font-semibold' 
-                                  : 'text-white/80 hover:bg-white/5 hover:text-white font-medium'
+                                  ? 'bg-white/10 text-white shadow-inner font-medium' 
+                                  : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'
                               }`}
                             >
                               {/* Left accent pill */}
@@ -1537,15 +1334,15 @@ export default function HomePage() {
                                   className={`transition-colors shrink-0 ${
                                     isActive 
                                       ? 'text-white' 
-                                      : (isUnread ? 'text-white' : 'text-white/70 group-hover:text-white')
+                                      : (isUnread ? 'text-white' : 'text-[#a1a1aa] group-hover:text-white')
                                   }`} 
                                 />
                                 <span className={`text-[14px] truncate transition-all duration-200 group-hover:translate-x-0.5 ${
                                   isActive
-                                    ? 'font-semibold text-white'
+                                    ? 'font-medium text-white'
                                     : isUnread 
                                       ? 'font-bold text-white' 
-                                      : 'font-medium text-white/80 group-hover:text-white'
+                                      : 'font-medium text-[#a1a1aa] group-hover:text-white'
                                 }`}>{channel.name}</span>
                               </div>
                               
@@ -1553,7 +1350,7 @@ export default function HomePage() {
                                 <span title="Create Invite" className="flex items-center">
                                   <UserPlus
                                     size={14}
-                                    className="text-muted-foreground hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                    className="text-[#a1a1aa] hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setShowInviteModal(true);
@@ -1564,7 +1361,7 @@ export default function HomePage() {
                                   <span title="Edit Channel" className="flex items-center">
                                     <Settings
                                       size={14}
-                                      className="text-muted-foreground hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                      className="text-[#a1a1aa] hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setChannelToEdit(channel);
@@ -1585,7 +1382,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between px-1.5 mb-1 group/header select-none">
                       <button 
                         onClick={() => setVoiceChannelsCollapsed(!voiceChannelsCollapsed)}
-                        className="flex items-center gap-1 text-[11px] font-bold uppercase text-white/80 hover:text-white transition-colors"
+                        className="flex items-center gap-1 text-[11px] font-bold uppercase text-[#767572] hover:text-[#dbdee1] transition-colors"
                       >
                         <ChevronDown 
                           size={12} 
@@ -1596,7 +1393,7 @@ export default function HomePage() {
                       {(currentServer.owner_id === user?.id || (currentServer as any).permissions?.includes('ADMINISTRATOR') || (currentServer as any).permissions?.includes('MANAGE_CHANNELS')) && (
                         <Plus 
                           size={14} 
-                          className="text-white/80 cursor-pointer hover:text-white hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
+                          className="text-[#a3a29e] cursor-pointer hover:text-[#dbdee1] hover:scale-110 active:scale-95 opacity-0 group-hover/header:opacity-100 transition-all duration-200" 
                           onClick={(e) => { e.stopPropagation(); setNewChannelType('voice'); setShowCreateChannelModal(true); }} 
                         />
                       )}
@@ -1619,8 +1416,8 @@ export default function HomePage() {
                                   isConnected
                                     ? 'bg-emerald-500/10 text-emerald-400 font-medium border border-emerald-500/20'
                                     : (isActive 
-                                      ? 'bg-white/10 text-white shadow-inner font-semibold' 
-                                      : 'text-white/80 hover:bg-white/5 hover:text-white font-medium')
+                                      ? 'bg-white/10 text-white shadow-inner font-medium' 
+                                      : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white')
                                 }`}
                               >
                                 <div className="flex items-start gap-2 min-w-0 flex-1">
@@ -1631,7 +1428,7 @@ export default function HomePage() {
                                         ? 'text-emerald-400'
                                         : (isActive 
                                           ? 'text-white' 
-                                          : 'text-white/70 group-hover:text-white')
+                                          : 'text-[#a1a1aa] group-hover:text-white')
                                     }`} 
                                   />
                                   <div className="flex flex-col min-w-0 flex-1 select-none">
@@ -1640,7 +1437,7 @@ export default function HomePage() {
                                         ? 'font-medium text-emerald-400'
                                         : (isActive
                                           ? 'font-medium text-white'
-                                          : 'font-medium text-muted-foreground group-hover:text-white')
+                                          : 'font-medium text-[#a1a1aa] group-hover:text-white')
                                     }`}>{channel.name}</span>
                                     
                                     {/* Voice Channel Status */}
@@ -1653,7 +1450,7 @@ export default function HomePage() {
                                             setNewChannelStatus(channelStatuses[channel.id] || "");
                                           }
                                         }}
-                                        className="flex items-center gap-1 group/status text-[11px] text-muted-foreground hover:text-white transition-colors mt-0.5 min-w-0 cursor-pointer"
+                                        className="flex items-center gap-1 group/status text-[11px] text-[#a1a1aa] hover:text-white transition-colors mt-0.5 min-w-0 cursor-pointer"
                                       >
                                         {editingStatusChannelId === channel.id ? (
                                           <input
@@ -1687,7 +1484,7 @@ export default function HomePage() {
                                             {isConnected && (
                                               <Pencil 
                                                 size={10} 
-                                                className="opacity-0 group-hover/status:opacity-100 transition-opacity shrink-0 ml-0.5 text-muted-foreground" 
+                                                className="opacity-0 group-hover/status:opacity-100 transition-opacity shrink-0 ml-0.5 text-[#a1a1aa]" 
                                               />
                                             )}
                                           </>
@@ -1701,7 +1498,7 @@ export default function HomePage() {
                                   <span title="Create Invite" className="flex items-center">
                                     <UserPlus
                                       size={14}
-                                      className="text-muted-foreground hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                      className="text-[#a1a1aa] hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setShowInviteModal(true);
@@ -1712,7 +1509,7 @@ export default function HomePage() {
                                     <span title="Edit Channel" className="flex items-center">
                                       <Settings
                                         size={14}
-                                        className="text-muted-foreground hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                                        className="text-[#a1a1aa] hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setChannelToEdit(channel);
@@ -1735,10 +1532,10 @@ export default function HomePage() {
                                       <div 
                                         key={p.user_id} 
                                         onClick={() => setSelectedUserProfileId(p.user_id)}
-                                        className="flex items-center justify-between p-1 rounded-md hover:bg-secondary/50 cursor-pointer group/p transition-colors"
+                                        className="flex items-center justify-between p-1 rounded-md hover:bg-[#2d2f31]/50 cursor-pointer group/p transition-colors"
                                       >
                                         <div className="flex items-center gap-2 min-w-0">
-                                          <div className={`w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[9px] uppercase font-bold text-foreground shrink-0 overflow-hidden transition-all duration-150 ${
+                                          <div className={`w-5 h-5 rounded-full bg-[#2b2d31] flex items-center justify-center text-[9px] uppercase font-bold text-[#e3e1db] shrink-0 overflow-hidden transition-all duration-150 ${
                                             isUserSpeaking 
                                               ? 'ring-2 ring-[#23a55a] border-transparent shadow-[0_0_8px_rgba(35,165,90,0.6)] scale-105' 
                                               : 'border border-[#3f4147]'
@@ -1750,13 +1547,13 @@ export default function HomePage() {
                                             )}
                                           </div>
                                           <span className={`text-xs truncate transition-colors duration-150 font-medium ${
-                                            isUserSpeaking ? 'text-[#23a55a] font-semibold' : 'text-muted-foreground group-hover/p:text-foreground'
+                                            isUserSpeaking ? 'text-[#23a55a] font-semibold' : 'text-[#949ba4] group-hover/p:text-[#dbdee1]'
                                           }`}>{p.username}</span>
                                         </div>
                                         <div className="flex items-center gap-1 pr-1 shrink-0">
-                                          {p.is_muted === 1 && <MicOff size={13} className="text-muted-foreground" />}
+                                          {p.is_muted === 1 && <MicOff size={13} className="text-[#949ba4]" />}
                                           {p.is_deafened === 1 && (
-                                            <div className="relative flex items-center justify-center text-muted-foreground">
+                                            <div className="relative flex items-center justify-center text-[#949ba4]">
                                               <Headphones size={13} />
                                               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                                 <div className="w-[1px] h-[13px] bg-[#949ba4] rotate-45" />
@@ -1820,19 +1617,19 @@ export default function HomePage() {
                     
                     {showStatusMenu && (
                       <div className="absolute bottom-12 left-0 w-48 bg-black/80 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 p-2 z-50 flex flex-col gap-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-muted-foreground">
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('online'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-[#a1a1aa]">
                           <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm" />
                           <span className="text-sm font-medium">Online</span>
                         </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-muted-foreground">
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('idle'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-[#a1a1aa]">
                           <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm" />
                           <span className="text-sm font-medium">Idle</span>
                         </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-muted-foreground">
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('dnd'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-[#a1a1aa]">
                           <div className="w-3 h-3 rounded-full bg-rose-500 shadow-sm" />
                           <span className="text-sm font-medium">Do Not Disturb</span>
                         </div>
-                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-muted-foreground">
+                        <div onClick={(e) => { e.stopPropagation(); handleUpdateStatus('invisible'); setShowStatusMenu(false); }} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 hover:text-white cursor-pointer group/status transition-colors text-[#a1a1aa]">
                           <div className="w-3 h-3 rounded-full bg-zinc-500 shadow-sm" />
                           <span className="text-sm font-medium">Invisible</span>
                         </div>
@@ -1866,43 +1663,151 @@ export default function HomePage() {
         </div>
 
         {/* Main Chat Content wrapper */}
-        <div className="flex-1 flex flex-col overflow-hidden relative z-10 bg-card">
+        <div className="flex-1 flex flex-col overflow-hidden relative z-10 md:m-3 md:ml-0 rounded-2xl bg-black/40 border border-white/5 shadow-2xl backdrop-blur-xl">
           {activeTab === 'home' && activeHomeView === 'friends' ? (
-          /* Welcome / empty state — friends are managed in the sidebar now */
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <button 
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden absolute top-4 left-4 p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              <Menu size={20} />
-            </button>
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-              <Users size={28} className="text-primary" />
+          <div className="flex-1 flex flex-col">
+            <div className="h-[60px] border-b border-white/5 flex items-center px-4 shadow-sm shrink-0 gap-4 overflow-x-auto bg-black/20 backdrop-blur-md relative z-10">
+              <button 
+                onClick={() => setMobileMenuOpen(true)}
+                className="md:hidden p-1 mr-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer shrink-0"
+              >
+                <Menu size={24} />
+              </button>
+              <div className="flex items-center gap-2 font-bold text-white border-r border-white/10 pr-4 shrink-0">
+                <User size={20} className="text-primary" /> Friends
+              </div>
+              <Button variant="ghost" className={`h-8 px-3 rounded-full shrink-0 transition-all ${friendsFilter === 'all' ? 'bg-white/10 text-white font-medium shadow-inner' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`} onClick={() => setFriendsFilter('all')}>All</Button>
+              <Button variant="ghost" className={`h-8 px-3 rounded-full shrink-0 transition-all ${friendsFilter === 'pending' ? 'bg-white/10 text-white font-medium shadow-inner' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`} onClick={() => setFriendsFilter('pending')}>Pending</Button>
+              <Button variant="ghost" className={`h-8 px-3 rounded-full shrink-0 transition-all ${friendsFilter === 'blocked' ? 'bg-white/10 text-white font-medium shadow-inner' : 'text-[#a1a1aa] hover:bg-white/5 hover:text-white'}`} onClick={() => setFriendsFilter('blocked')}>Blocked</Button>
+              <Button variant="ghost" className={`h-8 px-3 rounded-full shrink-0 transition-all ${friendsFilter === 'add' ? 'bg-emerald-500 text-white hover:bg-emerald-600 font-medium shadow-sm' : 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 font-medium'}`} onClick={() => setFriendsFilter('add')}>Add Friend</Button>
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">People</h2>
-            <p className="text-sm text-muted-foreground max-w-[280px] leading-relaxed mb-6">
-              Manage your connections in the sidebar. Search for people, accept requests, or start a conversation.
-            </p>
-            <button
-              onClick={() => setShowUserSettingsModal(true)}
-              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition-all border border-white/15 flex items-center gap-2 shadow-lg cursor-pointer hover:scale-105 active:scale-95"
-            >
-              <Settings size={18} className="text-primary" />
-              <span className="font-sans font-semibold tracking-wide">Open User Settings</span>
-            </button>
+            
+            <div className="flex-1 p-6 overflow-y-auto">
+              {friendsFilter === 'add' ? (
+                <div className="max-w-[600px]">
+                  <h2 className="text-[#e3e1db] font-bold mb-2">ADD FRIEND</h2>
+                  <p className="text-[#a3a29e] text-sm mb-4">You can add friends with their Suhhp username.</p>
+                  <form onSubmit={handleSearchUsers} className="flex gap-2 mb-6">
+                    <div className="relative flex-1">
+                       <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="You can add friends with their Suhhp username." className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] pl-4 pr-10 focus-visible:ring-1 focus-visible:ring-[#5865f2] focus-visible:ring-offset-0" />
+                      <Button type="submit" size="icon" variant="ghost" className="absolute right-0 top-0 text-[#a3a29e] hover:text-[#e3e1db]"><Search size={18} /></Button>
+                    </div>
+                  </form>
+                  {searchResults.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-[#a3a29e] text-xs font-bold uppercase mb-2">Search Results</h3>
+                      {searchResults.map(u => (
+                        <div key={u.id} className="flex items-center justify-between p-3 rounded-lg border border-[#2d2f31] bg-[#1e2022]">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638] overflow-hidden">
+                              {u.avatar ? (
+                                <img src={getFileUrl(u.avatar)} alt={u.username} className="w-full h-full object-cover" />
+                              ) : (
+                                u.username?.[0] || '?'
+                              )}
+                            </div>
+                            <span className="font-bold text-[#e3e1db]">{u.username}</span>
+                          </div>
+                          <Button size="sm" className="bg-[#5865f2] text-white hover:bg-[#4752c4]" onClick={async () => { const ok = await sendRequest(u.id); if (ok) showToast("Friend request sent!"); }}>Send Request</Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {hasSearchedUsers && searchResults.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-[#a3a29e] text-sm">No users found with that username.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {friends.filter(f => friendsFilter === 'all' ? f.status === 'accepted' : f.status === friendsFilter).map(friend => (
+                    <div key={friend.id} className="flex items-center justify-between p-3 rounded-lg border-b border-[#2d2f31]/40 hover:bg-[#2d2f31]/30 group cursor-pointer" onClick={() => setSelectedUserProfileId(friend.id)}>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <div className="w-8 h-8 rounded-full bg-[#2d2f31] flex items-center justify-center text-[#e3e1db] font-bold uppercase border border-[#343638] overflow-hidden">
+                            {friend.avatar ? (
+                              <img src={getFileUrl(friend.avatar)} alt={friend.username} className="w-full h-full object-cover" />
+                            ) : (
+                              friend.username[0]
+                            )}
+                          </div>
+                          {friend.status === 'accepted' && (
+                            <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border border-[#1e2022] ${getStatusColor(friend.presence_status)}`} />
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-[#e3e1db] truncate">{friend.display_name || friend.username}</span>
+                          <span className="text-xs text-[#a3a29e] truncate">
+                            {friend.status === 'pending' ? (friend.direction === 'incoming' ? 'Incoming Friend Request' : 'Outgoing Friend Request') : 
+                             friend.status === 'blocked' ? 'Blocked' : (friend.status_message || (friend.presence_status || 'offline').toUpperCase())}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {friend.status === 'pending' && friend.direction === 'incoming' && (
+                          <>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#23a55a] hover:bg-[#23a55a]/10" onClick={async () => {
+                              const success = await acceptRequest(friend.id)
+                              if (success) {
+                                const latestDms = await fetchDMs()
+                                const newDm = latestDms?.find((d: any) => d.target_id === friend.id)
+                                if (newDm) {
+                                  openDm(newDm.id)
+                                }
+                              }
+                            }} title="Accept"><Check size={16} /></Button>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#f23f43] hover:bg-[#f23f43]/10" onClick={() => removeFriend(friend.id)} title="Decline"><XIcon size={16} /></Button>
+                          </>
+                        )}
+                        {friend.status === 'pending' && friend.direction === 'outgoing' && (
+                          <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#f23f43] hover:bg-[#f23f43]/10" onClick={() => removeFriend(friend.id)} title="Cancel Request"><XIcon size={16} /></Button>
+                        )}
+                        {friend.status === 'accepted' && (
+                          <>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#5865f2] hover:bg-[#5865f2]/10" onClick={async () => {
+                              let existingDm = dms.find(d => d.target_id === friend.id)
+                              if (!existingDm) {
+                                const latestDms = await fetchDMs()
+                                existingDm = latestDms?.find((d: any) => d.target_id === friend.id)
+                              }
+                              if (existingDm) {
+                                openDm(existingDm.id)
+                              } else {
+                                alert("Failed to find or create DM channel. Please try again.")
+                              }
+                            }} title="Message"><MessageSquare size={16} /></Button>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#f23f43] hover:bg-[#f23f43]/10" onClick={() => removeFriend(friend.id)} title="Remove Friend"><UserMinus size={16} /></Button>
+                            <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-[#2d2f31] border border-[#343638]/40 hover:text-[#f23f43] hover:bg-[#f23f43]/10" onClick={() => blockUser(friend.id)} title="Block User"><Ban size={16} /></Button>
+                          </>
+                        )}
+                        {friend.status === 'blocked' && (
+                           <Button size="sm" variant="secondary" className="h-8 rounded bg-[#2d2f31] border border-[#343638]/40 hover:text-[#e3e1db]" onClick={() => removeFriend(friend.id)}>Unblock</Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {friends.filter(f => friendsFilter === 'all' ? f.status === 'accepted' : f.status === friendsFilter).length === 0 && (
+                    <div className="flex items-center justify-center h-40 text-[#a3a29e]">
+                      Wumpus is waiting for friends.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         ) : activeTab === 'home' && activeHomeView === 'dm' && activeDmId ? (
           <>
-            <div className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 relative z-20">
+            <div className="h-[60px] border-b border-white/5 flex items-center justify-between px-4 shadow-sm shrink-0 bg-black/20 backdrop-blur-md relative z-10">
               <div className="flex items-center gap-2 min-w-0">
                 <button 
                   onClick={() => setMobileMenuOpen(true)}
-                  className="md:hidden p-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+                  className="md:hidden p-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer shrink-0"
                 >
-                  <Menu size={20} />
+                  <Menu size={24} />
                 </button>
                 <div className="flex flex-col text-left min-w-0">
-                  <span className="font-semibold text-foreground truncate text-sm">@{dms.find(d => d.id === activeDmId)?.name}</span>
+                  <span className="font-bold text-white truncate text-lg display-font">@{dms.find(d => d.id === activeDmId)?.name}</span>
                   {isJoined && activeVoiceChannel?.id === activeDmId && (
                     <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 leading-none">
                       In a call
@@ -1910,7 +1815,7 @@ export default function HomePage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-muted-foreground">
+              <div className="flex items-center gap-4 text-[#a1a1aa]">
                 <button 
                   onClick={() => {
                     const dmChannel = dms.find(d => d.id === activeDmId)
@@ -1959,7 +1864,7 @@ export default function HomePage() {
             <div className="flex-1 flex overflow-hidden relative">
               <div className="flex-1 flex flex-col">
                 {isJoined && activeVoiceChannel?.id === activeDmId && (
-                  <div className="bg-background p-4 flex flex-col items-center justify-center border-b border-border select-none shrink-0 relative transition-all duration-300 w-full">
+                  <div className="bg-[#141517] p-4 flex flex-col items-center justify-center border-b border-[#2d2f31] select-none shrink-0 relative transition-all duration-300 w-full">
                     {/* Participant Grid */}
                     <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                       {allParticipants.map(p => renderParticipantCard(p, 'normal'))}
@@ -1968,27 +1873,27 @@ export default function HomePage() {
                     {/* Controls Row */}
                     <div className="flex items-center gap-4">
                       {/* Audio, Video, Deafen Controls Container */}
-                      <div className="bg-background border border-border p-1.5 rounded-[8px] flex items-center gap-1.5 shadow-md">
+                      <div className="bg-[#1e1f22] border border-[#2d2f31] p-1.5 rounded-[8px] flex items-center gap-1.5 shadow-md">
                         {/* Mic */}
                         <div className="flex items-center">
                           <button 
                             onClick={toggleAudio}
                             className={`p-2 rounded-lg transition-all flex items-center justify-center ${
                               !isAudioEnabled 
-                                ? 'bg-destructive/20 text-destructive hover:bg-destructive hover:text-white' 
-                                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white' 
+                                : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'
                             }`}
                             title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
                             aria-label={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
                           >
                             {isAudioEnabled ? <Mic size={16} /> : <MicOff size={16} />}
                           </button>
-                          <button className="p-1 text-muted-foreground hover:text-white transition-colors" aria-label="Audio settings">
+                          <button className="p-1 text-[#a3a29e] hover:text-white transition-colors" aria-label="Audio settings">
                             <ChevronDown size={12} />
                           </button>
                         </div>
                         
-                        <div className="w-[1px] h-5 bg-secondary mx-1" />
+                        <div className="w-[1px] h-5 bg-[#2d2f31] mx-1" />
 
                         {/* Video */}
                         <div className="flex items-center">
@@ -1996,20 +1901,20 @@ export default function HomePage() {
                             onClick={toggleVideo}
                             className={`p-2 rounded-lg transition-all flex items-center justify-center ${
                               isVideoEnabled 
-                                ? 'bg-primary text-white hover:bg-primary/80' 
-                                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                ? 'bg-[#5865f2] text-white hover:bg-[#4752c4]' 
+                                : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'
                             }`}
                             title={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
                             aria-label={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
                           >
                             {isVideoEnabled ? <Video size={16} /> : <VideoOff size={16} />}
                           </button>
-                          <button className="p-1 text-muted-foreground hover:text-white transition-colors" aria-label="Camera settings">
+                          <button className="p-1 text-[#a3a29e] hover:text-white transition-colors" aria-label="Camera settings">
                             <ChevronDown size={12} />
                           </button>
                         </div>
 
-                        <div className="w-[1px] h-5 bg-secondary mx-1" />
+                        <div className="w-[1px] h-5 bg-[#2d2f31] mx-1" />
 
                         {/* Deafen */}
                         <div className="flex items-center">
@@ -2017,8 +1922,8 @@ export default function HomePage() {
                             onClick={toggleDeafen}
                             className={`p-2 rounded-lg transition-all flex items-center justify-center relative ${
                               isDeafened 
-                                ? 'bg-destructive/20 text-destructive hover:bg-destructive hover:text-white' 
-                                : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                                ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white' 
+                                : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'
                             }`}
                             title={isDeafened ? "Undeafen" : "Deafen"}
                             aria-label={isDeafened ? "Undeafen" : "Deafen"}
@@ -2034,28 +1939,28 @@ export default function HomePage() {
                       </div>
 
                       {/* Screen, Grid, Soundboard Options Container */}
-                      <div className="bg-background border border-border p-1.5 rounded-[8px] flex items-center gap-1.5 shadow-md">
+                      <div className="bg-[#1e1f22] border border-[#2d2f31] p-1.5 rounded-[8px] flex items-center gap-1.5 shadow-md">
                         <button 
                           onClick={toggleScreenShare}
                           className={`p-2 rounded-lg transition-all flex items-center justify-center ${
                             isScreenSharing 
-                              ? 'bg-primary text-white hover:bg-primary/80' 
-                              : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                              ? 'bg-[#5865f2] text-white hover:bg-[#4752c4]' 
+                              : 'text-[#a3a29e] hover:bg-[#2d2f31] hover:text-[#e3e1db]'
                           }`}
                           title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen"}
                         >
                           <MonitorUp size={16} />
                         </button>
                         
-                        <button className="p-2 text-muted-foreground hover:bg-secondary hover:text-white rounded-lg transition-colors" title="Participants Grid">
+                        <button className="p-2 text-[#a3a29e] hover:bg-[#2d2f31] hover:text-white rounded-lg transition-colors" title="Participants Grid">
                           <Users size={16} />
                         </button>
 
-                        <button className="p-2 text-muted-foreground hover:bg-secondary hover:text-white rounded-lg transition-colors" title="Soundboard">
+                        <button className="p-2 text-[#a3a29e] hover:bg-[#2d2f31] hover:text-white rounded-lg transition-colors" title="Soundboard">
                           <Gamepad2 size={16} />
                         </button>
 
-                        <button className="p-2 text-muted-foreground hover:bg-secondary hover:text-white rounded-lg transition-colors" title="More Options">
+                        <button className="p-2 text-[#a3a29e] hover:bg-[#2d2f31] hover:text-white rounded-lg transition-colors" title="More Options">
                           <MoreHorizontal size={16} />
                         </button>
                       </div>
@@ -2063,7 +1968,7 @@ export default function HomePage() {
                       {/* Red End Call Button */}
                       <button 
                         onClick={handleLeaveVoice}
-                        className="bg-destructive text-white hover:bg-destructive/80 p-2.5 rounded-[8px] transition-all flex items-center justify-center shadow-md cursor-pointer"
+                        className="bg-[#ed4245] text-white hover:bg-[#c93b3e] p-2.5 rounded-[8px] transition-all flex items-center justify-center shadow-md cursor-pointer"
                         title="Disconnect"
                       >
                         <PhoneOff size={18} className="rotate-[135deg]" />
@@ -2100,7 +2005,6 @@ export default function HomePage() {
                         onTogglePin={togglePin}
                         onReact={toggleReaction}
                         onProfileClick={setSelectedUserProfileId}
-                        onImageClick={(url) => setSelectedLightboxImage(url)}
                       />
                     )
                   })}
@@ -2109,8 +2013,8 @@ export default function HomePage() {
                   <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-md">
                     {replyToMsg && (
                       <div className="bg-black/20 px-3 py-1.5 flex items-center justify-between border-b border-white/5 text-xs">
-                        <span className="text-muted-foreground">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
-                        <button onClick={() => setReplyToMsg(null)} className="text-muted-foreground hover:text-white"><XIcon size={14} /></button>
+                        <span className="text-[#a1a1aa]">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
+                        <button onClick={() => setReplyToMsg(null)} className="text-[#a1a1aa] hover:text-white"><XIcon size={14} /></button>
                       </div>
                     )}
                     {pendingAttachments.length > 0 && (
@@ -2121,7 +2025,7 @@ export default function HomePage() {
                               <img src={att.url} className="max-w-full max-h-full rounded-lg object-contain" />
                             ) : (
                               <div className="text-center">
-                                <div className="w-12 h-16 bg-white/5 rounded-lg mx-auto mb-2 flex items-center justify-center text-muted-foreground font-bold uppercase text-[10px]">
+                                <div className="w-12 h-16 bg-white/5 rounded-lg mx-auto mb-2 flex items-center justify-center text-[#a1a1aa] font-bold uppercase text-[10px]">
                                   {att.filename.split('.').pop()}
                                 </div>
                                 <p className="text-xs text-white truncate w-32">{att.filename}</p>
@@ -2178,8 +2082,8 @@ export default function HomePage() {
               
               {/* Pinned Messages Sidebar */}
               {showPins && (
-                <div className="w-80 bg-secondary border-l border-border flex flex-col absolute right-0 top-0 bottom-0 z-20 shadow-xl animate-in slide-in-from-right duration-200">
-                  <div className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 bg-secondary">
+                <div className="w-80 bg-[#2b2d31] border-l border-[#1e1f22] flex flex-col absolute right-0 top-0 bottom-0 z-20 shadow-xl animate-in slide-in-from-right duration-200">
+                  <div className="h-12 border-b border-[#1e1f22] flex items-center justify-between px-4 shrink-0 bg-[#2b2d31]">
                     <div className="flex items-center gap-1.5 font-bold">
                       <Pin size={16} className="text-[#f5a623] fill-[#f5a623]" />
                       <span>Pinned Messages</span>
@@ -2188,12 +2092,12 @@ export default function HomePage() {
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-sidebar-scrollbar">
                     {pinnedMessages.length === 0 ? (
-                      <div className="text-center text-xs text-muted-foreground mt-10">No pinned messages yet. Pin messages from the hover toolbar!</div>
+                      <div className="text-center text-xs text-[#949ba4] mt-10">No pinned messages yet. Pin messages from the hover toolbar!</div>
                     ) : (
                       pinnedMessages.map((msg: any) => (
-                        <div key={msg.id} className="bg-background p-3 rounded shadow-sm border border-border relative group/pin-item text-left">
+                        <div key={msg.id} className="bg-[#1e1f22] p-3 rounded shadow-sm border border-[#1e1f22] relative group/pin-item text-left">
                           <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold uppercase shrink-0 overflow-hidden">
+                            <div className="w-6 h-6 rounded-full bg-[#5865f2] flex items-center justify-center text-[10px] font-bold uppercase shrink-0 overflow-hidden">
                               {msg.avatar ? (
                                 <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
                               ) : (
@@ -2201,12 +2105,12 @@ export default function HomePage() {
                               )}
                             </div>
                             <span className="font-bold text-xs truncate">{msg.username}</span>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-auto">{parseUTCDate(msg.created_at).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-[#949ba4] whitespace-nowrap ml-auto">{parseUTCDate(msg.created_at).toLocaleDateString()}</span>
                           </div>
                           <MessageContent content={msg.content} attachments={msg.attachments} />
                           <button
                             onClick={() => togglePin(msg.id, true)}
-                            className="absolute top-2 right-2 opacity-0 group-hover/pin-item:opacity-100 text-xs text-destructive hover:underline transition-opacity"
+                            className="absolute top-2 right-2 opacity-0 group-hover/pin-item:opacity-100 text-xs text-[#ed4245] hover:underline transition-opacity"
                           >
                             Unpin
                           </button>
@@ -2220,16 +2124,16 @@ export default function HomePage() {
           </>
         ) : activeTab === 'server' && currentChannel && currentChannel.type === 'text' ? (
           <>
-            <div className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 relative z-20">
+            <div className="h-[60px] border-b border-white/5 flex items-center justify-between px-4 shadow-sm shrink-0 bg-black/20 backdrop-blur-md relative z-10">
               <div className="flex items-center min-w-0">
                 <button 
                   onClick={() => setMobileMenuOpen(true)}
-                  className="md:hidden p-1 mr-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+                  className="md:hidden p-1 mr-2 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer shrink-0"
                 >
-                  <Menu size={20} />
+                  <Menu size={24} />
                 </button>
-                <Hash size={18} className="text-muted-foreground mr-2 shrink-0" />
-                <span className="font-semibold truncate text-sm text-foreground">{currentChannel.name}</span>
+                <Hash size={24} className="text-[#a1a1aa] mr-2 shrink-0" />
+                <span className="font-bold truncate text-lg display-font text-white">{currentChannel.name}</span>
               </div>
               <div className="flex items-center gap-4">
                 <button 
@@ -2237,14 +2141,14 @@ export default function HomePage() {
                     setShowPins(!showPins)
                     if (!showPins) fetchPins()
                   }}
-                  className={`hover:scale-110 active:scale-95 transition-all cursor-pointer ${showPins ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
+                  className={`hover:scale-110 active:scale-95 transition-all cursor-pointer ${showPins ? 'text-primary' : 'text-[#a1a1aa] hover:text-white'}`}
                   title="Pinned Messages"
                 >
                   <Pin size={20} className={showPins ? 'fill-primary' : ''} />
                 </button>
                 <div className="relative w-48 md:w-64 hidden sm:block">
-                  <Input value={messageSearchQuery} onChange={(e) => setMessageSearchQuery(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); setShowMsgSearchResults(true); searchMessages(messageSearchQuery); } }} placeholder="Search" className="h-8 text-[13px] bg-white/5 border border-white/10 rounded-full text-white placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary pr-9 shadow-inner transition-all" />
-                  <Search size={14} className="absolute right-3 top-2 text-muted-foreground" />
+                  <Input value={messageSearchQuery} onChange={(e) => setMessageSearchQuery(e.target.value)} onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); setShowMsgSearchResults(true); searchMessages(messageSearchQuery); } }} placeholder="Search" className="h-8 text-[13px] bg-white/5 border border-white/10 rounded-full text-white placeholder:text-[#a1a1aa] focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary pr-9 shadow-inner transition-all" />
+                  <Search size={14} className="absolute right-3 top-2 text-[#a1a1aa]" />
                 </div>
               </div>
             </div>
@@ -2261,7 +2165,7 @@ export default function HomePage() {
                       parseUTCDate(msg.created_at).getHours() === parseUTCDate(nextMsg.created_at).getHours() &&
                       parseUTCDate(msg.created_at).toDateString() === parseUTCDate(nextMsg.created_at).toDateString();
                     return msg.author_id === 'system' ? (
-                      <div key={msg.id} className="flex items-center gap-4 py-2 px-4 -mx-4 hover:bg-secondary group/system mt-3">
+                      <div key={msg.id} className="flex items-center gap-4 py-2 px-4 -mx-4 hover:bg-[#2e3035] group/system mt-3">
                         <div className="w-10 flex justify-center text-[#23a559] shrink-0">
                           <Plus size={18} />
                         </div>
@@ -2287,7 +2191,6 @@ export default function HomePage() {
                         onTogglePin={togglePin}
                         onReact={toggleReaction}
                         onProfileClick={setSelectedUserProfileId}
-                        onImageClick={(url) => setSelectedLightboxImage(url)}
                       />
                     )
                   })}
@@ -2296,8 +2199,8 @@ export default function HomePage() {
                   <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-sm backdrop-blur-md">
                     {replyToMsg && (
                       <div className="bg-black/20 px-3 py-1.5 flex items-center justify-between border-b border-white/5 text-xs">
-                        <span className="text-muted-foreground">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
-                        <button onClick={() => setReplyToMsg(null)} className="text-muted-foreground hover:text-white"><XIcon size={14} /></button>
+                        <span className="text-[#a1a1aa]">Replying to <span className="font-semibold text-white">@{replyToMsg.username}</span></span>
+                        <button onClick={() => setReplyToMsg(null)} className="text-[#a1a1aa] hover:text-white"><XIcon size={14} /></button>
                       </div>
                     )}
                     {pendingAttachments.length > 0 && (
@@ -2308,7 +2211,7 @@ export default function HomePage() {
                               <img src={att.url} className="max-w-full max-h-full rounded-lg object-contain" />
                             ) : (
                               <div className="text-center">
-                                <div className="w-12 h-16 bg-white/5 rounded-lg mx-auto mb-2 flex items-center justify-center text-muted-foreground font-bold uppercase text-[10px]">
+                                <div className="w-12 h-16 bg-white/5 rounded-lg mx-auto mb-2 flex items-center justify-center text-[#a1a1aa] font-bold uppercase text-[10px]">
                                   {att.filename.split('.').pop()}
                                 </div>
                                 <p className="text-xs text-white truncate w-32">{att.filename}</p>
@@ -2366,34 +2269,34 @@ export default function HomePage() {
               {/* Pinned Messages Sidebar */}
               {showPins && (
                 <div className="w-80 obsidian-card flex flex-col absolute right-2.5 top-2.5 bottom-2.5 z-10 shadow-2xl border-none">
-                  <div className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 bg-secondary">
-                    <div className="flex items-center gap-1.5 font-bold text-primary">
-                      <Pin size={16} className="text-primary fill-primary" />
-                      <span className="text-foreground">Pinned Messages</span>
+                  <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shrink-0 bg-[#2b2d31]">
+                    <div className="flex items-center gap-1.5 font-bold text-[#5865f2]">
+                      <Pin size={16} className="text-[#5865f2] fill-[#5865f2]" />
+                      <span className="text-[#e3e1db]">Pinned Messages</span>
                     </div>
-                    <Button variant="ghost" size="icon" className="w-6 h-6 hover:text-white text-muted-foreground" onClick={() => setShowPins(false)}><XIcon size={14} /></Button>
+                    <Button variant="ghost" size="icon" className="w-6 h-6 hover:text-white text-[#a3a29e]" onClick={() => setShowPins(false)}><XIcon size={14} /></Button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-sidebar-scrollbar">
                     {pinnedMessages.length === 0 ? (
-                      <div className="text-center text-xs text-muted-foreground mt-10">No pinned messages yet. Pin messages from the hover toolbar!</div>
+                      <div className="text-center text-xs text-[#a3a29e] mt-10">No pinned messages yet. Pin messages from the hover toolbar!</div>
                     ) : (
                       pinnedMessages.map((msg: any) => (
-                        <div key={msg.id} className="bg-background p-3 rounded shadow-sm border border-border relative group/pin-item text-left">
+                        <div key={msg.id} className="bg-[#141517] p-3 rounded shadow-sm border border-[#2d2f31] relative group/pin-item text-left">
                           <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold uppercase text-foreground border border-border shrink-0 overflow-hidden">
+                            <div className="w-6 h-6 rounded-full bg-[#2d2f31] flex items-center justify-center text-[10px] font-bold uppercase text-[#e3e1db] border border-[#343638] shrink-0 overflow-hidden">
                               {msg.avatar ? (
                                 <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
                               ) : (
                                 msg.username?.[0] || 'U'
                               )}
                             </div>
-                            <span className="font-bold text-xs truncate text-foreground">{msg.username}</span>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-auto">{parseUTCDate(msg.created_at).toLocaleDateString()}</span>
+                            <span className="font-bold text-xs truncate text-[#e3e1db]">{msg.username}</span>
+                            <span className="text-[10px] text-[#a3a29e] whitespace-nowrap ml-auto">{parseUTCDate(msg.created_at).toLocaleDateString()}</span>
                           </div>
                           <MessageContent content={msg.content} attachments={msg.attachments} />
                           <button
                             onClick={() => togglePin(msg.id, true)}
-                            className="absolute top-2 right-2 opacity-0 group-hover/pin-item:opacity-100 text-xs text-primary hover:underline transition-opacity"
+                            className="absolute top-2 right-2 opacity-0 group-hover/pin-item:opacity-100 text-xs text-[#5865f2] hover:underline transition-opacity"
                           >
                             Unpin
                           </button>
@@ -2407,30 +2310,30 @@ export default function HomePage() {
               {/* Search Results Sidebar */}
               {showMsgSearchResults && (
                 <div className="w-80 obsidian-card flex flex-col absolute right-2.5 top-2.5 bottom-2.5 z-10 shadow-2xl border-none">
-                  <div className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 bg-secondary">
-                    <span className="font-bold text-foreground">Search Results</span>
-                    <Button variant="ghost" size="icon" className="w-6 h-6 hover:text-white text-muted-foreground" onClick={() => { setMsgSearchResults([]); setMessageSearchQuery(''); setShowMsgSearchResults(false); }}><XIcon size={14} /></Button>
+                  <div className="h-12 border-b border-[#2d2f31] flex items-center justify-between px-4 shrink-0 bg-[#2b2d31]">
+                    <span className="font-bold text-[#e3e1db]">Search Results</span>
+                    <Button variant="ghost" size="icon" className="w-6 h-6 hover:text-white text-[#a3a29e]" onClick={() => { setMsgSearchResults([]); setMessageSearchQuery(''); setShowMsgSearchResults(false); }}><XIcon size={14} /></Button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {isSearching ? (
-                      <p className="text-muted-foreground text-center mt-10">Searching...</p>
+                      <p className="text-[#a3a29e] text-center mt-10">Searching...</p>
                     ) : msgSearchResults.length === 0 ? (
-                      <p className="text-muted-foreground text-center mt-10">No results found.</p>
+                      <p className="text-[#a3a29e] text-center mt-10">No results found.</p>
                     ) : (
                       msgSearchResults.map((msg: any) => (
-                        <div key={msg.id} className="bg-background p-3 rounded hover:bg-secondary/40 cursor-pointer shadow-sm border border-border">
+                        <div key={msg.id} className="bg-[#141517] p-3 rounded hover:bg-[#2d2f31]/40 cursor-pointer shadow-sm border border-[#2d2f31]">
                           <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold uppercase text-foreground border border-border shrink-0 overflow-hidden">
+                            <div className="w-6 h-6 rounded-full bg-[#2d2f31] flex items-center justify-center text-[10px] font-bold uppercase text-[#e3e1db] border border-[#343638] shrink-0 overflow-hidden">
                               {msg.avatar ? (
                                 <img src={getFileUrl(msg.avatar)} alt={msg.username} className="w-full h-full object-cover" />
                               ) : (
                                 msg.username?.[0] || '?'
                               )}
                             </div>
-                            <span className="font-bold text-sm truncate text-foreground">{msg.username}</span>
-                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">in #{msg.channel_name}</span>
+                            <span className="font-bold text-sm truncate text-[#e3e1db]">{msg.username}</span>
+                            <span className="text-[10px] text-[#a3a29e] whitespace-nowrap">in #{msg.channel_name}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground break-words line-clamp-3">{msg.content}</p>
+                          <p className="text-sm text-[#a3a29e] break-words line-clamp-3">{msg.content}</p>
                         </div>
                       ))
                     )}
@@ -2441,15 +2344,15 @@ export default function HomePage() {
           </>
         ) : (activeTab === 'server' && currentChannel && currentChannel.type === 'voice') ? (
           <>
-            <div className="h-12 border-b border-border flex items-center justify-between px-4 shadow-sm shrink-0 bg-background">
+            <div className="h-12 border-b border-[#1e1f22] flex items-center justify-between px-4 shadow-sm shrink-0 bg-[#111214]">
               <div className="flex items-center min-w-0">
                 <button 
                   onClick={() => setMobileMenuOpen(true)}
-                  className="md:hidden p-1 mr-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+                  className="md:hidden p-1 mr-2 text-[#949ba4] hover:text-[#e3e1db] transition-colors cursor-pointer shrink-0"
                 >
                   <Menu size={24} />
                 </button>
-                <Volume2 size={24} className="text-muted-foreground mr-1 shrink-0" />
+                <Volume2 size={24} className="text-[#949ba4] mr-1 shrink-0" />
                 <span className="font-bold truncate">{currentChannel.name}</span>
               </div>
             </div>
@@ -2460,9 +2363,9 @@ export default function HomePage() {
 
             const renderInviteCard = () => {
               return (
-                <div className="aspect-video bg-background rounded-[8px] flex flex-col items-center justify-center p-6 relative overflow-hidden border border-border border-dashed shadow group">
+                <div className="aspect-video bg-[#1e1f22] rounded-[8px] flex flex-col items-center justify-center p-6 relative overflow-hidden border border-[#2d2f31] border-dashed shadow group">
                   <div className="flex flex-col items-center justify-center text-center space-y-4">
-                    <svg width="100" height="75" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-muted-foreground opacity-70 group-hover:scale-105 transition-transform duration-300">
+                    <svg width="100" height="75" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#949ba4] opacity-70 group-hover:scale-105 transition-transform duration-300">
                       <path d="M40 50C40 60 48 65 60 65C72 65 80 60 80 50V25H40V50Z" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2" />
                       <path d="M40 30H32C28 30 25 33 25 37V40C25 44 28 47 32 47H40" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       <path d="M80 30H88C92 30 95 33 95 37V40C95 44 92 47 88 47H80" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -2474,10 +2377,10 @@ export default function HomePage() {
                       <path d="M30 65L32 60L37 59L33 55L34 50L30 53L26 50L27 55L23 59L28 60L30 65Z" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.5" />
                     </svg>
                     <div className="flex flex-col items-center gap-2 pt-2">
-                      <span className="text-xs text-muted-foreground">Invite friends to join this voice call!</span>
+                      <span className="text-xs text-[#949ba4]">Invite friends to join this voice call!</span>
                       <button 
                         onClick={() => setShowInviteModal(true)} 
-                        className="bg-primary hover:bg-primary/80 text-white font-semibold text-xs px-4 py-2 rounded-[3px] flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
+                        className="bg-[#5865f2] hover:bg-[#4752c4] text-white font-semibold text-xs px-4 py-2 rounded-[3px] flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
                       >
                         <UserPlus size={14} />
                         Invite to Voice
@@ -2492,7 +2395,7 @@ export default function HomePage() {
 
             return (
               <div 
-                className="flex-1 flex flex-col bg-background relative group/voice"
+                className="flex-1 flex flex-col bg-[#111214] relative group/voice"
                 onMouseMove={handleMouseMoveVoice}
                 onMouseLeave={() => setShowControls(false)}
               >
@@ -2504,7 +2407,7 @@ export default function HomePage() {
                             {renderParticipantCard(focusedParticipant, 'large')}
                           </div>
                           {otherParticipants.length > 0 && (
-                            <div className="w-full max-w-5xl flex items-center justify-center gap-3 overflow-x-auto py-2 px-4 bg-background/60 rounded-[8px] shrink-0 no-scrollbar">
+                            <div className="w-full max-w-5xl flex items-center justify-center gap-3 overflow-x-auto py-2 px-4 bg-[#1e1f22]/60 rounded-[8px] shrink-0 no-scrollbar">
                               {otherParticipants.map(p => renderParticipantCard(p, 'small'))}
                             </div>
                           )}
@@ -2566,14 +2469,14 @@ export default function HomePage() {
                     <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 flex items-center gap-4 ${
                       showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
                     }`}>
-                      <div className="bg-background/95 backdrop-blur-md px-4 py-2.5 rounded-[8px] flex items-center gap-3 shadow-2xl border border-border">
+                      <div className="bg-[#1e1f22]/95 backdrop-blur-md px-4 py-2.5 rounded-[8px] flex items-center gap-3 shadow-2xl border border-[#2d2f31]">
                         {/* Mute Mic */}
                         <button 
                           onClick={toggleAudio}
                           className={`p-3 rounded-full transition-all ${
                             !isAudioEnabled 
-                              ? 'bg-destructive/20 text-destructive hover:bg-destructive hover:text-white' 
-                              : 'bg-card text-foreground hover:bg-secondary hover:text-white'
+                              ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white' 
+                              : 'bg-[#313338] text-[#dbdee1] hover:bg-[#35373c] hover:text-white'
                           }`}
                           title={isAudioEnabled ? "Mute Microphone" : "Unmute Microphone"}
                         >
@@ -2585,8 +2488,8 @@ export default function HomePage() {
                           onClick={toggleDeafen}
                           className={`p-3 rounded-full transition-all ${
                             isDeafened 
-                              ? 'bg-destructive/20 text-destructive hover:bg-destructive hover:text-white' 
-                              : 'bg-card text-foreground hover:bg-secondary hover:text-white'
+                              ? 'bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white' 
+                              : 'bg-[#313338] text-[#dbdee1] hover:bg-[#35373c] hover:text-white'
                           }`}
                           title={isDeafened ? "Undeafen" : "Deafen"}
                         >
@@ -2598,8 +2501,8 @@ export default function HomePage() {
                           onClick={toggleVideo}
                           className={`p-3 rounded-full transition-all ${
                             isVideoEnabled 
-                              ? 'bg-primary text-white hover:bg-primary/80' 
-                              : 'bg-card text-foreground hover:bg-secondary hover:text-white'
+                              ? 'bg-[#5865f2] text-white hover:bg-[#4752c4]' 
+                              : 'bg-[#313338] text-[#dbdee1] hover:bg-[#35373c] hover:text-white'
                           }`}
                           title={isVideoEnabled ? "Turn Off Camera" : "Turn On Camera"}
                         >
@@ -2611,8 +2514,8 @@ export default function HomePage() {
                           onClick={toggleScreenShare}
                           className={`p-3 rounded-full transition-all ${
                             isScreenSharing 
-                              ? 'bg-primary text-white hover:bg-primary/80' 
-                              : 'bg-card text-foreground hover:bg-secondary hover:text-white'
+                              ? 'bg-[#5865f2] text-white hover:bg-[#4752c4]' 
+                              : 'bg-[#313338] text-[#dbdee1] hover:bg-[#35373c] hover:text-white'
                           }`}
                           title={isScreenSharing ? "Stop Sharing Screen" : "Share Screen"}
                         >
@@ -2620,12 +2523,12 @@ export default function HomePage() {
                         </button>
 
                         {/* Vertical Divider */}
-                        <div className="w-[1px] h-6 bg-secondary" />
+                        <div className="w-[1px] h-6 bg-[#2d2f31]" />
 
                         {/* Disconnect Button */}
                         <button 
                           onClick={handleLeaveVoice}
-                          className="bg-destructive text-white hover:bg-destructive/80 p-3 px-5 rounded-[8px] transition-all flex items-center justify-center shadow"
+                          className="bg-[#ed4245] text-white hover:bg-[#c93b3e] p-3 px-5 rounded-[8px] transition-all flex items-center justify-center shadow"
                           title="Disconnect"
                         >
                           <PhoneOff size={18} className="rotate-[135deg]" />
@@ -2645,19 +2548,19 @@ export default function HomePage() {
                   return true
                 })
                 return (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-card">
-                    <Volume2 size={64} className="text-primary mb-4 opacity-80" />
-                    <h1 className="text-3xl font-extrabold text-foreground mb-2">{targetChannel.name}</h1>
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#313338]">
+                    <Volume2 size={64} className="text-[#5865f2] mb-4 opacity-80" />
+                    <h1 className="text-3xl font-extrabold text-[#e3e1db] mb-2">{targetChannel.name}</h1>
                     
                     {activeParticipants.length === 0 ? (
-                      <p className="text-muted-foreground text-sm mb-8">No one is currently in voice</p>
+                      <p className="text-[#a3a29e] text-sm mb-8">No one is currently in voice</p>
                     ) : (
                       <div className="flex flex-col items-center gap-3 mb-8">
                         <div className="flex -space-x-2">
                           {activeParticipants.map(p => (
                             <div 
                               key={p.user_id} 
-                              className="w-10 h-10 rounded-full bg-secondary border-2 border-border flex items-center justify-center text-xs font-bold uppercase text-foreground shadow overflow-hidden"
+                              className="w-10 h-10 rounded-full bg-[#2d2f31] border-2 border-[#313338] flex items-center justify-center text-xs font-bold uppercase text-[#e3e1db] shadow overflow-hidden"
                               title={p.username}
                             >
                               {p.avatar ? (
@@ -2668,7 +2571,7 @@ export default function HomePage() {
                             </div>
                           ))}
                         </div>
-                        <p className="text-foreground text-sm font-medium">
+                        <p className="text-[#e3e1db] text-sm font-medium">
                           {activeParticipants.length} {
                             activeParticipants.length === 1 ? "person is" : "people are"
                           } currently in voice
@@ -2678,7 +2581,7 @@ export default function HomePage() {
                     
                     <button 
                       onClick={() => handleJoinVoice(targetChannel)} 
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3 rounded-full transition-all shadow-xl text-sm cursor-pointer"
+                      className="bg-[#23a55a] hover:bg-[#1a7f47] text-white font-bold px-8 py-3 rounded-full transition-all shadow-xl text-sm cursor-pointer"
                     >
                       Join Voice
                     </button>
@@ -2692,7 +2595,7 @@ export default function HomePage() {
             <div className="md:hidden h-[60px] border-b border-white/5 flex items-center px-4 shadow-sm shrink-0 w-full absolute top-0 left-0 bg-black/20 backdrop-blur-md z-10">
               <button 
                 onClick={() => setMobileMenuOpen(true)}
-                className="p-1 text-muted-foreground hover:text-white transition-colors cursor-pointer shrink-0"
+                className="p-1 text-[#a1a1aa] hover:text-white transition-colors cursor-pointer shrink-0"
               >
                 <Menu size={24} />
               </button>
@@ -2704,7 +2607,7 @@ export default function HomePage() {
                 <MessageSquare size={32} className="text-white/50" />
               </div>
               <h3 className="text-xl font-bold text-white mb-2 display-font">Ready to connect?</h3>
-              <p className="text-muted-foreground text-sm">Select a conversation or a channel to start talking with your community.</p>
+              <p className="text-[#a1a1aa] text-sm">Select a conversation or a channel to start talking with your community.</p>
             </div>
           </div>
         )}
@@ -2714,12 +2617,12 @@ export default function HomePage() {
       {activeTab === 'server' && currentServer && currentChannel?.type === 'text' && (
         <div className="hidden md:flex w-64 bg-black/20 backdrop-blur-2xl flex flex-col overflow-hidden shrink-0 border-l border-white/5 z-10">
           <div className="h-[60px] border-b border-white/5 flex items-center px-4 shadow-sm shrink-0 bg-transparent">
-            <Users size={20} className="text-muted-foreground mr-2" />
+            <Users size={20} className="text-[#a1a1aa] mr-2" />
             <span className="font-bold text-white text-lg display-font">Members</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 no-scrollbar space-y-4">
             <div>
-              <p className="text-xs font-bold uppercase text-muted-foreground mb-2 px-1">Online — {members.length}</p>
+              <p className="text-xs font-bold uppercase text-[#a1a1aa] mb-2 px-1">Online — {members.length}</p>
               <div className="space-y-1">
                 {members.map(member => (
                   <div key={member.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 cursor-pointer group transition-all" onClick={() => setSelectedUserProfileId(member.id)}>
@@ -2735,7 +2638,7 @@ export default function HomePage() {
                     </div>
                     <div className="flex flex-col min-w-0">
                       <span className="text-[15px] font-medium text-white group-hover:text-primary transition-colors truncate">{member.display_name || member.username}</span>
-                      {member.status_message && <span className="text-[11px] text-muted-foreground truncate">{member.status_message}</span>}
+                      {member.status_message && <span className="text-[11px] text-[#a1a1aa] truncate">{member.status_message}</span>}
                     </div>
                   </div>
                 ))}
@@ -2774,26 +2677,26 @@ export default function HomePage() {
                 <h2 className="text-xl font-bold text-white leading-tight flex items-center gap-1.5 display-font">
                   {dmUserProfile.display_name || dmUserProfile.username}
                 </h2>
-                <p className="text-sm text-muted-foreground">@{dmUserProfile.username}</p>
+                <p className="text-sm text-[#a1a1aa]">@{dmUserProfile.username}</p>
               </div>
 
               {dmUserProfile.status_message && (
                 <div className="border-t border-white/5 pt-4">
-                  <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1.5">Custom Status</p>
+                  <p className="text-[#a1a1aa] text-[10px] font-bold uppercase tracking-wider mb-1.5">Custom Status</p>
                   <p className="text-sm text-white italic">"{dmUserProfile.status_message}"</p>
                 </div>
               )}
 
               {dmUserProfile.bio && (
                 <div className="border-t border-white/5 pt-4">
-                  <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1.5">About Me</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{dmUserProfile.bio}</p>
+                  <p className="text-[#a1a1aa] text-[10px] font-bold uppercase tracking-wider mb-1.5">About Me</p>
+                  <p className="text-sm text-[#a1a1aa] whitespace-pre-wrap break-words">{dmUserProfile.bio}</p>
                 </div>
               )}
 
               {dmUserProfile.created_at && (
                 <div className="border-t border-white/5 pt-4">
-                  <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1.5">Member Since</p>
+                  <p className="text-[#a1a1aa] text-[10px] font-bold uppercase tracking-wider mb-1.5">Member Since</p>
                   <p className="text-sm text-white">
                     {parseUTCDate(dmUserProfile.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </p>
@@ -2803,11 +2706,11 @@ export default function HomePage() {
               <div className="border-t border-white/5 pt-4 space-y-3">
                 <div className="flex items-center justify-between text-sm text-white hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
                   <span className="font-semibold">Mutual Servers</span>
-                  <span className="text-muted-foreground font-medium">{(dmUserProfile as any).mutual_servers || 0}</span>
+                  <span className="text-[#a1a1aa] font-medium">{(dmUserProfile as any).mutual_servers || 0}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-white hover:bg-white/5 p-2 -mx-2 rounded-lg transition-colors cursor-pointer">
                   <span className="font-semibold">Mutual Friends</span>
-                  <span className="text-muted-foreground font-medium">{(dmUserProfile as any).mutual_friends || 0}</span>
+                  <span className="text-[#a1a1aa] font-medium">{(dmUserProfile as any).mutual_friends || 0}</span>
                 </div>
               </div>
             </div>
@@ -2832,26 +2735,26 @@ export default function HomePage() {
       {/* Modals... */}
       {showCreateServerModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-popover w-full max-w-md rounded-xl overflow-hidden shadow-2xl border border-border p-6 text-center">
-            <h2 className="text-2xl font-bold mb-2 text-foreground">Customize your server</h2>
+          <div className="bg-[#1e2022] w-full max-w-md rounded-xl overflow-hidden shadow-2xl border border-[#2d2f31] p-6 text-center">
+            <h2 className="text-2xl font-bold mb-2 text-[#e3e1db]">Customize your server</h2>
             <form onSubmit={handleCreateServer} className="text-left space-y-4">
-              <Input autoFocus value={newServerName} onChange={(e) => setNewServerName(e.target.value)} className="bg-background border border-border text-foreground focus-visible:ring-primary" placeholder={`${user?.username}'s server`} />
-              <div className="flex justify-between pt-4"><Button variant="ghost" type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setShowCreateServerModal(false)}>Back</Button><Button type="submit" className="bg-primary text-white hover:bg-primary/80 font-bold">Create</Button></div>
+              <Input autoFocus value={newServerName} onChange={(e) => setNewServerName(e.target.value)} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus-visible:ring-[#5865f2]" placeholder={`${user?.username}'s server`} />
+              <div className="flex justify-between pt-4"><Button variant="ghost" type="button" className="text-[#a3a29e] hover:text-[#e3e1db]" onClick={() => setShowCreateServerModal(false)}>Back</Button><Button type="submit" className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-bold">Create</Button></div>
             </form>
           </div>
         </div>
       )}
       {showCreateChannelModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-popover w-full max-w-md rounded-xl p-6 shadow-2xl border border-border">
-            <h2 className="text-2xl font-bold mb-6 text-foreground">Create Channel</h2>
+          <div className="bg-[#1e2022] w-full max-w-md rounded-xl p-6 shadow-2xl border border-[#2d2f31]">
+            <h2 className="text-2xl font-bold mb-6 text-[#e3e1db]">Create Channel</h2>
             <form onSubmit={handleCreateChannel} className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
-                <div onClick={() => setNewChannelType('text')} className={`p-3 rounded-lg bg-background cursor-pointer border-2 flex items-center gap-2 text-foreground ${newChannelType === 'text' ? 'border-primary' : 'border-border'}`}><Hash size={16} /> Text</div>
-                <div onClick={() => setNewChannelType('voice')} className={`p-3 rounded-lg bg-background cursor-pointer border-2 flex items-center gap-2 text-foreground ${newChannelType === 'voice' ? 'border-primary' : 'border-border'}`}><Volume2 size={16} /> Voice</div>
+                <div onClick={() => setNewChannelType('text')} className={`p-3 rounded-lg bg-[#141517] cursor-pointer border-2 flex items-center gap-2 text-[#e3e1db] ${newChannelType === 'text' ? 'border-[#5865f2]' : 'border-[#2d2f31]'}`}><Hash size={16} /> Text</div>
+                <div onClick={() => setNewChannelType('voice')} className={`p-3 rounded-lg bg-[#141517] cursor-pointer border-2 flex items-center gap-2 text-[#e3e1db] ${newChannelType === 'voice' ? 'border-[#5865f2]' : 'border-[#2d2f31]'}`}><Volume2 size={16} /> Voice</div>
               </div>
-              <Input autoFocus value={newChannelName} onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} className="bg-background border border-border text-foreground focus-visible:ring-primary" placeholder="new-channel" />
-              <div className="flex justify-end pt-4 gap-4"><Button variant="ghost" type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setShowCreateChannelModal(false)}>Cancel</Button><Button type="submit" className="bg-primary text-white hover:bg-primary/80 font-bold">Create Channel</Button></div>
+              <Input autoFocus value={newChannelName} onChange={(e) => setNewChannelName(e.target.value.toLowerCase().replace(/\s+/g, '-'))} className="bg-[#141517] border border-[#2d2f31] text-[#e3e1db] focus-visible:ring-[#5865f2]" placeholder="new-channel" />
+              <div className="flex justify-end pt-4 gap-4"><Button variant="ghost" type="button" className="text-[#a3a29e] hover:text-[#e3e1db]" onClick={() => setShowCreateChannelModal(false)}>Cancel</Button><Button type="submit" className="bg-[#5865f2] text-white hover:bg-[#4752c4] font-bold">Create Channel</Button></div>
             </form>
           </div>
         </div>
@@ -2903,53 +2806,17 @@ export default function HomePage() {
         <UserSettingsModal onClose={() => setShowUserSettingsModal(false)} />
       )}
 
-      {/* Quick Switcher Modal (Ctrl + K / Cmd + K) */}
-      <QuickSwitcherModal
-        isOpen={showQuickSwitcher}
-        onClose={() => setShowQuickSwitcher(false)}
-        dms={dms}
-        friends={friends}
-        servers={servers}
-        onSelectDm={(dmId) => {
-          setActiveTab('home')
-          setActiveHomeView('dm')
-          setActiveDmId(dmId)
-        }}
-        onSelectFriend={() => {
-          setActiveTab('home')
-          setActiveHomeView('friends')
-          setActiveDmId(null)
-        }}
-        onSelectChannel={(serverId, channelId) => {
-          const targetServer = servers.find(s => s.id === serverId)
-          if (targetServer) {
-            setCurrentServer(targetServer)
-            setActiveTab('server')
-            const targetChan = (targetServer as any).channels?.find((c: any) => c.id === channelId)
-            if (targetChan) {
-              setCurrentChannel(targetChan)
-            }
-          }
-        }}
-      />
-
-      {/* Instant Image Lightbox Modal */}
-      <ImageLightboxModal
-        imageUrl={selectedLightboxImage}
-        onClose={() => setSelectedLightboxImage(null)}
-      />
-
       {selectedUserProfileId && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedUserProfileId(null)}>
-          <div className="bg-popover w-full max-w-[340px] rounded-xl overflow-hidden shadow-2xl border border-border relative text-left" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#1e2022] w-full max-w-[340px] rounded-xl overflow-hidden shadow-2xl border border-[#2d2f31] relative text-left" onClick={e => e.stopPropagation()}>
             {userProfileData && !(!userProfileData.username && userProfileData.isLoading) ? (
               <>
                 {/* Header block (non-scrollable) to prevent avatar clipping */}
                 <div className="relative shrink-0">
-                  <div className="h-16 bg-primary" />
+                  <div className="h-16 bg-[#5865f2]" />
                   <div className="px-4 -mt-8 mb-2">
-                    <div className="w-16 h-16 rounded-full bg-popover p-1 relative z-10">
-                      <div className="w-full h-full rounded-full bg-secondary flex items-center justify-center text-2xl font-bold uppercase text-foreground border border-border shadow-md overflow-hidden">
+                    <div className="w-16 h-16 rounded-full bg-[#1e2022] p-1 relative z-10">
+                      <div className="w-full h-full rounded-full bg-[#2d2f31] flex items-center justify-center text-2xl font-bold uppercase text-[#e3e1db] border border-[#343638] shadow-md overflow-hidden">
                         {userProfileData.avatar ? (
                           <img src={getFileUrl(userProfileData.avatar)} alt={userProfileData.username} className="w-full h-full object-cover" />
                         ) : (
@@ -2966,21 +2833,21 @@ export default function HomePage() {
                 <div className="px-4 pb-4 flex flex-col relative">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-lg font-bold text-foreground leading-tight">{userProfileData.display_name || userProfileData.username}</h3>
-                      <p className="text-xs text-muted-foreground">@{userProfileData.username}</p>
+                      <h3 className="text-lg font-bold text-[#e3e1db] leading-tight">{userProfileData.display_name || userProfileData.username}</h3>
+                      <p className="text-xs text-[#a3a29e]">@{userProfileData.username}</p>
                     </div>
                     
                     {userProfileData.status_message && (
-                      <div className="bg-background p-2 rounded border border-border text-xs text-white">
-                        <p className="text-muted-foreground text-[10px] font-bold uppercase mb-0.5">Custom Status</p>
-                        <p className="italic text-foreground">"{userProfileData.status_message}"</p>
+                      <div className="bg-[#141517] p-2 rounded border border-[#2d2f31] text-xs text-white">
+                        <p className="text-[#a3a29e] text-[10px] font-bold uppercase mb-0.5">Custom Status</p>
+                        <p className="italic text-[#e3e1db]">"{userProfileData.status_message}"</p>
                       </div>
                     )}
 
-                    <div className="bg-background p-3 rounded border border-border space-y-2.5">
+                    <div className="bg-[#141517] p-3 rounded border border-[#2d2f31] space-y-2.5">
                       <div>
-                        <p className="text-muted-foreground text-[10px] font-bold uppercase">About Me</p>
-                        <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                        <p className="text-[#a3a29e] text-[10px] font-bold uppercase">About Me</p>
+                        <p className="text-xs text-[#a3a29e] whitespace-pre-wrap">
                           {userProfileData.isLoading && !userProfileData.bio 
                             ? "Loading bio..." 
                             : (userProfileData.bio || "No bio yet.")}
@@ -2988,31 +2855,29 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {selectedUserProfileId !== user?.id && (
-                      <div className="bg-background p-3 rounded-xl border border-border space-y-2">
+                    {selectedUserProfileId !== user?.id && remoteStreams[selectedUserProfileId] && (
+                      <div className="bg-[#141517] p-3 rounded border border-[#2d2f31] space-y-2">
+                        <p className="text-[#a3a29e] text-[10px] font-bold uppercase tracking-wider">Voice Settings</p>
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold uppercase text-white/80 tracking-wider">User Volume</label>
-                          <span className="text-xs text-primary font-bold">{Math.round((userVolumes[selectedUserProfileId] ?? 1.0) * 100)}%</span>
+                          <label className="text-xs text-[#e3e1db]">User Volume</label>
+                          <span className="text-xs text-[#a3a29e] font-semibold">{Math.round((userVolumes[selectedUserProfileId] ?? 1.0) * 100)}%</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Volume2 size={16} className="text-white/60 shrink-0" />
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="2" 
-                            step="0.05"
-                            value={userVolumes[selectedUserProfileId] ?? 1.0}
-                            onChange={(e) => setUserVolume(selectedUserProfileId, parseFloat(e.target.value))}
-                            className="w-full accent-primary bg-secondary h-2 rounded-lg cursor-pointer"
-                          />
-                        </div>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="2" 
+                          step="0.05"
+                          value={userVolumes[selectedUserProfileId] ?? 1.0}
+                          onChange={(e) => setUserVolume(selectedUserProfileId, parseFloat(e.target.value))}
+                          className="w-full accent-[#5865f2] bg-[#2d2f31] h-1.5 rounded-lg appearance-none cursor-pointer"
+                        />
                       </div>
                     )}
                   </div>
                 </div>
               </>
             ) : (
-              <div className="py-12 text-center text-sm text-muted-foreground">Loading profile...</div>
+              <div className="py-12 text-center text-sm text-[#a3a29e]">Loading profile...</div>
             )}
             <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-white/75 hover:text-white rounded-full bg-black/20 hover:bg-black/40 h-7 w-7" onClick={() => setSelectedUserProfileId(null)}>
               <XIcon size={14} />
@@ -3022,18 +2887,18 @@ export default function HomePage() {
       )}
       {incomingCall && (
         <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-[100] animate-in fade-in duration-200">
-          <div className="bg-popover p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center max-w-sm w-full border border-border">
-            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center text-3xl font-bold uppercase text-foreground border border-border mb-4 shadow-lg animate-bounce">
+          <div className="bg-[#1e2022] p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center max-w-sm w-full border border-[#2d2f31]">
+            <div className="w-20 h-20 rounded-full bg-[#2d2f31] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] border border-[#343638] mb-4 shadow-lg animate-bounce">
               {incomingCall.callerName[0]}
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-1">{incomingCall.callerName}</h3>
-            <p className="text-sm text-muted-foreground mb-6 flex items-center gap-1.5 animate-pulse">
+            <h3 className="text-xl font-bold text-[#e3e1db] mb-1">{incomingCall.callerName}</h3>
+            <p className="text-sm text-[#a3a29e] mb-6 flex items-center gap-1.5 animate-pulse">
               Incoming {incomingCall.isVideo ? 'Video' : 'Voice'} Call...
             </p>
             <div className="flex gap-4 w-full">
               <button 
                 onClick={declineCall}
-                className="flex-1 py-3 bg-destructive/20 text-destructive hover:bg-destructive hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+                className="flex-1 py-3 bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
               >
                 <PhoneOff size={18} />
                 Decline
@@ -3045,7 +2910,7 @@ export default function HomePage() {
                   openDm(incomingCall.channelId)
                   acceptCall()
                 }}
-                className="flex-1 py-3 bg-emerald-500 text-white hover:bg-emerald-600 font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg animate-pulse"
+                className="flex-1 py-3 bg-[#23a55a] text-white hover:bg-[#1a7f47] font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg animate-pulse"
               >
                 <Phone size={18} />
                 Accept
@@ -3057,15 +2922,15 @@ export default function HomePage() {
 
       {outgoingCall && (
         <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-[100] animate-in fade-in duration-200">
-          <div className="bg-popover p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center max-w-sm w-full border border-border">
-            <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center text-3xl font-bold uppercase text-foreground border border-border mb-4 shadow-lg animate-pulse">
+          <div className="bg-[#1e2022] p-8 rounded-2xl shadow-2xl flex flex-col items-center text-center max-w-sm w-full border border-[#2d2f31]">
+            <div className="w-20 h-20 rounded-full bg-[#2d2f31] flex items-center justify-center text-3xl font-bold uppercase text-[#e3e1db] border border-[#343638] mb-4 shadow-lg animate-pulse">
               {outgoingCall.targetName[0]}
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-1">Calling {outgoingCall.targetName}</h3>
-            <p className="text-sm text-muted-foreground mb-8 animate-pulse">Ringing...</p>
+            <h3 className="text-xl font-bold text-[#e3e1db] mb-1">Calling {outgoingCall.targetName}</h3>
+            <p className="text-sm text-[#a3a29e] mb-8 animate-pulse">Ringing...</p>
             <button 
               onClick={cancelCall}
-              className="w-full py-3 bg-destructive/20 text-destructive hover:bg-destructive hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+              className="w-full py-3 bg-[#ed4245]/20 text-[#ed4245] hover:bg-[#ed4245] hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
             >
               <PhoneOff size={18} />
               Cancel Call
@@ -3075,10 +2940,11 @@ export default function HomePage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 bg-popover text-foreground px-4 py-2.5 rounded-lg shadow-2xl font-semibold border border-border z-[110] animate-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-6 right-6 bg-[#232428] text-[#e3e1db] px-4 py-2.5 rounded-lg shadow-2xl font-semibold border border-[#2d2f31] z-[110] animate-in slide-in-from-bottom duration-200">
           {toast}
         </div>
       )}
+      </InteractiveBackground>
     </div>
   )
 }
@@ -3145,7 +3011,6 @@ interface MessageItemProps {
   onTogglePin: (msgId: string, isPinned: boolean) => void;
   onReact: (msgId: string, emoji: string, hasReacted: boolean) => void;
   onProfileClick?: (userId: string) => void;
-  onImageClick?: (url: string) => void;
   isGrouped?: boolean;
 }
 
@@ -3163,7 +3028,6 @@ function MessageItem({
   onTogglePin,
   onReact,
   onProfileClick,
-  onImageClick,
   isGrouped = false
 }: MessageItemProps) {
   const isAuthor = msg.author_id === currentUser?.id;
@@ -3191,8 +3055,8 @@ function MessageItem({
     <div className={`flex flex-col group message-group-container relative hover:bg-white/5 -mx-4 px-4 transition-colors duration-100 ease-in-out ${isGrouped ? 'py-[1px] mt-0' : 'py-1 mt-3'}`}>
       {/* Reply header */}
       {msg.reply_to_id && (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-14 mb-1 select-none">
-          <CornerUpLeft size={12} className="rotate-180 text-muted-foreground shrink-0" />
+        <div className="flex items-center gap-1.5 text-xs text-[#a1a1aa] ml-14 mb-1 select-none">
+          <CornerUpLeft size={12} className="rotate-180 text-[#a1a1aa] shrink-0" />
           <span className="font-bold text-white">@{msg.reply_username}</span>
           <span className="truncate max-w-[240px] opacity-75">{msg.reply_content}</span>
         </div>
@@ -3201,7 +3065,7 @@ function MessageItem({
       <div className="flex gap-4">
         {isGrouped ? (
           /* Gutter placeholder with hover timestamp */
-          <div className="w-10 shrink-0 select-none flex items-center justify-center text-[9px] text-muted-foreground opacity-0 group-hover:opacity-100 pr-1 font-medium h-4 mt-0.5">
+          <div className="w-10 shrink-0 select-none flex items-center justify-center text-[9px] text-[#a1a1aa] opacity-0 group-hover:opacity-100 pr-1 font-medium h-4 mt-0.5">
             {parseUTCDate(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s?[AP]M$/i, '')}
           </div>
         ) : (
@@ -3219,7 +3083,7 @@ function MessageItem({
           {!isGrouped && (
             <div className="flex items-baseline gap-2">
               <span className="font-bold hover:underline cursor-pointer text-white text-[15px]" onClick={() => onProfileClick?.(msg.author_id)}>{msg.username}</span>
-              <span className="text-[12px] font-medium text-muted-foreground">
+              <span className="text-[12px] font-medium text-[#a1a1aa]">
                 {formatMessageTimestamp(msg.created_at)}
               </span>
               {msg.is_pinned === 1 && (
@@ -3247,16 +3111,16 @@ function MessageItem({
                 }}
                 className="w-full bg-black/40 text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary border border-white/10"
               />
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-[#a1a1aa]">
                 escape to <span className="text-rose-500 hover:underline cursor-pointer" onClick={onEditCancel}>cancel</span> • enter to <span className="text-emerald-500 hover:underline cursor-pointer" onClick={() => onEditSubmit(msg.id, editingContent)}>save</span>
               </span>
             </div>
           ) : (
             <div className="text-[15px] text-white flex flex-col gap-1">
               <div className="flex items-baseline gap-1.5 flex-wrap">
-                <MessageContent content={msg.content} attachments={msg.attachments} onImageClick={onImageClick} />
+                <MessageContent content={msg.content} attachments={msg.attachments} />
                 {msg.edited_at && (
-                  <span className="text-[10px] text-muted-foreground select-none">(edited)</span>
+                  <span className="text-[10px] text-[#a1a1aa] select-none">(edited)</span>
                 )}
               </div>
             </div>
@@ -3272,7 +3136,7 @@ function MessageItem({
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs border transition-colors cursor-pointer backdrop-blur-md shadow-sm ${
                     r.hasReacted 
                       ? 'bg-primary/20 border-primary/50 text-white hover:bg-primary/30' 
-                      : 'bg-black/20 border-white/10 text-muted-foreground hover:bg-white/5 hover:text-white hover:border-white/20'
+                      : 'bg-black/20 border-white/10 text-[#a1a1aa] hover:bg-white/5 hover:text-white hover:border-white/20'
                   }`}
                   title={r.users.join(', ')}
                 >
@@ -3292,7 +3156,7 @@ function MessageItem({
           <div className="relative">
             <button 
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="p-1.5 hover:bg-white/10 text-muted-foreground hover:text-white rounded transition-colors cursor-pointer"
+              className="p-1.5 hover:bg-white/10 text-[#a1a1aa] hover:text-white rounded transition-colors cursor-pointer"
               title="Add Reaction"
             >
               <Smile size={16} />
@@ -3319,7 +3183,7 @@ function MessageItem({
           {/* Reply */}
           <button 
             onClick={() => onReply(msg)}
-            className="p-1.5 hover:bg-white/10 text-muted-foreground hover:text-white rounded transition-colors cursor-pointer"
+            className="p-1.5 hover:bg-white/10 text-[#a1a1aa] hover:text-white rounded transition-colors cursor-pointer"
             title="Reply"
           >
             <CornerUpLeft size={16} />
@@ -3329,7 +3193,7 @@ function MessageItem({
           <button 
             onClick={() => onTogglePin(msg.id, msg.is_pinned === 1)}
             className={`p-1.5 hover:bg-white/10 rounded transition-colors cursor-pointer ${
-              msg.is_pinned === 1 ? 'text-primary' : 'text-muted-foreground hover:text-white'
+              msg.is_pinned === 1 ? 'text-primary' : 'text-[#a1a1aa] hover:text-white'
             }`}
             title={msg.is_pinned === 1 ? "Unpin Message" : "Pin Message"}
           >
@@ -3341,7 +3205,7 @@ function MessageItem({
             <>
               <button 
                 onClick={() => onEditStart(msg.id, msg.content)}
-                className="p-1.5 hover:bg-white/10 text-muted-foreground hover:text-white rounded transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-white/10 text-[#a1a1aa] hover:text-white rounded transition-colors cursor-pointer"
                 title="Edit Message"
               >
                 <Edit3 size={16} />

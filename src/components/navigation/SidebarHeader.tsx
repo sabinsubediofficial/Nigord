@@ -38,7 +38,7 @@ export const SidebarHeader = React.memo(function SidebarHeader({
 }: SidebarHeaderProps) {
   return (
     <div 
-      className="relative flex flex-col justify-end group cursor-pointer hover:bg-[#2d2f31]/30 transition-all duration-200 border-b border-[#2d2f31] shrink-0 select-none" 
+      className="relative flex flex-col justify-end group cursor-pointer hover:bg-secondary/30 transition-all duration-200 border-b border-border shrink-0 select-none" 
       style={{ height: activeTab === 'server' && currentServer?.banner ? '120px' : '48px' }}
       onClick={() => activeTab === 'server' && setShowServerMenu(!showServerMenu)}
     >
@@ -55,25 +55,25 @@ export const SidebarHeader = React.memo(function SidebarHeader({
         {activeTab === 'server' && currentServer?.icon && (
           <img 
             src={getFileUrl(currentServer.icon)} 
-            className="w-5 h-5 rounded-full object-cover mr-2 border border-[#2d2f31]" 
+            className="w-5 h-5 rounded-full object-cover mr-2 border border-border" 
             alt="" 
           />
         )}
-        <h2 className="font-bold truncate flex-1 text-[#e3e1db] transition-colors group-hover:text-white drop-shadow-md">
+        <h2 className="font-bold truncate flex-1 text-foreground transition-colors group-hover:text-white drop-shadow-md">
           {activeTab === 'server' ? currentServer?.name : "Find or start a conversation"}
         </h2>
         {activeTab === 'server' && (
           <ChevronDown 
             size={18} 
-            className={`text-[#a3a29e] shrink-0 transition-transform duration-200 drop-shadow-md ${showServerMenu ? 'rotate-180 text-white' : ''}`} 
+            className={`text-muted-foreground shrink-0 transition-transform duration-200 drop-shadow-md ${showServerMenu ? 'rotate-180 text-white' : ''}`} 
           />
         )}
       </div>
       
       {showServerMenu && activeTab === 'server' && (
-        <div className="absolute top-[52px] left-2 right-2 bg-[#232428]/95 backdrop-blur-md rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.6)] border border-[#2d2f31]/80 p-1.5 z-50 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-150 ease-out">
+        <div className="absolute top-[52px] left-2 right-2 bg-popover/95 backdrop-blur-md rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.6)] border border-border/80 p-1.5 z-50 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-150 ease-out">
           <div 
-            className="flex items-center justify-between p-2 rounded-md text-[#5865f2] hover:bg-[#5865f2] hover:text-white cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
+            className="flex items-center justify-between p-2 rounded-md text-primary hover:bg-primary hover:text-white cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
             onClick={(e) => { e.stopPropagation(); setShowServerMenu(false); setShowInviteModal(true); }}
           >
             <span className="text-xs font-semibold">Invite People</span>
@@ -81,7 +81,7 @@ export const SidebarHeader = React.memo(function SidebarHeader({
           </div>
           {(isOwner || isAdmin || isManageChannels) && (
             <div 
-              className="flex items-center justify-between p-2 rounded-md text-[#a3a29e] hover:bg-[#5865f2] hover:text-white cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
+              className="flex items-center justify-between p-2 rounded-md text-muted-foreground hover:bg-primary hover:text-white cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
               onClick={(e) => { e.stopPropagation(); setShowServerMenu(false); onCreateChannel?.(); }}
             >
               <span className="text-xs font-semibold">Create Channel</span>
@@ -90,7 +90,7 @@ export const SidebarHeader = React.memo(function SidebarHeader({
           )}
           {(isOwner || isAdmin) && (
             <div 
-              className="flex items-center justify-between p-2 rounded-md text-[#a3a29e] hover:bg-[#5865f2] hover:text-white cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
+              className="flex items-center justify-between p-2 rounded-md text-muted-foreground hover:bg-primary hover:text-white cursor-pointer transition-all duration-150 font-medium active:scale-[0.98]"
               onClick={(e) => { e.stopPropagation(); setShowServerMenu(false); setShowServerSettingsModal(true); }}
             >
               <span className="text-xs font-semibold">Server Settings</span>

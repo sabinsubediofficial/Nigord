@@ -2,71 +2,131 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Blomberg';
+  src: url('/fonts/blomberg.otf') format('opentype'),
+       url('/fonts/blomberg.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'Mighty Souly';
+  src: url('/fonts/mighty-souly.ttf') format('truetype'),
+       url('/fonts/mighty-souly.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.font-luxury {
+  font-family: 'Syne', 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.font-display {
+  font-family: 'Syne', 'Outfit', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.font-blomberg {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+.font-mighty-souly {
+  font-family: 'Syne', 'Outfit', sans-serif;
+}
+
 @layer base {
   :root {
-    /* Pure deep obsidian background */
-    --background: 240 10% 4%; /* #09090b */
-    --foreground: 0 0% 98%; /* #fafafa */
+    /* ═══════════════════════════════════════════
+       SUHHP — Warm Dark Theme
+       A warm, golden-tinted dark palette.
+       NOT Discord grey. NOT generic.
+       ═══════════════════════════════════════════ */
 
-    /* Glass panels (slightly lighter than bg) */
-    --card: 240 10% 6%; /* #0f0f11 */
-    --card-foreground: 0 0% 98%;
+    /* Warm Black Base */
+    --background: 20 12% 5%;       /* #0f0d0b */
+    --foreground: 36 30% 93%;      /* #f5f0e8 — warm off-white */
 
-    --popover: 240 10% 6%;
-    --popover-foreground: 0 0% 98%;
+    /* Warm Dark Surface (sidebar, panels) */
+    --secondary: 20 10% 9%;        /* #1a1715 */
+    --secondary-foreground: 36 30% 93%;
 
-    --primary: 252 87% 67%; /* Indigo/Purple Vibrant (#6366f1) */
+    /* Warm Elevated Surface (cards, chat area) */
+    --card: 18 8% 12%;             /* #211e1c */
+    --card-foreground: 36 30% 93%;
+
+    /* Popovers / Modals */
+    --popover: 20 10% 10%;
+    --popover-foreground: 36 30% 93%;
+
+    /* ── Accent: Coral Pink ── */
+    --primary: 355 100% 68%;       /* #ff5e6c */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 6% 12%; /* #1c1c1f */
-    --secondary-foreground: 0 0% 98%;
+    /* ── Muted / Inactive ── */
+    --muted: 20 6% 16%;
+    --muted-foreground: 36 15% 78%; /* #dfd7cc — bright warm off-white, high contrast */
 
-    --muted: 240 6% 12%;
-    --muted-foreground: 240 5% 65%; /* #a1a1aa */
+    /* ── Accent 2: Sleuthe Yellow ── */
+    --accent: 42 100% 50%;         /* #feb300 */
+    --accent-foreground: 20 12% 5%;
 
-    --accent: 252 87% 67%;
-    --accent-foreground: 0 0% 98%;
-
-    --destructive: 0 84% 60%;
+    /* ── Destructive ── */
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 6% 15%; /* #27272a */
-    --input: 240 6% 12%;
-    --ring: 252 87% 67%;
+    /* ── Borders — warm, barely visible ── */
+    --border: 30 8% 14%;
+    --input: 20 8% 12%;
+    --ring: 355 100% 68%;
 
-    --radius: 1rem;
+    --radius: 0.625rem;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+
+  html, body {
+    font-size: 15px;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/30;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.011em;
+    font-feature-settings: 'cv11', 'ss01', 'cv05';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  
-  /* Headings use the bold structural font */
+
+  ::selection {
+    background: rgba(255, 94, 108, 0.25);
+    color: #fff;
+  }
+
   h1, h2, h3, h4, h5, h6, .display-font {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Syne', 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Focus ring for accessibility */
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
   }
 }
 
-/* Glassmorphism Utilities */
-@layer utilities {
-  .glass-panel {
-    @apply bg-white/[0.03] backdrop-blur-2xl border border-white/[0.05] shadow-[0_8px_32px_rgba(0,0,0,0.4)];
-  }
-  .glass-panel-heavy {
-    @apply bg-[#09090b]/80 backdrop-blur-3xl border border-white/[0.08] shadow-[0_16px_48px_rgba(0,0,0,0.6)];
-  }
-  .text-glow {
-    text-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-  }
-}
-
-/* Custom dynamic scrollbars */
+/* ─────────────────────────────────────
+   Scrollbars
+   ───────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -75,30 +135,28 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full;
+  background: rgba(255, 240, 215, 0.08);
+  border-radius: 99px;
 }
-*:hover::-webkit-scrollbar-thumb {
-  @apply bg-white/20;
-}
-::-webkit-scrollbar-thumb:hover,
-::-webkit-scrollbar-thumb:active {
-  @apply bg-white/30;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 240, 215, 0.16);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-*:hover {
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  scrollbar-color: rgba(255, 240, 215, 0.08) transparent;
 }
 
-/* Message toolbar fade-in */
+/* ─────────────────────────────────────
+   Message toolbar reveal on hover
+   ───────────────────────────────────── */
 .message-group-container:hover .message-hover-toolbar {
   opacity: 1 !important;
 }
 
-/* Mobile responsive enhancements */
+/* ─────────────────────────────────────
+   Mobile
+   ───────────────────────────────────── */
 @media (max-width: 767px) {
   input, textarea, select {
     font-size: 16px !important;
@@ -110,5 +168,3 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
-
-
