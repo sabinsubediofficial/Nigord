@@ -25,7 +25,6 @@ import QuickSwitcherModal from "@/components/modals/QuickSwitcherModal"
 import ImageLightboxModal from "@/components/modals/ImageLightboxModal"
 import EmojiPickerPopover from "@/components/chat/EmojiPickerPopover"
 import GifPickerPopover from "@/components/chat/GifPickerPopover"
-import PipVideoOverlay from "@/components/voice/PipVideoOverlay"
 import { useUIStore } from "@/store/useUIStore"
 import MessageContent from "@/components/MessageContent"
 import { SidebarHeader } from "@/components/navigation/SidebarHeader"
@@ -3293,19 +3292,6 @@ export default function HomePage() {
             </button>
           </div>
         </div>
-      )}
-
-      {/* Real-time Picture-in-Picture Video Overlay (only shown when navigated away from voice view) */}
-      {isJoined && activeVoiceChannel && !(activeTab === 'server' && currentChannel?.id === activeVoiceChannel?.id && currentChannel?.type === 'voice') && (
-        <PipVideoOverlay
-          channelName={activeVoiceChannel.name}
-          participants={allParticipants}
-          isMuted={!isAudioEnabled}
-          isDeafened={isDeafened}
-          onToggleMute={toggleAudio}
-          onToggleDeafen={toggleDeafen}
-          onDisconnect={handleLeaveVoice}
-        />
       )}
 
       {toast && (
