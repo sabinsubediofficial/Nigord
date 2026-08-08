@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface Message {
   id: string
@@ -28,50 +29,57 @@ interface MessageState {
 
 export const deletedMessageIds = new Set<string>()
 
-export const useMessageStore = create<MessageState>((set) => ({
-  messages: {},
-  setMessages: (channelId, messages) => 
-    set((state) => ({ messages: { ...state.messages, [channelId]: messages } })),
-  addMessage: (channelId, message) => 
-    set((state) => ({ 
-      messages: { 
-        ...state.messages, 
-        [channelId]: [message, ...(state.messages[channelId] || []).filter(m => m.id !== message.id)] 
-      } 
-    })),
-  prependMessages: (channelId, oldMessages) =>
-    set((state) => {
-      const existing = state.messages[channelId] || []
-      const existingIds = new Set(existing.map(m => m.id))
-      const uniqueOld = oldMessages.filter(m => !existingIds.has(m.id))
-      return {
-        messages: {
-          ...state.messages,
-          [channelId]: [...existing, ...uniqueOld]
-        }
-      }
+export const useMessageStore = create<MessageState>()(
+  persist(
+    (set) => ({
+      messages: {},
+      setMessages: (channelId, messages) => 
+        set((state) => ({ messages: { ...state.messages, [channelId]: messages } })),
+      addMessage: (channelId, message) => 
+        set((state) => ({ 
+          messages: { 
+            ...state.messages, 
+            [channelId]: [message, ...(state.messages[channelId] || []).filter(m => m.id !== message.id)] 
+          } 
+        })),
+      prependMessages: (channelId, oldMessages) =>
+        set((state) => {
+          const existing = state.messages[channelId] || []
+          const existingIds = new Set(existing.map(m => m.id))
+          const uniqueOld = oldMessages.filter(m => !existingIds.has(m.id))
+          return {
+            messages: {
+              ...state.messages,
+              [channelId]: [...existing, ...uniqueOld]
+            }
+          }
+        }),
+      updateMessage: (channelId, messageId, updates) =>
+        set((state) => {
+          const current = state.messages[channelId] || []
+          const updated = current.map(m => m.id === messageId ? { ...m, ...updates } : m)
+          return {
+            messages: {
+              ...state.messages,
+              [channelId]: updated
+            }
+          }
+        }),
+      deleteMessage: (channelId, messageId) =>
+        set((state) => {
+          deletedMessageIds.add(messageId)
+          const current = state.messages[channelId] || []
+          const filtered = current.filter(m => m.id !== messageId)
+          return {
+            messages: {
+              ...state.messages,
+              [channelId]: filtered
+            }
+          }
+        }),
     }),
-  updateMessage: (channelId, messageId, updates) =>
-    set((state) => {
-      const current = state.messages[channelId] || []
-      const updated = current.map(m => m.id === messageId ? { ...m, ...updates } : m)
-      return {
-        messages: {
-          ...state.messages,
-          [channelId]: updated
-        }
-      }
-    }),
-  deleteMessage: (channelId, messageId) =>
-    set((state) => {
-      deletedMessageIds.add(messageId)
-      const current = state.messages[channelId] || []
-      const filtered = current.filter(m => m.id !== messageId)
-      return {
-        messages: {
-          ...state.messages,
-          [channelId]: filtered
-        }
-      }
-    }),
-}))
+    {
+      name: 'suhhp_messages_cache',
+    }
+  )
+)

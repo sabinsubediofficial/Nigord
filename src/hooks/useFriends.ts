@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { apiFetch } from "@/lib/api"
+import { useFriendsStore } from "@/store/useFriendsStore"
 
 export interface Friend {
   id: string
@@ -13,7 +14,7 @@ export interface Friend {
 }
 
 export const useFriends = () => {
-  const [friends, setFriends] = useState<Friend[]>([])
+  const { friends, setFriends } = useFriendsStore()
   const [searchResults, setSearchResults] = useState<any[]>([])
 
   const fetchFriends = async () => {

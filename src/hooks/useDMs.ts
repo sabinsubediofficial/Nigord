@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { Message, deletedMessageIds } from "@/store/useMessageStore"
 import { apiFetch, parseUTCDate } from "@/lib/api"
+import { useDMStore } from "@/store/useDMStore"
 
 export interface DMChannel {
   id: string
@@ -13,10 +14,16 @@ export interface DMChannel {
 }
 
 export const useDMs = (activeDmId?: string) => {
-  const [dms, setDms] = useState<DMChannel[]>([])
-  const [messages, setMessages] = useState<Message[]>([])
+  const { dms, dmMessagesCache, setDms, setDmMessages, addDmMessage } = useDMStore()
+  const messages = activeDmId ? (dmMessagesCache[activeDmId] || []) : []
   const [hasMore, setHasMore] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+
+  const setMessages = (msgs: Message[] | ((prev: Message[]) => Message[])) => {
+    if (activeDmId) {
+      setDmMessages(activeDmId, msgs)
+    }
+  }
 
   const fetchDMs = async () => {
     try {
@@ -40,48 +47,47 @@ export const useDMs = (activeDmId?: string) => {
         const data = await res.json()
         const fetchedMsgs: Message[] = (data.messages || []).filter((m: any) => !deletedMessageIds.has(m.id))
         
-        if (initial) {
-          setMessages(fetchedMsgs)
+        if (initial || !dmMessagesCache[activeDmId]) {
+          setDmMessages(activeDmId, fetchedMsgs)
           setHasMore(data.messages.length === 50)
         } else {
-          setMessages(prev => {
-            const fetchedIds = new Set(fetchedMsgs.map(m => m.id))
-            
-            let oldestFetchedTime = 0
-            let newestFetchedTime = 0
-            if (fetchedMsgs.length > 0) {
-              oldestFetchedTime = parseUTCDate(fetchedMsgs[fetchedMsgs.length - 1].created_at).getTime()
-              newestFetchedTime = parseUTCDate(fetchedMsgs[0].created_at).getTime()
-            }
-            
-            const updatedCurrent = prev.map(m => {
-              const fetched = fetchedMsgs.find(f => f.id === m.id)
-              if (fetched) {
-                const localEditTime = m.edited_at ? parseUTCDate(m.edited_at).getTime() : 0
-                const fetchedEditTime = fetched.edited_at ? parseUTCDate(fetched.edited_at).getTime() : 0
-                if (localEditTime > fetchedEditTime) {
-                  return {
-                    ...fetched,
-                    content: m.content,
-                    edited_at: m.edited_at
-                  }
+          const current = dmMessagesCache[activeDmId] || []
+          const fetchedIds = new Set(fetchedMsgs.map(m => m.id))
+          
+          let oldestFetchedTime = 0
+          let newestFetchedTime = 0
+          if (fetchedMsgs.length > 0) {
+            oldestFetchedTime = parseUTCDate(fetchedMsgs[fetchedMsgs.length - 1].created_at).getTime()
+            newestFetchedTime = parseUTCDate(fetchedMsgs[0].created_at).getTime()
+          }
+          
+          const updatedCurrent = current.map(m => {
+            const fetched = fetchedMsgs.find(f => f.id === m.id)
+            if (fetched) {
+              const localEditTime = m.edited_at ? parseUTCDate(m.edited_at).getTime() : 0
+              const fetchedEditTime = fetched.edited_at ? parseUTCDate(fetched.edited_at).getTime() : 0
+              if (localEditTime > fetchedEditTime) {
+                return {
+                  ...fetched,
+                  content: m.content,
+                  edited_at: m.edited_at
                 }
-                return { ...m, ...fetched }
               }
-              return m
-            }).filter(m => {
-              const mTime = parseUTCDate(m.created_at).getTime()
-              if (fetchedIds.has(m.id)) return true
-              if (mTime < oldestFetchedTime) return true
-              if (mTime > newestFetchedTime) return true // Safeguard for newly sent local messages
-              return false
-            })
-            
-            const currentIds = new Set(updatedCurrent.map(m => m.id))
-            const uniqueNew = fetchedMsgs.filter(m => !currentIds.has(m.id))
-            
-            return [...uniqueNew, ...updatedCurrent]
+              return { ...m, ...fetched }
+            }
+            return m
+          }).filter(m => {
+            const mTime = parseUTCDate(m.created_at).getTime()
+            if (fetchedIds.has(m.id)) return true
+            if (mTime < oldestFetchedTime) return true
+            if (mTime > newestFetchedTime) return true
+            return false
           })
+          
+          const currentIds = new Set(updatedCurrent.map(m => m.id))
+          const uniqueNew = fetchedMsgs.filter(m => !currentIds.has(m.id))
+          
+          setDmMessages(activeDmId, [...uniqueNew, ...updatedCurrent])
         }
         apiFetch(`/dms/${activeDmId}/read`, { method: 'POST', credentials: 'include' }).catch(console.error)
       }
@@ -101,11 +107,9 @@ export const useDMs = (activeDmId?: string) => {
       if (res.ok) {
         const data = await res.json()
         const fetchedMsgs: Message[] = data.messages
-        setMessages(prev => {
-          const currentIds = new Set(prev.map(m => m.id))
-          const uniqueOld = fetchedMsgs.filter(m => !currentIds.has(m.id))
-          return [...prev, ...uniqueOld]
-        })
+        const currentIds = new Set(messages.map(m => m.id))
+        const uniqueOld = fetchedMsgs.filter(m => !currentIds.has(m.id))
+        setDmMessages(activeDmId, [...messages, ...uniqueOld])
         setHasMore(data.messages.length === 50)
       }
     } catch (e) {
@@ -126,7 +130,7 @@ export const useDMs = (activeDmId?: string) => {
       })
       if (res.ok) {
         const data = await res.json()
-        setMessages(prev => [data.message, ...prev])
+        addDmMessage(activeDmId, data.message)
         return data.message
       }
     } catch (e) {

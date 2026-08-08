@@ -165,6 +165,7 @@ app.get('/files/get/:key', async (c) => {
   const headers = new Headers()
   file.writeHttpMetadata(headers)
   headers.set('etag', file.httpEtag)
+  headers.set('Cache-Control', 'public, max-age=31536000, immutable')
   
   const originalName = key.split('-').slice(1).join('-')
   const sanitizedFilename = encodeURIComponent(originalName)
