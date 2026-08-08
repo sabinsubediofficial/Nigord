@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { apiFetch, API_BASE } from "@/lib/api"
 import { useAudioStore } from "@/store/useAudioStore"
+import { createVoiceProcessor, VoiceProcessorInstance } from "@/utils/audioProcessor"
 
 const playSound = (src: string) => {
   new Audio(src).play().catch(() => {})
@@ -9,7 +10,15 @@ const playSound = (src: string) => {
 
 export const useWebRTC = (channelId?: string) => {
   const { user } = useAuthStore()
-  const { micVolume, inputDeviceId } = useAudioStore()
+  const { 
+    micVolume, 
+    inputDeviceId,
+    noiseSuppression,
+    noiseGateThreshold,
+    highpassFilter,
+    voiceClarity
+  } = useAudioStore()
+  const voiceProcessorRef = useRef<VoiceProcessorInstance | null>(null)
   const [remoteStreams, setRemoteStreams] = useState<Record<string, MediaStream>>({})
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [localScreenStream, setLocalScreenStream] = useState<MediaStream | null>(null)
@@ -96,10 +105,14 @@ export const useWebRTC = (channelId?: string) => {
   }, [outgoingCall])
 
   useEffect(() => {
-    if (localGainNodeRef.current) {
+    if (voiceProcessorRef.current) {
+      voiceProcessorRef.current.gainNode.gain.value = micVolume
+      voiceProcessorRef.current.setNoiseGateEnabled(noiseSuppression)
+      voiceProcessorRef.current.setThreshold(noiseGateThreshold)
+    } else if (localGainNodeRef.current) {
       localGainNodeRef.current.gain.value = micVolume
     }
-  }, [micVolume])
+  }, [micVolume, noiseSuppression, noiseGateThreshold])
 
   const startRingtone = (src: string) => {
     stopRingtone()
@@ -360,23 +373,25 @@ export const useWebRTC = (channelId?: string) => {
       })
       rawStreamRef.current = rawStream
 
-      // Set up Web Audio API for gain/volume adjustment
+      // Set up Web Audio API with Open-Source DSP Noise Processor & Noise Gate
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
       const audioCtx = new AudioContextClass()
       audioContextRef.current = audioCtx
 
-      const source = audioCtx.createMediaStreamSource(rawStream)
-      const gainNode = audioCtx.createGain()
-      gainNode.gain.value = micVolume
-      localGainNodeRef.current = gainNode
-
-      const destination = audioCtx.createMediaStreamDestination()
-      source.connect(gainNode)
-      gainNode.connect(destination)
+      const processor = createVoiceProcessor(audioCtx, rawStream, {
+        enableNoiseGate: noiseSuppression,
+        noiseGateThreshold,
+        enableHighPass: highpassFilter,
+        enableVoicePresence: voiceClarity,
+        enableCompressor: true,
+        micGain: micVolume
+      })
+      voiceProcessorRef.current = processor
+      localGainNodeRef.current = processor.gainNode
 
       // Combined stream containing processed audio track and raw video track
       const stream = new MediaStream()
-      destination.stream.getAudioTracks().forEach(track => stream.addTrack(track))
+      processor.destinationStream.getAudioTracks().forEach(track => stream.addTrack(track))
       rawStream.getVideoTracks().forEach(track => stream.addTrack(track))
 
       streamRef.current = stream
@@ -426,6 +441,10 @@ export const useWebRTC = (channelId?: string) => {
     streamRef.current = null
     rawStreamRef.current?.getTracks().forEach(t => t.stop())
     rawStreamRef.current = null
+    if (voiceProcessorRef.current) {
+      voiceProcessorRef.current.cleanup()
+      voiceProcessorRef.current = null
+    }
     if (audioContextRef.current) {
       audioContextRef.current.close().catch(() => {})
       audioContextRef.current = null

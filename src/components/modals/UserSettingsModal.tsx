@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { X, LogOut, Upload, ShieldAlert, Check, Volume2, Mic } from "lucide-react"
 import { apiFetch, getFileUrl, clearToken, saveToken } from "@/lib/api"
 import { useAudioStore } from "@/store/useAudioStore"
+import { createVoiceProcessor, VoiceProcessorInstance } from "@/utils/audioProcessor"
 import ImageCropModal from "./ImageCropModal"
 import ImageLightboxModal from "./ImageLightboxModal"
 import { useUIStore } from "@/store/useUIStore"
@@ -25,10 +26,18 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     outputVolume, 
     inputDeviceId, 
     outputDeviceId, 
+    noiseSuppression,
+    noiseGateThreshold,
+    highpassFilter,
+    voiceClarity,
     setMicVolume, 
     setOutputVolume, 
     setInputDeviceId, 
-    setOutputDeviceId 
+    setOutputDeviceId,
+    setNoiseSuppression,
+    setNoiseGateThreshold,
+    setHighpassFilter,
+    setVoiceClarity
   } = useAudioStore()
 
   // Voice & Video state
@@ -53,6 +62,8 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     getDevices()
   }, [])
 
+  const testProcessorRef = useRef<VoiceProcessorInstance | null>(null)
+
   const startMicTest = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -64,10 +75,16 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
       const ctx = new AudioContextClass()
       testAudioContextRef.current = ctx
 
-      const source = ctx.createMediaStreamSource(stream)
-      const analyser = ctx.createAnalyser()
-      analyser.fftSize = 256
-      source.connect(analyser)
+      const processor = createVoiceProcessor(ctx, stream, {
+        enableNoiseGate: noiseSuppression,
+        noiseGateThreshold,
+        enableHighPass: highpassFilter,
+        enableVoicePresence: voiceClarity,
+        enableCompressor: true,
+        micGain: micVolume
+      })
+      testProcessorRef.current = processor
+      const analyser = processor.analyserNode
 
       const bufferLength = analyser.frequencyBinCount
       const dataArray = new Uint8Array(bufferLength)
@@ -94,6 +111,10 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
     if (testAnimationRef.current) {
       cancelAnimationFrame(testAnimationRef.current)
       testAnimationRef.current = null
+    }
+    if (testProcessorRef.current) {
+      testProcessorRef.current.cleanup()
+      testProcessorRef.current = null
     }
     if (testAudioContextRef.current) {
       testAudioContextRef.current.close().catch(() => {})
@@ -708,11 +729,94 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
 
                 <div className="w-full h-[1px] bg-border/50" />
 
+                {/* Open-Source DSP Noise Suppression & Gate Controls */}
+                <div className="w-full h-[1px] bg-border/50" />
+
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span>DSP Noise Suppression & Gate</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">Open-Source DSP</span>
+                      </h3>
+                      <p className="text-xs text-white/70 mt-1">
+                        Filters background keyboard typing, computer fan noise, AC hum, and breathing room echoes.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNoiseSuppression(!noiseSuppression)}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors ${
+                        noiseSuppression ? 'bg-primary justify-end' : 'bg-secondary justify-start'
+                      }`}
+                    >
+                      <div className="w-4 h-4 rounded-full bg-white shadow-md transition-transform" />
+                    </button>
+                  </div>
+
+                  {noiseSuppression && (
+                    <div className="space-y-4 bg-secondary/40 border border-border/80 rounded-xl p-4 animate-in fade-in duration-200">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold uppercase text-white/80 tracking-wider">Noise Gate Threshold</label>
+                          <span className="text-xs text-emerald-400 font-bold font-mono">
+                            {noiseGateThreshold} dB ({noiseGateThreshold <= -50 ? 'High Sensitivity' : noiseGateThreshold <= -40 ? 'Recommended' : 'Aggressive (Noisy Room)'})
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-60"
+                          max="-24"
+                          step="1"
+                          value={noiseGateThreshold}
+                          onChange={(e) => setNoiseGateThreshold(parseInt(e.target.value))}
+                          className="w-full accent-primary bg-secondary/60 h-2 rounded-lg appearance-none cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[10px] text-white/50 font-medium">
+                          <span>-60 dB (Quiet Room)</span>
+                          <span>-48 dB (Standard)</span>
+                          <span>-24 dB (Loud/Noisy)</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <div 
+                          onClick={() => setHighpassFilter(!highpassFilter)}
+                          className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                            highpassFilter ? 'bg-primary/10 border-primary/40 text-white' : 'bg-secondary/40 border-border text-white/60'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between font-bold text-xs">
+                            <span>85Hz High-Pass Rumble Filter</span>
+                            <Check size={14} className={highpassFilter ? 'text-primary' : 'opacity-0'} />
+                          </div>
+                          <p className="text-[11px] text-white/60 mt-1">Cuts desk taps, chair rumbles, and AC drone.</p>
+                        </div>
+
+                        <div 
+                          onClick={() => setVoiceClarity(!voiceClarity)}
+                          className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                            voiceClarity ? 'bg-primary/10 border-primary/40 text-white' : 'bg-secondary/40 border-border text-white/60'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between font-bold text-xs">
+                            <span>Voice Presence Boost (2.8kHz)</span>
+                            <Check size={14} className={voiceClarity ? 'text-primary' : 'opacity-0'} />
+                          </div>
+                          <p className="text-[11px] text-white/60 mt-1">Enhances vocal clarity and speech intelligibility.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full h-[1px] bg-border/50" />
+
                 {/* Mic Level Test Meter */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">Mic Test</h3>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">Live Mic & Gate Test</h3>
                   <p className="text-xs text-white/70 leading-relaxed">
-                    Having trouble? Let's check your mic level. Click the button below to start monitoring.
+                    Test your microphone with the active noise suppression and noise gate in real-time.
                   </p>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-4">

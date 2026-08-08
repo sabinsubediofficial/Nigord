@@ -7,11 +7,19 @@ export interface AudioState {
   userVolumes: Record<string, number> // maps userId -> volume (0 to 2)
   inputDeviceId: string
   outputDeviceId: string
+  noiseSuppression: boolean
+  noiseGateThreshold: number // in dB, default -48
+  highpassFilter: boolean
+  voiceClarity: boolean
   setMicVolume: (vol: number) => void
   setOutputVolume: (vol: number) => void
   setUserVolume: (userId: string, vol: number) => void
   setInputDeviceId: (id: string) => void
   setOutputDeviceId: (id: string) => void
+  setNoiseSuppression: (enabled: boolean) => void
+  setNoiseGateThreshold: (threshold: number) => void
+  setHighpassFilter: (enabled: boolean) => void
+  setVoiceClarity: (enabled: boolean) => void
 }
 
 export const useAudioStore = create<AudioState>()(
@@ -22,6 +30,10 @@ export const useAudioStore = create<AudioState>()(
       userVolumes: {},
       inputDeviceId: 'default',
       outputDeviceId: 'default',
+      noiseSuppression: true,
+      noiseGateThreshold: -48,
+      highpassFilter: true,
+      voiceClarity: true,
       setMicVolume: (micVolume) => set({ micVolume }),
       setOutputVolume: (outputVolume) => set({ outputVolume }),
       setUserVolume: (userId, vol) =>
@@ -30,6 +42,10 @@ export const useAudioStore = create<AudioState>()(
         })),
       setInputDeviceId: (inputDeviceId) => set({ inputDeviceId }),
       setOutputDeviceId: (outputDeviceId) => set({ outputDeviceId }),
+      setNoiseSuppression: (noiseSuppression) => set({ noiseSuppression }),
+      setNoiseGateThreshold: (noiseGateThreshold) => set({ noiseGateThreshold }),
+      setHighpassFilter: (highpassFilter) => set({ highpassFilter }),
+      setVoiceClarity: (voiceClarity) => set({ voiceClarity }),
     }),
     {
       name: 'suhhp_audio_settings',
