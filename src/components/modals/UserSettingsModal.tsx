@@ -517,32 +517,79 @@ export default function UserSettingsModal({ onClose }: { onClose: () => void }) 
 
               {/* Profile Avatar Header */}
               <div className="flex items-center gap-5 pb-6 border-b border-border/50">
-                <div className="w-20 h-20 rounded-full bg-secondary p-1 relative shrink-0 shadow-lg border border-border">
+                <div 
+                  onClick={() => {
+                    if (avatarUrl) {
+                      setCropImageSrc(getFileUrl(avatarUrl))
+                    } else {
+                      fileInputRef.current?.click()
+                    }
+                  }}
+                  className="w-20 h-20 rounded-full bg-secondary p-1 relative shrink-0 shadow-lg border border-border group cursor-pointer overflow-hidden"
+                >
                   {avatarUrl ? (
                     <img src={getFileUrl(avatarUrl)} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                   ) : (
-                    <div className="w-full h-full rounded-full bg-secondary flex items-center justify-center text-2xl font-bold uppercase text-white">
+                    <div className="w-full h-full rounded-full bg-secondary flex items-center justify-center text-2xl font-bold uppercase text-white font-display">
                       {user?.username[0]}
                     </div>
                   )}
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-                  >
-                    <Upload size={18} className="text-white" />
-                  </button>
+                  <div className="absolute inset-0 bg-black/75 rounded-full flex flex-col items-center justify-center text-[10px] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[2px] gap-0.5">
+                    {avatarUrl ? (
+                      <>
+                        <span className="hover:text-primary transition-colors">✏️ Adjust</span>
+                        <span 
+                          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                          className="hover:text-primary transition-colors"
+                        >
+                          📷 Change
+                        </span>
+                      </>
+                    ) : (
+                      <span>UPLOAD</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col">
                   <h3 className="text-xl font-bold text-white leading-tight font-display">{displayName || user?.username}</h3>
                   <p className="text-white/70 text-sm font-medium">@{user?.username}</p>
-                  <button 
-                    type="button" 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-xs text-primary font-semibold hover:underline mt-1 self-start"
-                  >
-                    Change Avatar
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
+                    {avatarUrl ? (
+                      <>
+                        <button 
+                          type="button" 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-primary font-semibold hover:underline"
+                        >
+                          Change Avatar
+                        </button>
+                        <span className="text-white/30">•</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setCropImageSrc(getFileUrl(avatarUrl))}
+                          className="text-white/70 hover:text-white font-semibold"
+                        >
+                          Adjust Frame
+                        </button>
+                        <span className="text-white/30">•</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setAvatarUrl("")}
+                          className="text-rose-400 hover:text-rose-300 font-semibold"
+                        >
+                          Remove
+                        </button>
+                      </>
+                    ) : (
+                      <button 
+                        type="button" 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-primary font-semibold hover:underline"
+                      >
+                        Upload Avatar
+                      </button>
+                    )}
+                  </div>
                   <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" />
                 </div>
               </div>

@@ -281,7 +281,17 @@ export default function ServerSettingsModal({
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase text-white/80 tracking-wider block">Server Icon</label>
                         <div 
-                          onClick={() => iconInputRef.current?.click()}
+                          onClick={() => {
+                            if (iconUrl) {
+                              setCropImageSrc(getFileUrl(iconUrl))
+                              setCropTarget('icon')
+                              setCropAspect(1)
+                              setCropShape('rounded-square')
+                              setCropTitle("Adjust Server Icon Frame")
+                            } else {
+                              iconInputRef.current?.click()
+                            }
+                          }}
                           className="relative group w-24 h-24 rounded-2xl overflow-hidden bg-secondary/60 border border-border flex items-center justify-center cursor-pointer hover:border-primary transition-all shadow-md"
                         >
                           {iconUrl ? (
@@ -289,8 +299,20 @@ export default function ServerSettingsModal({
                           ) : (
                             <span className="text-2xl font-bold text-white uppercase font-display">{name.substring(0, 2)}</span>
                           )}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-white font-bold transition-opacity">
-                            <span>{uploadingIcon ? "UPLOADING..." : "CHANGE"}</span>
+                          <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1 text-[11px] text-white font-bold transition-opacity backdrop-blur-[2px]">
+                            {iconUrl ? (
+                              <>
+                                <span className="hover:text-primary transition-colors py-0.5">✏️ Adjust Frame</span>
+                                <span 
+                                  onClick={(e) => { e.stopPropagation(); iconInputRef.current?.click(); }}
+                                  className="hover:text-primary transition-colors py-0.5"
+                                >
+                                  📷 Change
+                                </span>
+                              </>
+                            ) : (
+                              <span>{uploadingIcon ? "UPLOADING..." : "UPLOAD"}</span>
+                            )}
                           </div>
                         </div>
                         <input 
@@ -300,24 +322,66 @@ export default function ServerSettingsModal({
                           accept="image/*" 
                           className="hidden" 
                         />
-                        {iconUrl && (
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-xs text-rose-400 hover:text-rose-300 hover:bg-transparent p-0"
-                            onClick={(e) => { e.stopPropagation(); setIconUrl(""); }}
-                          >
-                            Remove Icon
-                          </Button>
-                        )}
+                        <div className="flex flex-wrap gap-2 pt-1 text-xs">
+                          {iconUrl ? (
+                            <>
+                              <button
+                                type="button"
+                                className="text-primary hover:underline font-semibold"
+                                onClick={() => iconInputRef.current?.click()}
+                              >
+                                Change
+                              </button>
+                              <span className="text-white/30">•</span>
+                              <button
+                                type="button"
+                                className="text-white/70 hover:text-white font-semibold"
+                                onClick={() => {
+                                  setCropImageSrc(getFileUrl(iconUrl))
+                                  setCropTarget('icon')
+                                  setCropAspect(1)
+                                  setCropShape('rounded-square')
+                                  setCropTitle("Adjust Server Icon Frame")
+                                }}
+                              >
+                                Adjust Frame
+                              </button>
+                              <span className="text-white/30">•</span>
+                              <button
+                                type="button"
+                                className="text-rose-400 hover:text-rose-300 font-semibold"
+                                onClick={() => setIconUrl("")}
+                              >
+                                Remove
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="text-primary hover:underline font-semibold"
+                              onClick={() => iconInputRef.current?.click()}
+                            >
+                              Upload Icon
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Server Banner */}
                       <div className="flex-1 space-y-2 w-full">
                         <label className="text-xs font-bold uppercase text-white/80 tracking-wider block">Server Banner</label>
                         <div 
-                          onClick={() => bannerInputRef.current?.click()} 
+                          onClick={() => {
+                            if (bannerUrl) {
+                              setCropImageSrc(getFileUrl(bannerUrl))
+                              setCropTarget('banner')
+                              setCropAspect(16 / 9)
+                              setCropShape('rect')
+                              setCropTitle("Adjust Server Banner Frame")
+                            } else {
+                              bannerInputRef.current?.click()
+                            }
+                          }} 
                           className="relative group h-24 w-full rounded-xl bg-secondary/60 border border-border border-dashed flex items-center justify-center cursor-pointer hover:border-primary overflow-hidden transition-all shadow-inner"
                         >
                           {bannerUrl ? (
@@ -328,11 +392,21 @@ export default function ServerSettingsModal({
                               <p className="text-[10px] opacity-70 mt-1">Recommended size: 960x540</p>
                             </div>
                           )}
-                          {bannerUrl && (
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs text-white font-bold transition-opacity">
-                              CHANGE BANNER
-                            </div>
-                          )}
+                          <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-4 text-xs text-white font-bold transition-opacity backdrop-blur-[2px]">
+                            {bannerUrl ? (
+                              <>
+                                <span className="hover:text-primary transition-colors">✏️ Adjust Frame</span>
+                                <span 
+                                  onClick={(e) => { e.stopPropagation(); bannerInputRef.current?.click(); }}
+                                  className="hover:text-primary transition-colors"
+                                >
+                                  📷 Change Banner
+                                </span>
+                              </>
+                            ) : (
+                              <span>UPLOAD BANNER</span>
+                            )}
+                          </div>
                         </div>
                         <input 
                           type="file" 
@@ -341,17 +415,49 @@ export default function ServerSettingsModal({
                           accept="image/*" 
                           className="hidden" 
                         />
-                        {bannerUrl && (
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-xs text-rose-400 hover:text-rose-300 hover:bg-transparent p-0"
-                            onClick={(e) => { e.stopPropagation(); setBannerUrl(""); }}
-                          >
-                            Remove Banner
-                          </Button>
-                        )}
+                        <div className="flex flex-wrap gap-2 pt-1 text-xs">
+                          {bannerUrl ? (
+                            <>
+                              <button
+                                type="button"
+                                className="text-primary hover:underline font-semibold"
+                                onClick={() => bannerInputRef.current?.click()}
+                              >
+                                Change Banner
+                              </button>
+                              <span className="text-white/30">•</span>
+                              <button
+                                type="button"
+                                className="text-white/70 hover:text-white font-semibold"
+                                onClick={() => {
+                                  setCropImageSrc(getFileUrl(bannerUrl))
+                                  setCropTarget('banner')
+                                  setCropAspect(16 / 9)
+                                  setCropShape('rect')
+                                  setCropTitle("Adjust Server Banner Frame")
+                                }}
+                              >
+                                Adjust Frame
+                              </button>
+                              <span className="text-white/30">•</span>
+                              <button
+                                type="button"
+                                className="text-rose-400 hover:text-rose-300 font-semibold"
+                                onClick={() => setBannerUrl("")}
+                              >
+                                Remove Banner
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="text-primary hover:underline font-semibold"
+                              onClick={() => bannerInputRef.current?.click()}
+                            >
+                              Upload Banner
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
