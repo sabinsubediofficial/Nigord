@@ -19,8 +19,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        display: ['"Syne"', '"Outfit"', 'sans-serif'],
-        luxury: ['"Syne"', '"Outfit"', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', '"Outfit"', 'sans-serif'],
+        luxury: ['"Plus Jakarta Sans"', '"Outfit"', 'sans-serif'],
         jakarta: ['"Plus Jakarta Sans"', 'sans-serif'],
       },
       colors: {
