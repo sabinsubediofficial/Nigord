@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { apiFetch } from "@/lib/api"
+import { playSoundEffect } from "@/utils/soundEffects"
 
 export interface GlobalNotifications {
   servers: { server_id: string, channel_id: string, unread_count: number }[]
@@ -10,7 +11,6 @@ export interface GlobalNotifications {
 export const useGlobalNotifications = () => {
   const { user } = useAuthStore()
   const [notifications, setNotifications] = useState<GlobalNotifications>({ servers: [], dms: [] })
-  const notificationSound = useRef(new Audio('/sounds/new-message.mp3'))
   const lastTotalUnread = useRef(0)
 
   const fetchNotifications = async (activeChannelId?: string, activeDmId?: string) => {
@@ -28,7 +28,7 @@ export const useGlobalNotifications = () => {
         const currentTotal = [...relevantServers, ...relevantDms].reduce((acc, curr) => acc + curr.unread_count, 0)
         
         if (currentTotal > lastTotalUnread.current) {
-          notificationSound.current.play().catch(() => {})
+          playSoundEffect('new-message')
         }
         
         lastTotalUnread.current = currentTotal

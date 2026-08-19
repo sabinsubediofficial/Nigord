@@ -3,10 +3,7 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { apiFetch, API_BASE } from "@/lib/api"
 import { useAudioStore } from "@/store/useAudioStore"
 import { createVoiceProcessor, VoiceProcessorInstance } from "@/utils/audioProcessor"
-
-const playSound = (src: string) => {
-  new Audio(src).play().catch(() => {})
-}
+import { playSoundEffect, startCallRingtone, stopCallRingtone } from "@/utils/soundEffects"
 
 export const useWebRTC = (channelId?: string) => {
   const { user } = useAuthStore()
@@ -114,19 +111,13 @@ export const useWebRTC = (channelId?: string) => {
     }
   }, [micVolume, noiseSuppression, noiseGateThreshold])
 
-  const startRingtone = (src: string) => {
-    stopRingtone()
-    const audio = new Audio(src)
-    audio.loop = true
-    audio.play().catch(() => {})
-    ringtoneAudioRef.current = audio
+  const startRingtone = (type: 'incoming' | 'outgoing' | string) => {
+    const ringType = typeof type === 'string' && type.includes('incoming') ? 'incoming' : 'outgoing'
+    startCallRingtone(ringType)
   }
 
   const stopRingtone = () => {
-    if (ringtoneAudioRef.current) {
-      ringtoneAudioRef.current.pause()
-      ringtoneAudioRef.current = null
-    }
+    stopCallRingtone()
   }
 
   const monitorStream = (userId: string, stream: MediaStream) => {
@@ -156,7 +147,7 @@ export const useWebRTC = (channelId?: string) => {
     if (pc) {
       pc.close()
       delete pcs.current[targetId]
-      playSound('/sounds/user-leave.mp3')
+      playSoundEffect('user-leave')
     }
     setRemoteStreams(prev => {
       const next = { ...prev }
@@ -239,11 +230,11 @@ export const useWebRTC = (channelId?: string) => {
     if (newState) {
       streamRef.current?.getAudioTracks().forEach(t => t.enabled = false)
       setIsAudioEnabled(false)
-      playSound('/sounds/deaf.mp3')
+      playSoundEffect('deaf')
     } else {
       streamRef.current?.getAudioTracks().forEach(t => t.enabled = true)
       setIsAudioEnabled(true)
-      playSound('/sounds/non-deaf.mp3')
+      playSoundEffect('non-deaf')
     }
   }
 
@@ -254,7 +245,7 @@ export const useWebRTC = (channelId?: string) => {
       track.enabled = enabled
     })
     setIsAudioEnabled(enabled)
-    playSound(enabled ? '/sounds/non-muted.mp3' : '/sounds/muted.mp3')
+    playSoundEffect(enabled ? 'non-muted' : 'muted')
     
     // If unmuting, undeafen automatically
     if (enabled && isDeafened) {
@@ -401,7 +392,7 @@ export const useWebRTC = (channelId?: string) => {
       setIsVideoEnabled(withVideo)
       setIsAudioEnabled(true)
       setIsDeafened(false)
-      playSound('/sounds/incoming-user.mp3')
+      playSoundEffect('incoming-user')
       if (isDmCall.current) {
         callConnectTime.current = Date.now()
       }
@@ -452,7 +443,7 @@ export const useWebRTC = (channelId?: string) => {
     localGainNodeRef.current = null
     setLocalStream(null)
     setIsJoined(false)
-    playSound('/sounds/deconnected.mp3')
+    playSoundEffect('deconnected')
 
     Object.values(pcs.current).forEach(pc => pc.close())
     pcs.current = {}
@@ -524,7 +515,7 @@ export const useWebRTC = (channelId?: string) => {
       screenStreamRef.current = null
       setLocalScreenStream(null)
       setIsScreenSharing(false)
-      playSound('/sounds/stream-ended.mp3')
+      playSoundEffect('stream-ended')
 
       // Notify peers that screen share ended
       Object.keys(pcs.current).forEach(targetId => {
@@ -536,14 +527,14 @@ export const useWebRTC = (channelId?: string) => {
         screenStreamRef.current = stream
         setLocalScreenStream(stream)
         setIsScreenSharing(true)
-        playSound('/sounds/stream-started.mp3')
+        playSoundEffect('stream-started')
 
         const track = stream.getVideoTracks()[0]
         track.onended = () => {
           setIsScreenSharing(false)
           screenStreamRef.current = null
           setLocalScreenStream(null)
-          playSound('/sounds/stream-ended.mp3')
+          playSoundEffect('stream-ended')
 
           Object.values(pcs.current).forEach(pc => {
             const sender = pc.getSenders().find(s => s.track === track)
@@ -592,7 +583,7 @@ export const useWebRTC = (channelId?: string) => {
     dmChannelIdRef.current = dmChannelId
     callConnectTime.current = null
     setOutgoingCall({ targetId, targetName, channelId: dmChannelId, isVideo: withVideo })
-    startRingtone('/sounds/outgoing-ring.mp3')
+    startRingtone('outgoing')
     
     setCallTimeout(async () => {
       await cancelCall()
@@ -696,7 +687,7 @@ export const useWebRTC = (channelId?: string) => {
               })
               isDmCall.current = true
               dmChannelIdRef.current = data.channelId
-              startRingtone('/sounds/incoming-ring.mp3')
+              startRingtone('incoming')
 
               setCallTimeout(async () => {
                 await declineCall()
@@ -720,12 +711,12 @@ export const useWebRTC = (channelId?: string) => {
             clearCallTimeout()
             setOutgoingCall(null)
             stopRingtone()
-            playSound('/sounds/deconnected.mp3')
+            playSoundEffect('deconnected')
             await leave(true)
           } else if (type === 'offer') {
             if (!isJoinedRef.current) continue
             if (!pcs.current[from_id]) {
-              playSound('/sounds/incoming-user.mp3')
+              playSoundEffect('incoming-user')
             }
             const pc = createPC(from_id, streamRef.current!)
             await pc.setRemoteDescription(new RTCSessionDescription(data))
@@ -775,7 +766,7 @@ export const useWebRTC = (channelId?: string) => {
             setRemoteStreams(prev => {
               const key = `${from_id}-screen`
               if (prev[key]) {
-                playSound('/sounds/stream-ended.mp3')
+                playSoundEffect('stream-ended')
               }
               const next = { ...prev }
               delete next[key]
