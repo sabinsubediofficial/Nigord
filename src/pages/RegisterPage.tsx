@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ShieldAlert, Check, Gamepad2 } from "lucide-react"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, saveToken } from "@/lib/api"
+import { useAuthStore } from "@/store/useAuthStore"
 import { InteractiveBackground } from "@/components/ui/InteractiveBackground"
 
 export default function RegisterPage() {
@@ -13,6 +14,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const setUser = useAuthStore((state) => state.setUser)
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,7 +48,9 @@ export default function RegisterPage() {
       const data = await res.json()
 
       if (res.ok) {
-        navigate("/verify", { state: { userId: data.userId } })
+        if (data.token) saveToken(data.token)
+        setUser(data.user)
+        navigate("/")
       } else {
         setError(data.error || "Registration failed. Please try again.")
       }

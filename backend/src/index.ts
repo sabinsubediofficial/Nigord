@@ -178,7 +178,7 @@ app.get('/files/get/:key', async (c) => {
 
 // Authentication Routes
 app.post('/auth/register', async (c) => {
-  const { username, email, password } = await c.req.json()
+  const { username, email, password, display_name } = await c.req.json()
   if (!username || !email || !password) return c.json({ error: 'Missing fields' }, 400)
 
   const usernameTrim = username.trim()
@@ -193,26 +193,30 @@ app.post('/auth/register', async (c) => {
     return c.json({ error: 'Password must be at least 6 characters' }, 400)
   }
 
-  // Purge unverified accounts older than 15 minutes with the same username/email
-  await c.env.DB.prepare(
-    "DELETE FROM users WHERE is_verified = 0 AND (username = ? OR email = ?) AND created_at < datetime('now', '-15 minutes')"
-  ).bind(usernameTrim, normalizedEmail).run().catch(() => {})
-
   const id = crypto.randomUUID()
   const passwordHash = await bcrypt.hash(password, 10)
-  const codeVal = Math.floor(100000 + Math.random() * 900000).toString()
-  const verificationCodeField = `${codeVal}:${Date.now()}`
 
   try {
     await c.env.DB.prepare(
-      'INSERT INTO users (id, username, email, password_hash, is_verified, verification_code) VALUES (?, ?, ?, ?, 0, ?)'
-    ).bind(id, usernameTrim, normalizedEmail, passwordHash, verificationCodeField).run()
+      'INSERT INTO users (id, username, email, password_hash, display_name, is_verified) VALUES (?, ?, ?, ?, ?, 1)'
+    ).bind(id, usernameTrim, normalizedEmail, passwordHash, display_name || null).run()
 
-    console.log(`[DEVELOPMENT VERIFICATION] Email verification code for ${usernameTrim} (${normalizedEmail}): ${codeVal}`)
+    const exp = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days
+    const token = await sign({ id, username: usernameTrim, exp }, c.env.JWT_SECRET)
+    const origin = c.req.header('origin') || ''
+    const isProd = origin.includes('pages.dev') || origin.includes('nigord.pages.dev')
+
+    setCookie(c, 'token', token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'None' : 'Lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    })
 
     return c.json({ 
-      user: { id, username: usernameTrim, email: normalizedEmail, is_verified: 0 },
-      debugCode: codeVal
+      token, 
+      user: { id, username: usernameTrim, email: normalizedEmail, display_name: display_name || null, avatar: null, bio: null, status_message: null, status: 'online' } 
     })
   } catch (e: any) {
     if (e.message.includes('UNIQUE constraint failed')) return c.json({ error: 'Username or email already exists' }, 400)
@@ -230,10 +234,6 @@ app.post('/auth/login', async (c) => {
   const user: any = await c.env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(normalizedEmail).first()
 
   if (!user || !(await bcrypt.compare(password, user.password_hash))) return c.json({ error: 'Invalid credentials' }, 401)
-
-  if (!user.is_verified) {
-    return c.json({ error: 'Email not verified', unverified: true, userId: user.id }, 403)
-  }
 
   const exp = Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7) // 7 days
   const token = await sign({ id: user.id, username: user.username, exp }, c.env.JWT_SECRET)
